@@ -85,8 +85,8 @@ Route::prefix('booking')->group(function () {
     // Authenticated client: create booking
     Route::post('/masters/{masterId}', [BookingController::class, 'create'])->middleware('auth:api');
 
-    // Authenticated master: list and update using subscription check inside controller
-    Route::middleware('auth:api')->group(function () {
+    // Authenticated master: list and update using plan/subscription checks
+    Route::middleware(['auth:api', 'active.subscription', 'plan.feature:booking_management'])->group(function () {
         Route::get('/master', [BookingController::class, 'masterBookings']);
         Route::put('/{bookingId}/status', [BookingController::class, 'updateStatus']);
     });

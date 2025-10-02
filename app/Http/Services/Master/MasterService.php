@@ -8,6 +8,7 @@ use App\Http\Services\ClientService;
 use App\Http\Services\PaginatorService;
 use App\Models\Master;
 use App\Models\Service;
+use App\Models\Tariff;
 use Cocur\Slugify\Slugify;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -61,6 +62,15 @@ class MasterService
         }
 
         $master = Master::updateOrCreate(['contact_phone' => $data['contact_phone'] ?? null], $data);
+
+        // Ensure default tariff "free" if not set
+        if (! $master->tariff_id) {
+            $freeId = Tariff::where('name', 'free')->value('id');
+            if ($freeId) {
+                $master->tariff_id = $freeId;
+                $master->save();
+            }
+        }
 
         $this->handlePhoto($master, $photo);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Services;
 
 use App\DTO\SubscriptionStatus;
+use App\Models\AppSetting;
 use App\Models\Subscription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -63,30 +64,34 @@ class SubscriptionService
     }
 
     /**
-     * Verify IAP with Apple or Google. For production, you must fill env vars and use proper endpoints.
+     * Verify IAP with Apple or Google. Uses credentials configured in admin settings (app_settings.payments).
+     * Replace placeholders with real API calls and auth when ready for production.
      */
     private function verifyRemote(string $platform, string $token, ?string $productId): object
     {
+        $settings = optional(AppSetting::where('key', 'payments')->first())->value ?? [];
+        $apple = $settings['apple'] ?? [];
+        $google = $settings['google'] ?? [];
+
         if ($platform === 'apple') {
-            // Placeholder: in production, call App Store Server API with signed JWT
-            // and decode response. Here we trust the token for demo.
+            // Example of where you'd use: $apple['issuer_id'], $apple['key_id'], $apple['private_key'], $apple['bundle_id'], $apple['use_sandbox']
             return (object) [
                 'external_id' => substr($token, 0, 64),
                 'product_id' => $productId,
                 'active' => true,
                 'expires_at' => now()->addMonth()->toIso8601String(),
-                'raw_payload' => ['platform' => 'apple'],
+                'raw_payload' => ['platform' => 'apple', 'env' => ($apple['use_sandbox'] ?? true) ? 'sandbox' : 'prod'],
             ];
         }
 
         if ($platform === 'google') {
-            // Placeholder: call Google Play Developer API to validate purchase token
+            // Example of where you'd use: $google['service_account_json'], $google['package_name']
             return (object) [
                 'external_id' => substr($token, 0, 64),
                 'product_id' => $productId,
                 'active' => true,
                 'expires_at' => now()->addMonth()->toIso8601String(),
-                'raw_payload' => ['platform' => 'google'],
+                'raw_payload' => ['platform' => 'google', 'package' => $google['package_name'] ?? null],
             ];
         }
 

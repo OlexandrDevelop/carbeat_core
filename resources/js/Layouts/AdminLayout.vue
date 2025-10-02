@@ -124,6 +124,49 @@
                                                         Services
                                                     </Link>
                                                 </li>
+                                                <!-- Subscriptions (mobile) -->
+                                                <li>
+                                                    <Link
+                                                        :href="route('admin.subscriptions.index')"
+                                                        :class="[
+                                                            route().current('admin.subscriptions.*')
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-credit-card text-lg"
+                                                            :class="[
+                                                                route().current('admin.subscriptions.*')
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Subscriptions
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        :href="route('admin.payments.index')"
+                                                        :class="[
+                                                            route().current('admin.payments.*')
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-cog text-lg"
+                                                            :class="[
+                                                                route().current('admin.payments.*')
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Payments
+                                                    </Link>
+                                                </li>
                                                 <li>
                                                     <Link
                                                         :href="
@@ -180,6 +223,27 @@
                                                             ]"
                                                         ></i>
                                                         API Документація
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        :href="route('admin.tariffs.index')"
+                                                        :class="[
+                                                            route().current('admin.tariffs.*')
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-dollar text-lg"
+                                                            :class="[
+                                                                route().current('admin.tariffs.*')
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Tariffs
                                                     </Link>
                                                 </li>
                                             </ul>
@@ -266,6 +330,49 @@
                                         Services
                                     </Link>
                                 </li>
+                                <!-- Subscriptions (desktop) -->
+                                <li>
+                                    <Link
+                                        :href="route('admin.subscriptions.index')"
+                                        :class="[
+                                            route().current('admin.subscriptions.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-credit-card text-lg"
+                                            :class="[
+                                                route().current('admin.subscriptions.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Subscriptions
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.payments.index')"
+                                        :class="[
+                                            route().current('admin.payments.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-cog text-lg"
+                                            :class="[
+                                                route().current('admin.payments.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Payments
+                                    </Link>
+                                </li>
                                 <li>
                                     <Link
                                         :href="route('admin.api-docs.index')"
@@ -310,6 +417,27 @@
                                             ]"
                                         ></i>
                                         Import
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.tariffs.index')"
+                                        :class="[
+                                            route().current('admin.tariffs.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-dollar text-lg"
+                                            :class="[
+                                                route().current('admin.tariffs.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Tariffs
                                     </Link>
                                 </li>
                             </ul>
