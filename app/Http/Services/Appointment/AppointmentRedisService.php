@@ -146,6 +146,48 @@ class AppointmentRedisService
         return $availability;
     }
 
+    /**
+     * Return decoded free intervals for a master.
+     * Each interval is ['start' => int, 'end' => int]
+     */
+    public function getFreeIntervals(int $masterId, ?Carbon $from = null, ?Carbon $to = null): array
+    {
+        $fromScore = $from ? $from->timestamp : '-inf';
+        $toScore = $to ? $to->timestamp : '+inf';
+
+        $raw = Redis::zrangebyscore(
+            $this->getMasterFreeIntervalsKey($masterId),
+            $fromScore,
+            $toScore
+        );
+
+        $intervals = [];
+        foreach ($raw as $r) {
+            $decoded = json_decode($r, true);
+            if (isset($decoded['start'], $decoded['end'])) {
+                $intervals[] = $decoded;
+            }
+        }
+
+        return $intervals;
+    }
+
+    /**
+     * Check if the whole [start, end) interval is inside any single free interval.
+     */
+    public function isIntervalFree(int $masterId, Carbon $start, Carbon $end): bool
+    {
+        $intervals = $this->getFreeIntervals($masterId);
+        $s = $start->timestamp;
+        $e = $end->timestamp;
+        foreach ($intervals as $interval) {
+            if ($s >= (int) $interval['start'] && $e <= (int) $interval['end']) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function isTimestampInFreeIntervals(array $intervals, int $timestamp): bool
     {
         foreach ($intervals as $key => $value) {

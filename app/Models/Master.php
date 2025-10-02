@@ -98,4 +98,9 @@ class Master extends Model
     {
         return $this->belongsTo(Tariff::class);
     }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

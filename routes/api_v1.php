@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\V1\SmsVerificationController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\BookingController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +75,27 @@ Route::prefix('auth')->group(function () {
     );
     Route::post('/send-code', [SmsVerificationController::class, 'sendCode']);
     Route::post('/verify-code', [UserController::class, 'verifyCode']);
+});
+
+// Booking endpoints (API for Flutter)
+Route::prefix('booking')->group(function () {
+    // Public: list available slots for a master on a date
+    Route::get('/masters/{masterId}/slots', [BookingController::class, 'availableSlots']);
+
+    // Authenticated client: create booking
+    Route::post('/masters/{masterId}', [BookingController::class, 'create'])->middleware('auth:api');
+
+    // Authenticated master: list and update using subscription check inside controller
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/master', [BookingController::class, 'masterBookings']);
+        Route::put('/{bookingId}/status', [BookingController::class, 'updateStatus']);
+    });
+});
+
+// Subscription endpoints
+Route::prefix('subscription')->middleware('auth:api')->group(function () {
+    Route::post('/check', [SubscriptionController::class, 'check']);
+    Route::get('/status', [SubscriptionController::class, 'status']);
 });
 
 
