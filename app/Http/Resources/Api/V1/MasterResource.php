@@ -85,6 +85,7 @@ class MasterResource extends JsonResource
                     ]);
                 }
             ),
+
             // Include gallery photos list when relation is loaded
             'photos' => $this->when(
                 ($this->resource instanceof \Illuminate\Database\Eloquent\Model)
@@ -96,6 +97,7 @@ class MasterResource extends JsonResource
                     ]);
                 }
             ),
+
             // Include reviews when relation is loaded
             'reviews' => $this->when(
                 ($this->resource instanceof \Illuminate\Database\Eloquent\Model)
