@@ -14,6 +14,8 @@
                         <ul class="flex flex-wrap gap-4 text-sm">
                             <li><a href="#auth" class="text-blue-600 hover:underline">Авторизація</a></li>
                             <li><a href="#subscriptions" class="text-blue-600 hover:underline">Підписки</a></li>
+                            <li><a href="#availability" class="text-blue-600 hover:underline">Доступність майстра</a></li>
+                            <li><a href="#schedule" class="text-blue-600 hover:underline">Графік/Слоти</a></li>
                             <li><a href="#booking" class="text-blue-600 hover:underline">Бронювання</a></li>
                             <li><a href="#tokens" class="text-blue-600 hover:underline">Токени</a></li>
                             <li><a href="#guide" class="text-blue-600 hover:underline">Інструкція</a></li>
@@ -519,6 +521,90 @@
 
                                 <div class="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
                                     <strong>Нотатка:</strong> на деві сервер приймає будь-який токен та ставить строк дії +1 місяць. У продакшні будуть використовуватись реальні дані Apple/Google.
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Availability Flag Section -->
+                        <section id="availability">
+                            <h2 class="mb-4 text-xl font-semibold text-blue-600">🟢 Доступність майстра (прапорець)</h2>
+                            <div class="space-y-4 rounded-lg bg-gray-50 p-4">
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Поставити статус "вільний"</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>POST /api/v1/masters/{id}/availability</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Зняти статус "вільний"</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>DELETE /api/v1/masters/{id}/availability</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Перевірити доступність</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>GET /api/v1/masters/{id}/availability</div>
+                                    </div>
+                                </div>
+                                <div class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+                                    Прапорець впливає лише на відображення майстра як доступного "зараз" у списках/мапі та не визначає, чи можна записатись на конкретний час.
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Schedule/Slots Section -->
+                        <section id="schedule">
+                            <h2 class="mb-4 text-xl font-semibold text-blue-600">🗓️ Графік роботи / Слоти</h2>
+                            <div class="space-y-4 rounded-lg bg-gray-50 p-4">
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Додати правило (тижневий графік)</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>POST /api/v1/masters/{id}/slots/rules</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                        <div class="text-gray-300">Content-Type: application/json</div>
+                                        <div class="mt-2">{ "day_of_week": 1, "start_time": "09:00", "end_time": "18:00", "active": true }</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Видалити правило</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>DELETE /api/v1/masters/{id}/slots/rules/{ruleId}</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Додати вихідний/перерву (виняток)</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>POST /api/v1/masters/{id}/slots/time-off</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                        <div class="text-gray-300">Content-Type: application/json</div>
+                                        <div class="mt-2">{ "start_time": "2025-10-03T09:00:00Z", "end_time": "2025-10-03T13:00:00Z", "reason": "..." }</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Видалити вихідний/перерву</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>DELETE /api/v1/masters/{id}/slots/time-off/{offId}</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Переглянути інтервали на день (обчислено з правил − винятки)</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>GET /api/v1/masters/{id}/slots/day?date=YYYY-MM-DD</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-600">Синхронізувати інтервали дня в Redis</h3>
+                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
+                                        <div>POST /api/v1/masters/{id}/slots/sync-day?date=YYYY-MM-DD</div>
+                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-600">Після зміни графіку викликайте sync-day для швидкого застосування при бронюванні.</div>
                                 </div>
                             </div>
                         </section>
