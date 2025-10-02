@@ -39,8 +39,9 @@ readonly class MasterFetcher
             $filters
         );
 
+        // Use simple availability flags map
         $availabilityMap = $this->appointmentRedisService
-            ->getAvailabilityForMany($masters->pluck('id')->all(), now());
+            ->getAvailabilityFlagsForMany($masters->pluck('id')->all());
 
         $masters = $this->applyAvailabilityFilter($masters, $filters['available'], $availabilityMap);
 

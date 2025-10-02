@@ -111,8 +111,8 @@ class MasterController extends Controller
     {
         $id = (int) $id;
 
-        // Mark the master as unavailable in Redis
-        $appointmentRedisService->markAsUnavailableFromNow($id);
+        // Availability: set flag to unavailable
+        $appointmentRedisService->setUnavailableFlag($id);
 
         return response()->json(['message' => 'Master is unavailable']);
     }
@@ -121,21 +121,20 @@ class MasterController extends Controller
     {
         $id = (int) $id;
 
-        $availability = $appointmentRedisService->getAvailability($id, now());
+        $availability = $appointmentRedisService->isAvailableFlag($id);
 
         return response()->json(['availability' => $availability]);
     }
 
     /**
-     * Set the master as available.
+     * Set the master as available (flag only, for map/list visibility).
      */
     public function setAvailable(SetAvailableMasterRequest $request, string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
     {
-        $data = $request->validated();
         $id = (int) $id;
 
-        $interval = new AvailabilityInterval($data['start_time'], $data['duration']);
-        $appointmentRedisService->markAsFree($id, $interval->start, $interval->end);
+        // Availability: set flag to available
+        $appointmentRedisService->setAvailableFlag($id);
 
         return response()->json(['message' => 'Master is available']);
     }
@@ -204,14 +203,9 @@ class MasterController extends Controller
         $this->authorize('update', $master);
 
         $photo = MasterGallery::where('master_id', $master->id)->where('id', $photoId)->firstOrFail();
-
-        // Delete file from storage if exists
-        if (! empty($photo->photo)) {
-            Storage::disk('public')->delete($photo->photo);
-        }
-
+        Storage::disk('public')->delete($photo->photo);
         $photo->delete();
 
-        return response()->json(['status' => 'ok']);
+        return response()->json(['message' => 'deleted']);
     }
 }
