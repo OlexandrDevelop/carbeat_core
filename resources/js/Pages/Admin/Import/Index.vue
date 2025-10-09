@@ -31,23 +31,34 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Limit (optional)</label>
+                        <label class="block text-sm font-medium text-gray-700">Pages limit (optional)</label>
                         <input
-                            v-model.number="form.limit"
+                            v-model.number="form.pages"
                             type="number"
                             min="1"
-                            placeholder="Leave empty for no limit"
+                            placeholder="Leave empty for all pages"
                             class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         />
                     </div>
 
-                    <div class="flex justify-end">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500" v-if="progress && progress.eta_seconds != null">
+                            ETA: {{ formatSeconds(progress.eta_seconds) }}
+                        </div>
                         <button
                             type="submit"
                             :disabled="importing"
                             class="rounded-xl bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                         >
                             {{ importing ? 'Importing...' : 'Start Import' }}
+                        </button>
+                        <button
+                            v-if="importing && currentJobId"
+                            type="button"
+                            @click.prevent="stopImport"
+                            class="rounded-xl bg-red-600 px-4 py-2 text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        >
+                            Stop
                         </button>
                     </div>
                 </form>
@@ -115,14 +126,14 @@ let progressInterval = null;
 const form = ref({
     service_id: 0,
     url: '',
-    limit: null
+    pages: null
 });
 
 const progressWidth = computed(() => {
     if (!progress.value || progress.value.status === 'error') return '0%';
     if (progress.value.status === 'completed') return '100%';
 
-    const total = progress.value.total_urls || form.value.limit || 100;
+    const total = progress.value.total_urls || 100;
     if (total > 0) {
         const percentage = (progress.value.processed / total) * 100;
         return `${Math.min(percentage, 100)}%`;
@@ -164,6 +175,23 @@ async function startImport() {
         importing.value = false;
     }
 }
+async function stopImport(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!currentJobId.value) return;
+    try {
+        await axios.post(`/admin-api/import/stop/${currentJobId.value}`);
+    } catch (e) {
+        console.error('Failed to stop import', e);
+    }
+}
+
+function formatSeconds(sec) {
+    const s = Math.max(0, Math.floor(sec));
+    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${h}:${m}:${ss}`;
+}
 
 function startProgressPolling() {
     if (progressInterval) {
@@ -177,7 +205,7 @@ function startProgressPolling() {
             const response = await axios.get(`/admin-api/import/progress/${currentJobId.value}`);
             progress.value = response.data;
 
-            if (response.data.status === 'completed' || response.data.status === 'error') {
+            if (['completed','error','stopped'].includes(response.data.status)) {
                 importing.value = false;
                 clearInterval(progressInterval);
                 progressInterval = null;

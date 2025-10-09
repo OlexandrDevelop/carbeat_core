@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('subscriptions')) {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->unique(['platform', 'external_id']);
             $table->index(['user_id', 'status']);
         });
+    }
     }
 
     public function down(): void

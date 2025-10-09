@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('master_time_offs')) {
         Schema::create('master_time_offs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('master_id')->constrained('masters')->cascadeOnDelete();
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->index(['master_id', 'start_time']);
         });
     }
+}
 
     public function down(): void
     {

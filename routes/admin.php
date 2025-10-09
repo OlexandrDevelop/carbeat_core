@@ -42,6 +42,7 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
     Route::delete('/masters/{id}', [\App\Http\Controllers\Admin\MasterController::class, 'destroy'])->name('admin.api.masters.destroy');
     Route::delete('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'destroyAll'])->name('admin.api.masters.destroy_all');
     Route::get('/services', [\App\Http\Controllers\Admin\MasterController::class, 'services'])->name('admin.api.services');
+    Route::get('/cities', [\App\Http\Controllers\Admin\MasterController::class, 'cities'])->name('admin.api.cities');
     Route::get('/masters/{id}/reviews', [\App\Http\Controllers\Admin\MasterController::class, 'reviews'])->name('admin.api.masters.reviews');
     Route::post('/masters/{id}/reviews', [\App\Http\Controllers\Admin\MasterController::class, 'storeReview'])->name('admin.api.masters.reviews.store');
     Route::put('/reviews/{reviewId}', [\App\Http\Controllers\Admin\MasterController::class, 'updateReview'])->name('admin.api.reviews.update');
@@ -84,6 +85,11 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
 
     // Maintenance
     Route::post('/maintenance/gallery/cleanup', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cleanupMissingGallery'])->name('admin.api.maintenance.gallery.cleanup');
+
+    // Import (admin)
+    Route::post('/import/start', [\App\Http\Controllers\Admin\ImportController::class, 'startImport'])->name('admin.api.import.start');
+    Route::get('/import/progress/{jobId}', [\App\Http\Controllers\Admin\ImportController::class, 'getProgress'])->name('admin.api.import.progress');
+    Route::post('/import/stop/{jobId}', [\App\Http\Controllers\Admin\ImportController::class, 'stop'])->name('admin.api.import.stop');
 });
 
 // Admin OTP auth routes (session login)

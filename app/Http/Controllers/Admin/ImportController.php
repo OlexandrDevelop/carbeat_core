@@ -24,7 +24,7 @@ class ImportController extends Controller
         $request->validate([
             'service_id' => 'required|integer|min:0',
             'url' => 'required|url',
-            'limit' => 'nullable|integer|min:1',
+            'pages' => 'nullable|integer|min:1',
         ]);
 
         $jobId = Str::uuid()->toString();
@@ -37,6 +37,8 @@ class ImportController extends Controller
                 'imported' => 0,
                 'skipped' => 0,
                 'processed' => 0,
+                'total_urls' => 0,
+                'eta_seconds' => null,
                 'error' => null,
             ],
             now()->addHour()
@@ -47,7 +49,7 @@ class ImportController extends Controller
             $jobId,
             (int) $request->input('service_id'),
             (string) $request->input('url'),
-            $request->input('limit') !== null ? (int) $request->input('limit') : null,
+            $request->input('pages') !== null ? (int) $request->input('pages') : null,
         ));
 
         return response()->json([
@@ -64,5 +66,11 @@ class ImportController extends Controller
         }
 
         return response()->json($progress);
+    }
+
+    public function stop(string $jobId): JsonResponse
+    {
+        Cache::store('redis')->put("import_stop_{$jobId}", true, now()->addHour());
+        return response()->json(['status' => 'ok']);
     }
 }

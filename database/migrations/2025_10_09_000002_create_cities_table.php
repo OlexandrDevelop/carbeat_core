@@ -8,18 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('app_settings')) {
-        Schema::create('app_settings', function (Blueprint $table) {
+        Schema::create('cities', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
-            $table->json('value')->nullable();
             $table->timestamps();
+            $table->string('name')->unique();
         });
-    }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('app_settings');
+        Schema::dropIfExists('cities');
     }
 };
+
+
