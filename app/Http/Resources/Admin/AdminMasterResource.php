@@ -45,6 +45,7 @@ class AdminMasterResource extends JsonResource
             'reviews_count' => (int) $this->reviews_count,
             'photos_count' => (int) ($this->gallery_count ?? 0),
             'main_photo' => $photoUrl,
+            'main_thumb_url' => $this->main_thumb_url ? url('storage/'.$this->main_thumb_url) : null,
             'service_id' => $this->service_id,
             'tariff_id' => $this->tariff_id,
             'slug' => (string) $this->slug,

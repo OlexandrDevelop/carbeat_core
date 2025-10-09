@@ -111,6 +111,19 @@ class ImportMasters implements ShouldQueue
                 now()->addHour()
             );
 
+            // Dispatch thumbnail creation job for all affected masters (ids where main photo exists and no thumb yet)
+            $masterIds = \App\Models\Master::query()
+                ->whereNotNull('photo')
+                ->where(function ($q) {
+                    $q->where('main_thumb_generated', false)->orWhereNull('main_thumb_generated');
+                })
+                ->limit(2000)
+                ->pluck('id')
+                ->all();
+            if (!empty($masterIds)) {
+                dispatch(new \App\Jobs\CreateMasterThumbnails($masterIds));
+            }
+
         } catch (\Exception $e) {
             Log::error('Import failed', [
                 'job_id' => $this->jobId,
