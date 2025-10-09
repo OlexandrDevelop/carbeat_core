@@ -25,6 +25,7 @@ class Master extends Model
         'age' => 'integer',
         'reviews_count' => 'integer',
         'working_hours' => 'array',
+        'main_thumb_generated' => 'boolean',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -40,6 +41,8 @@ class Master extends Model
         'age',
         'photo',
         'main_photo',
+        'main_thumb_generated',
+        'main_thumb_url',
         'service_id',
         'city_id',
         'tariff_id',

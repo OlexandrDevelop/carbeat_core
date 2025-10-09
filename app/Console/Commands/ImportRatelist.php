@@ -57,6 +57,16 @@ class ImportRatelist extends Command
         $this->newLine(2);
         $this->info('Imported: ' . $result['imported'] . '; Skipped: ' . $result['skipped']);
 
+        // Dispatch thumbnails creation for updated masters
+        \App\Jobs\CreateMasterThumbnails::dispatch(
+            \App\Models\Master::query()
+                ->whereNotNull('photo')
+                ->where(function ($q) { $q->where('main_thumb_generated', false)->orWhereNull('main_thumb_generated'); })
+                ->limit(2000)
+                ->pluck('id')
+                ->all()
+        );
+
         return Command::SUCCESS;
     }
 }

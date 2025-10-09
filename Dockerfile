@@ -5,6 +5,9 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libwebp-dev \
     libonig-dev \
     libxml2-dev \
     zip \
@@ -14,8 +17,9 @@ RUN apt-get update && apt-get install -y \
     && pecl install redis \
     && docker-php-ext-enable redis
 
-# Встановлюємо PHP розширення
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Встановлюємо PHP розширення (GD з підтримкою JPEG/Freetype/WebP)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 # Встановлюємо Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
