@@ -24,6 +24,7 @@ class Master extends Model
         'available' => 'boolean',
         'age' => 'integer',
         'reviews_count' => 'integer',
+        'working_hours' => 'array',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -40,6 +41,7 @@ class Master extends Model
         'photo',
         'main_photo',
         'service_id',
+        'city_id',
         'tariff_id',
         'slug',
         'user_id',
@@ -50,6 +52,7 @@ class Master extends Model
         'available',
         'city',
         'reviews_count',
+        'working_hours',
     ];
 
     // Virtual attribute to keep backward compatibility
@@ -76,6 +79,11 @@ class Master extends Model
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'master_services');
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 
     public function reviews(): HasMany

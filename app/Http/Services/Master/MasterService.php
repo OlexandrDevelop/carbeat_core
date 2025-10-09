@@ -7,6 +7,7 @@ use App\Helpers\PhotoHelper;
 use App\Http\Services\ClientService;
 use App\Http\Services\PaginatorService;
 use App\Models\Master;
+use App\Models\City;
 use App\Models\Service;
 use App\Models\Tariff;
 use Cocur\Slugify\Slugify;
@@ -92,8 +93,8 @@ class MasterService
                 $extension = $matches[1];
                 $photo = base64_decode(substr($photo, strpos($photo, ',') + 1));
                 $photoName = uniqid().'.'.$extension;
-                Storage::disk('public')->put('photos/'.$photoName, $photo);
-                $master->update(['photo' => 'photos/'.$photoName]);
+                Storage::disk('public')->put('images/'.$photoName, $photo);
+                $master->update(['photo' => 'images/'.$photoName]);
             } else {
                 throw new Exception('The provided photo is not a valid Base64 image.');
             }
@@ -128,6 +129,17 @@ class MasterService
     {
         $photoBase64 = app(PhotoHelper::class)->downloadAndConvertToBase64($data['main_photo'] ?? '');
         $data['phone'] = app(PhoneHelper::class)->normalize($data['phone'] ?? '');
+
+        // Resolve city from first word of address
+        $cityId = null;
+        $address = (string) ($data['address'] ?? '');
+        if ($address !== '') {
+            $firstToken = trim(preg_split('/\s+/', $address)[0] ?? '');
+            if ($firstToken !== '') {
+                $city = City::firstOrCreate(['name' => $firstToken], ['name' => $firstToken]);
+                $cityId = $city->id;
+            }
+        }
         $masterData = [
             'user_id' => 1,
             'name' => $data['name'] ?? '',
@@ -138,8 +150,10 @@ class MasterService
             'longitude' => $data['coordinates']['lng'] ?? null,
             'photo' => $photoBase64,
             'service_id' => $serviceId,
+            'city_id' => $cityId,
             'place_id' => $data['place_id'] ?? null,
             'rating_google' => $data['rating_google'] ?? null,
+            'working_hours' => $data['working_hours'] ?? null,
         ];
         $master = $this->createOrUpdate($masterData);
         if (! empty($data['reviews'])) {

@@ -3,6 +3,7 @@
 namespace App\Http\Services\Admin;
 
 use App\Models\Master;
+use App\Models\City;
 use App\Models\Review;
 use App\Models\Service;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,7 +15,7 @@ class MasterAdminService
     public function listMasters(array $params): LengthAwarePaginator
     {
         $query = Master::query()
-            ->with(['services', 'user'])
+            ->with(['services', 'user', 'city'])
             ->withAvg('reviews', 'rating')
             ->withCount('gallery');
 
@@ -157,6 +158,11 @@ class MasterAdminService
             $query->whereHas('services', fn ($q) => $q->where('services.id', $serviceId));
         }
 
+        if (! empty($filters['city_id'])) {
+            $cityId = (int) $filters['city_id'];
+            $query->where('city_id', $cityId);
+        }
+
         if (isset($filters['uses_system']) && $filters['uses_system'] !== '') {
             if (filter_var($filters['uses_system'], FILTER_VALIDATE_BOOLEAN)) {
                 $query->where('user_id', '!=', 1);
@@ -164,6 +170,11 @@ class MasterAdminService
                 $query->where('user_id', 1);
             }
         }
+    }
+
+    public function listCities()
+    {
+        return City::query()->orderBy('name')->get(['id', 'name']);
     }
 
     private function applySorting(Builder $query, string $sortBy, string $sortDir): void

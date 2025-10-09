@@ -15,6 +15,10 @@
                         <option value="">All services</option>
                         <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
                     </select>
+                    <select v-model="filters.city_id" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm min-w-[160px]">
+                        <option value="">All cities</option>
+                        <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
                     <select v-model="filters.uses_system" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm min-w-[160px]">
                         <option value="">All users</option>
                         <option value="true">Uses system</option>
@@ -45,6 +49,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ID</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">City</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rating</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photos</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Available</th>
@@ -67,6 +72,7 @@
                                 </span>
                                 {{ m.name }}
                             </td>
+                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.city?.name ?? '—' }}</td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.reviews_avg_rating != null ? Number(m.reviews_avg_rating).toFixed(1) : '0.0' }}</td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.photos_count ?? 0 }}</td>
                             <td class="px-6 py-3 text-sm">
@@ -110,12 +116,14 @@ import { onMounted, ref } from 'vue';
 
 const masters = ref<any[]>([]);
 const services = ref<Array<{ id: number; name: string }>>([]);
+const cities = ref<Array<{ id: number; name: string }>>([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const perPage = ref(20);
-const filters = ref<{ search: string; available: string; service_id: string | number; uses_system: string; sort_by: string; sort_dir: string }>({
+const filters = ref<{ search: string; available: string; service_id: string | number; city_id: string | number; uses_system: string; sort_by: string; sort_dir: string }>({
     search: '',
     available: '',
     service_id: '',
+    city_id: '',
     uses_system: '',
     sort_by: 'created_at',
     sort_dir: 'desc',
@@ -131,6 +139,7 @@ async function fetchData() {
     if (filters.value.search) params.set('search', filters.value.search);
     if (filters.value.available !== '') params.set('available', filters.value.available);
     if (filters.value.service_id !== '') params.set('service_id', String(filters.value.service_id));
+    if (filters.value.city_id !== '') params.set('city_id', String(filters.value.city_id));
     if (filters.value.uses_system !== '') params.set('uses_system', String(filters.value.uses_system));
     if (filters.value.sort_by) params.set('sort_by', filters.value.sort_by);
     if (filters.value.sort_dir) params.set('sort_dir', filters.value.sort_dir);
@@ -144,6 +153,11 @@ async function fetchData() {
 async function loadServices() {
     const { data } = await axios.get('/admin-api/services');
     services.value = data;
+}
+
+async function loadCities() {
+    const { data } = await axios.get('/admin-api/cities');
+    cities.value = data;
 }
 
 function goto(p: number) {
@@ -181,7 +195,7 @@ async function confirmDeleteAll() {
 }
 
 onMounted(async () => {
-    await Promise.all([loadServices(), fetchData()]);
+    await Promise.all([loadServices(), loadCities(), fetchData()]);
 });
 </script>
 

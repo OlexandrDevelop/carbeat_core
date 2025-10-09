@@ -8,11 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasColumn('tariffs', 'currency')) {
         Schema::table('tariffs', function (Blueprint $table) {
             $table->string('currency', 8)->default('USD');
             $table->string('apple_product_id')->nullable();
             $table->string('google_product_id')->nullable();
         });
+    }
     }
 
     public function down(): void
