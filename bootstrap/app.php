@@ -34,6 +34,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [
             SetLocale::class,
         ]);
+
+        // Register route middleware aliases
+        $middleware->alias([
+            'active.subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
+            'plan.feature' => \App\Http\Middleware\EnsurePlanAllowsFeature::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->reportable(function (\Throwable $e) {

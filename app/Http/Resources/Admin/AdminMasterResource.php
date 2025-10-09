@@ -40,6 +40,7 @@ class AdminMasterResource extends JsonResource
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'reviews_count' => (int) $this->reviews_count,
+            'photos_count' => (int) ($this->gallery_count ?? 0),
             'main_photo' => $photoUrl,
             'service_id' => $this->service_id,
             'tariff_id' => $this->tariff_id,
@@ -48,6 +49,12 @@ class AdminMasterResource extends JsonResource
                 return $this->services->map(fn ($s) => [
                     'id' => (int) $s->id,
                     'name' => (string) $s->name,
+                ]);
+            }),
+            'photos' => $this->whenLoaded('gallery', function () {
+                return $this->gallery->map(fn ($g) => [
+                    'id' => (int) $g->id,
+                    'url' => (string) url('storage/'.$g->photo),
                 ]);
             }),
         ];

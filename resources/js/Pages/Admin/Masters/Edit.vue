@@ -92,6 +92,26 @@
 
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
                 <div class="mb-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Gallery</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <div v-for="p in master?.photos || []" :key="p.id" class="group relative">
+                        <img :src="p.url" alt="Photo" class="h-32 w-full rounded-lg object-cover cursor-zoom-in" @click="openPreview(p.url)" />
+                        <button @click="deletePhoto(p)" class="absolute top-2 right-2 rounded bg-red-600/90 text-white px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Modal -->
+            <div v-if="previewUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" @click.self="closePreview">
+                <div class="relative max-h-[90vh] max-w-[90vw]">
+                    <button @click="closePreview" class="absolute -top-10 right-0 rounded bg-white/90 px-3 py-1 text-sm text-gray-800">Close</button>
+                    <img :src="previewUrl" alt="Full preview" class="max-h-[90vh] max-w-[90vw] rounded-lg object-contain" />
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+                <div class="mb-3 flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-gray-900">Reviews</h2>
                     <div class="flex items-center gap-2">
                         <select v-model.number="newReview.user_id" class="min-w-[160px] rounded-xl bg-gray-100 px-3 py-2 text-sm">
@@ -154,6 +174,10 @@ const form = reactive<{ name: string; slug: string; phone: string; address: stri
 const reviews = ref<Array<{ id: number; rating: number; review: string; created_at: string; user_id: number | null; user?: any }>>([]);
 const newReview = reactive<{ user_id: number | null; rating: number | null; review: string | null }>({ user_id: null, rating: null, review: '' });
 
+const previewUrl = ref<string | null>(null);
+function openPreview(url: string) { previewUrl.value = url; }
+function closePreview() { previewUrl.value = null; }
+
 async function load() {
     const [masterRes, servicesRes, reviewsRes, usersRes] = await Promise.all([
         axios.get(`/admin-api/masters/${props.masterId}`),
@@ -188,6 +212,14 @@ async function save() {
     } finally {
         saving.value = false;
     }
+}
+
+function deletePhoto(p: any) {
+    if (! confirm('Delete this photo?')) return;
+    axios.delete(`/admin-api/masters/${props.masterId}/gallery/${p.id}`).then(async () => {
+        const { data } = await axios.get(`/admin-api/masters/${props.masterId}`);
+        master.value = data;
+    });
 }
 
 async function addReview() {

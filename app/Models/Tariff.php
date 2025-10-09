@@ -14,10 +14,14 @@ class Tariff extends Model
         'name',
         'price',
         'features',
+        'currency',
+        'apple_product_id',
+        'google_product_id',
     ];
 
     protected $casts = [
         'features' => 'array',
+        'price' => 'float',
     ];
 
     public function masters(): HasMany

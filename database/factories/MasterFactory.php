@@ -30,6 +30,7 @@ class MasterFactory extends Factory
             'contact_phone' => fake()->unique()->phoneNumber(),
             'age' => fake()->numberBetween(18, 80),
             'service_id' => fake()->numberBetween(1, 5),
+            'tariff_id' => \App\Models\Tariff::where('name', 'free')->value('id') ?? null,
             'longitude' => $longitude,
             'latitude' => $latitude,
             'description' => fake()->text(200),

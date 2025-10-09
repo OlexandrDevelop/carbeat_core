@@ -15,7 +15,8 @@ class MasterAdminService
     {
         $query = Master::query()
             ->with(['services', 'user'])
-            ->withAvg('reviews', 'rating');
+            ->withAvg('reviews', 'rating')
+            ->withCount('gallery');
 
         $this->applyFilters($query, $params);
         $this->applySorting($query, $params['sort_by'] ?? 'created_at', $params['sort_dir'] ?? 'desc');
@@ -26,7 +27,7 @@ class MasterAdminService
 
     public function getMaster(int $id): Master
     {
-        return Master::with(['services', 'user', 'reviews'])
+        return Master::with(['services', 'user', 'reviews', 'gallery'])
             ->withAvg('reviews', 'rating')
             ->findOrFail($id);
     }
