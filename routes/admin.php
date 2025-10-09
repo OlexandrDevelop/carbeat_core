@@ -85,6 +85,8 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
 
     // Maintenance
     Route::post('/maintenance/gallery/cleanup', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cleanupMissingGallery'])->name('admin.api.maintenance.gallery.cleanup');
+    Route::post('/maintenance/truncate', [\App\Http\Controllers\Admin\MaintenanceController::class, 'truncate'])->name('admin.api.maintenance.truncate');
+    Route::post('/maintenance/regenerate-thumbs', [\App\Http\Controllers\Admin\MaintenanceController::class, 'regenerateThumbs'])->name('admin.api.maintenance.regenerate_thumbs');
 
     // Import (admin)
     Route::post('/import/start', [\App\Http\Controllers\Admin\ImportController::class, 'startImport'])->name('admin.api.import.start');
