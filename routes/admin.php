@@ -27,6 +27,11 @@ Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, '
     // Tariffs
     Route::get('/tariffs', [\App\Http\Controllers\Admin\TariffController::class, 'index'])->name('admin.tariffs.index');
     Route::get('/tariffs/{id}/edit', [\App\Http\Controllers\Admin\TariffController::class, 'edit'])->name('admin.tariffs.edit');
+
+    // Maintenance tools (UI)
+    Route::get('/maintenance', function () {
+        return Inertia::render('Admin/Maintenance/Index');
+    })->name('admin.maintenance.index');
 });
 
 // Admin JSON API routes
@@ -76,6 +81,9 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
     Route::post('/tariffs', [\App\Http\Controllers\Admin\TariffController::class, 'create'])->name('admin.api.tariffs.create');
     Route::put('/tariffs/{id}', [\App\Http\Controllers\Admin\TariffController::class, 'update'])->name('admin.api.tariffs.update');
     Route::delete('/tariffs/{id}', [\App\Http\Controllers\Admin\TariffController::class, 'destroy'])->name('admin.api.tariffs.destroy');
+
+    // Maintenance
+    Route::post('/maintenance/gallery/cleanup', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cleanupMissingGallery'])->name('admin.api.maintenance.gallery.cleanup');
 });
 
 // Admin OTP auth routes (session login)

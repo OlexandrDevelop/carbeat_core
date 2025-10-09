@@ -46,6 +46,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rating</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photos</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Available</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Last login</th>
                             <th class="px-6 py-3"></th>
@@ -67,6 +68,7 @@
                                 {{ m.name }}
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.reviews_avg_rating != null ? Number(m.reviews_avg_rating).toFixed(1) : '0.0' }}</td>
+                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.photos_count ?? 0 }}</td>
                             <td class="px-6 py-3 text-sm">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" :class="m.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
                                     <span class="h-1.5 w-1.5 rounded-full" :class="m.available ? 'bg-green-600' : 'bg-gray-500'" />
@@ -92,6 +94,8 @@
                             <option :value="50">50</option>
                         </select>
                         <button :disabled="meta.current_page >= meta.last_page" @click="goto(meta.current_page + 1)" class="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50">Next</button>
+                        <input v-model.number="jumpPage" @keyup.enter="goDirect" type="number" min="1" :max="meta.last_page" placeholder="Page" class="w-20 rounded-lg border px-2 py-1.5 text-sm" />
+                        <button @click="goDirect" class="rounded-lg border px-3 py-1.5 text-sm">Go</button>
                     </div>
                 </div>
             </div>
@@ -118,6 +122,7 @@ const filters = ref<{ search: string; available: string; service_id: string | nu
 });
 
 const page = ref(1);
+const jumpPage = ref<number | null>(null);
 
 async function fetchData() {
     const params = new URLSearchParams();
@@ -133,6 +138,7 @@ async function fetchData() {
     const { data } = await axios.get(`/admin-api/masters?${params.toString()}`);
     masters.value = data.data;
     meta.value = data.meta;
+    jumpPage.value = meta.value.current_page;
 }
 
 async function loadServices() {
@@ -142,6 +148,13 @@ async function loadServices() {
 
 function goto(p: number) {
     page.value = p;
+    fetchData();
+}
+
+function goDirect() {
+    if (!jumpPage.value) return;
+    const target = Math.max(1, Math.min(jumpPage.value, meta.value.last_page));
+    page.value = target;
     fetchData();
 }
 

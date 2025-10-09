@@ -246,6 +246,27 @@
                                                         Tariffs
                                                     </Link>
                                                 </li>
+                                                <li>
+                                                    <Link
+                                                        :href="route('admin.maintenance.index')"
+                                                        :class="[
+                                                            route().current('admin.maintenance.*')
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-tools text-lg"
+                                                            :class="[
+                                                                route().current('admin.maintenance.*')
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Maintenance
+                                                    </Link>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="mt-auto">
@@ -438,6 +459,27 @@
                                             ]"
                                         ></i>
                                         Tariffs
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.maintenance.index')"
+                                        :class="[
+                                            route().current('admin.maintenance.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-tools text-lg"
+                                            :class="[
+                                                route().current('admin.maintenance.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Maintenance
                                     </Link>
                                 </li>
                             </ul>
