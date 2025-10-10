@@ -61,12 +61,12 @@
                         <tr v-for="m in masters" :key="m.id" class="hover:bg-gray-50" :class="m.user_id !== 1 ? 'bg-yellow-50/50' : ''">
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.id }}</td>
                             <td class="px-6 py-3">
-                                <div class="h-5 w-5 overflow-hidden rounded bg-gray-100 ring-2" :class="m.user_id !== 1 ? 'ring-yellow-300' : 'ring-transparent'">
+                                <div class="h-10 w-10 overflow-hidden rounded bg-gray-100 ring-2" :class="m.user_id !== 1 ? 'ring-yellow-300' : 'ring-transparent'">
                                     <img
                                         v-if="m.main_thumb_url || m.main_photo"
                                         :src="m.main_thumb_url || m.main_photo"
                                         alt="Thumb"
-                                        class="h-5 w-5 object-cover"
+                                        class="h-10 w-10 object-cover"
                                     />
                                 </div>
                             </td>
