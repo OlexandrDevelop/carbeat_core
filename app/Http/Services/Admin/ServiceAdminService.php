@@ -114,12 +114,16 @@ class ServiceAdminService
             ->select('masters.id', 'masters.name')
             ->get();
 
-        // Masters that only have this one service
-        $singleServiceMasters = DB::table('master_services as ms')
-            ->select('ms.master_id')
-            ->where('ms.service_id', $serviceId)
-            ->groupBy('ms.master_id')
+        // Masters that only have this one service (total services count = 1 and that service is $serviceId)
+        $singleServiceMasters = DB::table('master_services as total')
+            ->select('total.master_id')
+            ->groupBy('total.master_id')
             ->havingRaw('COUNT(*) = 1')
+            ->whereExists(function ($q) use ($serviceId) {
+                $q->from('master_services as ms2')
+                    ->whereColumn('ms2.master_id', 'total.master_id')
+                    ->where('ms2.service_id', $serviceId);
+            })
             ->pluck('master_id')
             ->toArray();
 
@@ -180,7 +184,8 @@ class ServiceAdminService
         foreach ($affectedMasters as $masterId) {
             $total = (int) ($totalCounts[$masterId] ?? 0);
             $remove = (int) ($toRemoveCounts[$masterId] ?? 0);
-            if ($total > 0 && $total === $remove) {
+            // Delete only if the master has exactly one service and it's among the services to be removed
+            if ($total === 1 && $remove === 1) {
                 $mastersToDeleteIds[] = (int) $masterId;
             }
         }
@@ -273,6 +278,62 @@ class ServiceAdminService
                 'deleted_service_ids' => $serviceIds,
                 'detached_from_masters' => (int) $preview['affected_masters_count'],
                 'deleted_masters' => count($masterIdsToDelete),
+            ];
+        });
+    }
+
+    public function merge(array $serviceIds, int $primaryId): array
+    {
+        $serviceIds = array_values(array_unique(array_map('intval', $serviceIds)));
+        $primaryId = (int) $primaryId;
+        if (count($serviceIds) < 2 || !in_array($primaryId, $serviceIds, true)) {
+            throw new \InvalidArgumentException('Invalid merge parameters');
+        }
+
+        $toRemove = array_values(array_diff($serviceIds, [$primaryId]));
+
+        return DB::transaction(function () use ($primaryId, $toRemove) {
+            // Repoint masters' main service
+            Master::whereIn('service_id', $toRemove)->update(['service_id' => $primaryId]);
+
+            // Repoint pivot entries to primary, avoiding duplicates
+            if (!empty($toRemove)) {
+                $masterIds = DB::table('master_services')
+                    ->whereIn('service_id', $toRemove)
+                    ->pluck('master_id')
+                    ->unique()
+                    ->values();
+
+                if ($masterIds->isNotEmpty()) {
+                    // Delete duplicate rows where (master_id, primaryId) already exists
+                    DB::table('master_services')
+                        ->whereIn('service_id', $toRemove)
+                        ->whereIn('master_id', $masterIds)
+                        ->delete();
+
+                    // Insert unique pairs (master, primary) where absent
+                    $existingPairs = DB::table('master_services')
+                        ->where('service_id', $primaryId)
+                        ->whereIn('master_id', $masterIds)
+                        ->pluck('master_id')
+                        ->all();
+
+                    $missing = array_values(array_diff($masterIds->all(), $existingPairs));
+                    if (!empty($missing)) {
+                        $rows = array_map(fn ($mid) => ['master_id' => $mid, 'service_id' => $primaryId], $missing);
+                        DB::table('master_services')->insert($rows);
+                    }
+                }
+            }
+
+            // Move any references from other tables if needed (none for now)
+
+            // Delete merged services
+            Service::whereIn('id', $toRemove)->delete();
+
+            return [
+                'primary_id' => $primaryId,
+                'deleted_ids' => $toRemove,
             ];
         });
     }
