@@ -24,18 +24,7 @@
                         <option value="true">Uses system</option>
                         <option value="false">Does not use</option>
                     </select>
-                    <select v-model="filters.sort_by" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm">
-                        <option value="created_at">Newest</option>
-                        <option value="name">Name</option>
-                        <option value="age">Age</option>
-                        <option value="rating">Rating</option>
-                        <option value="uses_system">Uses system</option>
-                        <option value="last_login_at">Last login</option>
-                    </select>
-                    <select v-model="filters.sort_dir" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm">
-                        <option value="desc">Desc</option>
-                        <option value="asc">Asc</option>
-                    </select>
+
                     <button @click="confirmDeleteAll" class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700">Delete all</button>
                 </div>
             </div>
@@ -46,14 +35,38 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photo</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">City</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rating</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photos</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Available</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Last login</th>
+                            <th @click="setSort('id')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>ID</span>
+                                <span v-if="filters.sort_by === 'id'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('photo')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Photo</span>
+                                <span v-if="filters.sort_by === 'photo'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('name')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Name</span>
+                                <span v-if="filters.sort_by === 'name'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('city')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>City</span>
+                                <span v-if="filters.sort_by === 'city'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('rating')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Rating</span>
+                                <span v-if="filters.sort_by === 'rating'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('photos_count')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Photos</span>
+                                <span v-if="filters.sort_by === 'photos_count'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('available')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Available</span>
+                                <span v-if="filters.sort_by === 'available'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
+                            <th @click="setSort('last_login_at')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                                <span>Last login</span>
+                                <span v-if="filters.sort_by === 'last_login_at'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                            </th>
                             <th class="px-6 py-3"></th>
                         </tr>
                     </thead>
@@ -181,6 +194,17 @@ let debounceTimer: any;
 function debouncedFetch() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(fetchData, 400);
+}
+
+function setSort(field: string) {
+    if (filters.value.sort_by === field) {
+        filters.value.sort_dir = filters.value.sort_dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        filters.value.sort_by = field;
+        filters.value.sort_dir = field === 'name' ? 'asc' : 'desc';
+    }
+    page.value = 1;
+    fetchData();
 }
 
 async function confirmDelete(m: any) {
