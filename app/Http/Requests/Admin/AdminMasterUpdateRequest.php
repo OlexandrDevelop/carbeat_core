@@ -21,6 +21,7 @@ class AdminMasterUpdateRequest extends FormRequest
             'phone' => 'sometimes|nullable|string|max:50',
             'available' => 'sometimes|boolean',
             'service_id' => 'sometimes|integer|exists:services,id',
+            'city_id' => 'sometimes|nullable|integer|exists:cities,id',
             'tariff_id' => 'sometimes|integer|exists:tariffs,id',
             'slug' => 'sometimes|string|max:255',
             'latitude' => 'sometimes|numeric|between:-90,90',

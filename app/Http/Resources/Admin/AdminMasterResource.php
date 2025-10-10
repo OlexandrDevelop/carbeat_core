@@ -37,6 +37,7 @@ class AdminMasterResource extends JsonResource
             'city' => $this->whenLoaded('city', function () {
                 return $this->city ? ['id' => (int) $this->city->id, 'name' => (string) $this->city->name] : null;
             }),
+            'city_id' => (int) ($this->city_id ?? 0),
             'age' => (int) $this->age,
             'phone' => $this->phone,
             'available' => (bool) $this->available,
