@@ -57,6 +57,7 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
     Route::put('/admin-services/{id}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('admin.api.admin_services.update');
     Route::put('/admin-services/{id}/providers', [\App\Http\Controllers\Admin\ServiceController::class, 'updateProviders'])->name('admin.api.admin_services.update_providers');
     Route::get('/admin-services/{id}/delete-preview', [\App\Http\Controllers\Admin\ServiceController::class, 'deletePreview'])->name('admin.api.admin_services.delete_preview');
+    Route::post('/admin-services/merge', [\App\Http\Controllers\Admin\ServiceController::class, 'merge'])->name('admin.api.admin_services.merge');
     Route::delete('/admin-services/{id}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('admin.api.admin_services.destroy');
     Route::post('/admin-services/bulk/delete-preview', [\App\Http\Controllers\Admin\ServiceController::class, 'bulkDeletePreview'])->name('admin.api.admin_services.bulk_delete_preview');
     Route::post('/admin-services/bulk/delete', [\App\Http\Controllers\Admin\ServiceController::class, 'bulkDestroy'])->name('admin.api.admin_services.bulk_delete');
