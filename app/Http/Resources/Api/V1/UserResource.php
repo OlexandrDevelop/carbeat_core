@@ -49,7 +49,11 @@ class UserResource extends JsonResource
                 'longitude' => $master->longitude,
                 'description' => $master->description,
                 'age' => $master->age,
-                'services' => $master->services->pluck('id'),
+                'services' => $master->services->map(fn ($s) => [
+                    'id' => (int) $s->id,
+                    'name' => (string) $s->name,
+                    'is_primary' => (int) $master->service_id === (int) $s->id,
+                ]),
                 'main_photo' => $master->photo,
                 'main_service_id' => $master->service_id,
             ];
