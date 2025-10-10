@@ -28,7 +28,7 @@ class MasterAdminService
 
     public function getMaster(int $id): Master
     {
-        return Master::with(['services', 'user', 'reviews', 'gallery'])
+        return Master::with(['services', 'user', 'reviews', 'gallery', 'city'])
             ->withAvg('reviews', 'rating')
             ->findOrFail($id);
     }

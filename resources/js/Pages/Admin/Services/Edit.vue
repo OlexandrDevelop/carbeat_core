@@ -39,7 +39,9 @@
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="p in providers" :key="p.id" class="hover:bg-gray-50">
                             <td class="px-6 py-3 text-sm text-gray-600">{{ p.id }}</td>
-                            <td class="px-6 py-3 text-sm font-medium text-gray-900">{{ p.name }}</td>
+                            <td class="px-6 py-3 text-sm font-medium text-gray-900">
+                                <Link :href="route('admin.masters.edit', { id: p.id })" class="text-blue-600 hover:text-blue-800">{{ p.name }}</Link>
+                            </td>
                             <td class="px-6 py-3 text-sm">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" :class="p.is_main ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
                                     <span class="h-1.5 w-1.5 rounded-full" :class="p.is_main ? 'bg-emerald-600' : 'bg-gray-500'" />
@@ -47,6 +49,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-3 text-right space-x-3">
+                                <Link :href="route('admin.masters.edit', { id: p.id })" class="text-blue-600 hover:text-blue-800">Open</Link>
                                 <button @click="removeProvider(p.id)" :disabled="p.is_main" class="text-red-600 hover:text-red-800 disabled:opacity-40">Remove</button>
                             </td>
                         </tr>
