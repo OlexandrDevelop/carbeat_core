@@ -28,7 +28,6 @@ export interface SEOConfig {
         enable_robots: boolean;
         enable_analytics: boolean;
         google_analytics_id?: string;
-        yandex_metrika_id?: string;
     };
 }
 
@@ -61,7 +60,6 @@ export const defaultSEOConfig: SEOConfig = {
         enable_robots: true,
         enable_analytics: true,
         google_analytics_id: 'GA_MEASUREMENT_ID',
-        yandex_metrika_id: 'YANDEX_METRIKA_ID',
     },
 };
 
@@ -94,13 +92,16 @@ export const beautySalonSEOConfig: SEOConfig = {
         enable_robots: true,
         enable_analytics: true,
         google_analytics_id: 'GA_MEASUREMENT_ID',
-        yandex_metrika_id: 'YANDEX_METRIKA_ID',
     },
 };
 
 // Function to get SEO config based on environment or type
-export function getSEOConfig(type: string = 'auto_mechanics'): SEOConfig {
-    switch (type) {
+export function getSEOConfig(type?: string): SEOConfig {
+    const envType = (import.meta as any)?.env?.VITE_SEO_TYPE as
+        | string
+        | undefined;
+    const resolvedType = type ?? envType ?? 'auto_mechanics';
+    switch (resolvedType) {
         case 'beauty_salons':
             return beautySalonSEOConfig;
         case 'auto_mechanics':
