@@ -28,7 +28,7 @@ class MasterAdminService
 
     public function getMaster(int $id): Master
     {
-        return Master::with(['services', 'user', 'reviews', 'gallery'])
+        return Master::with(['services', 'user', 'reviews', 'gallery', 'city'])
             ->withAvg('reviews', 'rating')
             ->findOrFail($id);
     }
@@ -181,6 +181,9 @@ class MasterAdminService
     {
         $direction = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
         switch ($sortBy) {
+            case 'id':
+                $query->orderBy('masters.id', $direction);
+                break;
             case 'uses_system':
                 $query->orderByRaw('(CASE WHEN user_id != 1 THEN 1 ELSE 0 END) '.$direction);
                 break;
@@ -189,9 +192,26 @@ class MasterAdminService
                     ->select('masters.*')
                     ->orderBy('users.last_login_at', $direction);
                 break;
+            case 'city':
+                $query->leftJoin('cities', 'cities.id', '=', 'masters.city_id')
+                    ->select('masters.*')
+                    ->orderBy('cities.name', $direction);
+                break;
             case 'rating':
                 // Sort by average rating from reviews (use withAvg alias)
                 $query->orderBy('reviews_avg_rating', $direction);
+                break;
+            case 'photos_count':
+                // withCount('gallery') alias is gallery_count
+                $query->orderBy('gallery_count', $direction);
+                break;
+            case 'available':
+                $query->orderBy('available', $direction);
+                break;
+            case 'photo':
+                // Sort by presence of photo (non-null and non-empty)
+                $query->orderByRaw('(CASE WHEN photo IS NOT NULL AND photo != "" THEN 1 ELSE 0 END) '.$direction)
+                    ->orderBy('id', 'desc');
                 break;
             case 'name':
             case 'age':
