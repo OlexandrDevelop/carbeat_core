@@ -40,6 +40,13 @@
                         <input v-model="form.phone" type="text" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700">City</label>
+                        <select v-model.number="form.city_id" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm">
+                            <option :value="null">Select city...</option>
+                            <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700">Main service</label>
                         <select v-model.number="form.service_id" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm">
                             <option :value="null">Select service...</option>
@@ -57,6 +64,11 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Longitude</label>
                         <input v-model.number="form.longitude" type="number" step="0.000001" min="-180" max="180" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Location</label>
+                        <div id="map" class="mt-2 h-64 w-full rounded-xl overflow-hidden border"></div>
+                        <div class="mt-1 text-xs text-gray-500">Drag the marker or click on map to set coordinates</div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Available</label>
@@ -87,6 +99,26 @@
                         {{ saving ? 'Saving...' : 'Save changes' }}
                     </button>
                     <span v-if="saved" class="text-sm text-green-600">Saved</span>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Gallery</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <div v-for="p in master?.photos || []" :key="p.id" class="group relative">
+                        <img :src="p.url" alt="Photo" class="h-32 w-full rounded-lg object-cover cursor-zoom-in" @click="openPreview(p.url)" />
+                        <button @click="deletePhoto(p)" class="absolute top-2 right-2 rounded bg-red-600/90 text-white px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Modal -->
+            <div v-if="previewUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" @click.self="closePreview">
+                <div class="relative max-h-[90vh] max-w-[90vw]">
+                    <button @click="closePreview" class="absolute -top-10 right-0 rounded bg-white/90 px-3 py-1 text-sm text-gray-800">Close</button>
+                    <img :src="previewUrl" alt="Full preview" class="max-h-[90vh] max-w-[90vw] rounded-lg object-contain" />
                 </div>
             </div>
 
@@ -128,6 +160,8 @@
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import { onMounted, reactive, ref } from 'vue';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const props = defineProps<{ masterId: number }>();
 
@@ -136,9 +170,10 @@ const saving = ref(false);
 const saved = ref(false);
 
 const services = ref<Array<{ id: number; name: string }>>([]);
+const cities = ref<Array<{ id: number; name: string }>>([]);
 const users = ref<Array<{ id: number; name: string | null; phone: string | null }>>([]);
 
-const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; available: boolean; description: string | null; service_id: number | null; service_ids: number[] }>({
+const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; available: boolean; description: string | null; service_id: number | null; service_ids: number[]; city_id: number | null }>({
     name: '',
     slug: '',
     phone: '',
@@ -149,22 +184,32 @@ const form = reactive<{ name: string; slug: string; phone: string; address: stri
     description: '',
     service_id: null,
     service_ids: [],
+    city_id: null,
 });
 
 const reviews = ref<Array<{ id: number; rating: number; review: string; created_at: string; user_id: number | null; user?: any }>>([]);
 const newReview = reactive<{ user_id: number | null; rating: number | null; review: string | null }>({ user_id: null, rating: null, review: '' });
 
+const previewUrl = ref<string | null>(null);
+function openPreview(url: string) { previewUrl.value = url; }
+function closePreview() { previewUrl.value = null; }
+
+let map: L.Map | null = null;
+let marker: L.Marker | null = null;
+
 async function load() {
-    const [masterRes, servicesRes, reviewsRes, usersRes] = await Promise.all([
+    const [masterRes, servicesRes, reviewsRes, usersRes, citiesRes] = await Promise.all([
         axios.get(`/admin-api/masters/${props.masterId}`),
         axios.get('/admin-api/services'),
         axios.get(`/admin-api/masters/${props.masterId}/reviews`),
         axios.get('/admin-api/users'),
+        axios.get('/admin-api/cities'),
     ]);
     master.value = masterRes.data;
     services.value = servicesRes.data;
     reviews.value = reviewsRes.data;
     users.value = usersRes.data;
+    cities.value = citiesRes.data;
 
     form.name = master.value.name ?? '';
     form.slug = master.value.slug ?? '';
@@ -176,6 +221,10 @@ async function load() {
     form.description = master.value.description ?? '';
     form.service_id = master.value.service_id ?? null;
     form.service_ids = (master.value.services || []).map((s: any) => s.id);
+    form.city_id = master.value.city?.id ?? master.value.city_id ?? null;
+
+    // Initialize map
+    initMap();
 }
 
 async function save() {
@@ -188,6 +237,14 @@ async function save() {
     } finally {
         saving.value = false;
     }
+}
+
+function deletePhoto(p: any) {
+    if (! confirm('Delete this photo?')) return;
+    axios.delete(`/admin-api/masters/${props.masterId}/gallery/${p.id}`).then(async () => {
+        const { data } = await axios.get(`/admin-api/masters/${props.masterId}`);
+        master.value = data;
+    });
 }
 
 async function addReview() {
@@ -225,6 +282,39 @@ async function reloadReviewsAndMaster() {
 }
 
 onMounted(load);
+
+function initMap() {
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    const lat = form.latitude ?? 50.4501;
+    const lng = form.longitude ?? 30.5234;
+    const zoom = form.latitude && form.longitude ? 14 : 11;
+    if (!map) {
+        map = L.map('map').setView([lat, lng], zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors',
+        }).addTo(map);
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', () => {
+            const pos = marker!.getLatLng();
+            form.latitude = Number(pos.lat.toFixed(6));
+            form.longitude = Number(pos.lng.toFixed(6));
+        });
+        map.on('click', (e: any) => {
+            const { lat, lng } = e.latlng;
+            if (marker) marker.setLatLng([lat, lng]);
+            form.latitude = Number(lat.toFixed(6));
+            form.longitude = Number(lng.toFixed(6));
+        });
+        // Ensure proper rendering after container became visible
+        setTimeout(() => map && map.invalidateSize(), 0);
+    } else {
+        map.setView([lat, lng], zoom);
+        if (marker) marker.setLatLng([lat, lng]);
+        setTimeout(() => map && map.invalidateSize(), 0);
+    }
+}
 </script>
 
 <style scoped>

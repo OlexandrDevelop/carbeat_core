@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminServiceDeleteRequest;
+use App\Http\Requests\Admin\AdminServiceMergeRequest;
 use App\Http\Requests\Admin\AdminServiceUpdateProvidersRequest;
 use App\Http\Requests\Admin\AdminServiceUpdateRequest;
 use App\Http\Resources\Admin\AdminServiceDeletePreviewResource;
@@ -82,5 +83,13 @@ class ServiceController extends Controller
         $ids = $request->input('ids', []);
         $summary = $this->service->deleteServicesAndCascade($ids);
         return response()->json(new AdminServiceDeleteResponse($summary));
+    }
+
+    public function merge(AdminServiceMergeRequest $request): JsonResponse
+    {
+        $serviceIds = $request->input('service_ids', []);
+        $primaryId = (int) $request->input('primary_id');
+        $result = $this->service->merge($serviceIds, $primaryId);
+        return response()->json($result);
     }
 }

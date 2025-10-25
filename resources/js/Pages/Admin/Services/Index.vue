@@ -11,6 +11,11 @@
                         @click="openBulkPreview"
                         class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700 disabled:opacity-50"
                     >Delete selected ({{ selectedIds.length }})</button>
+                    <button
+                        :disabled="selectedIds.length < 2"
+                        @click="openMergeModal"
+                        class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm hover:bg-emerald-700 disabled:opacity-50"
+                    >Merge selected</button>
                 </div>
             </div>
         </header>
@@ -66,7 +71,9 @@
                     <div v-if="preview?.masters_to_delete?.length" class="text-sm">
                         The following masters will be fully deleted because this is their only service:
                         <ul class="mt-2 list-disc pl-6 max-h-40 overflow-auto">
-                            <li v-for="m in preview?.masters_to_delete" :key="m.id">#{{ m.id }} — {{ m.name }}</li>
+                            <li v-for="m in preview?.masters_to_delete" :key="m.id">
+                                <Link :href="route('admin.masters.edit', { id: m.id })" class="text-blue-600 hover:text-blue-800">#{{ m.id }} — {{ m.name }}</Link>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -89,13 +96,33 @@
                     <div v-if="bulkPreview?.masters_to_delete?.length" class="text-sm">
                         The following masters will be fully deleted because they will have no services left:
                         <ul class="mt-2 list-disc pl-6 max-h-60 overflow-auto">
-                            <li v-for="m in bulkPreview?.masters_to_delete" :key="m.id">#{{ m.id }} — {{ m.name }}</li>
+                            <li v-for="m in bulkPreview?.masters_to_delete" :key="m.id">
+                                <Link :href="route('admin.masters.edit', { id: m.id })" class="text-blue-600 hover:text-blue-800">#{{ m.id }} — {{ m.name }}</Link>
+                            </li>
                         </ul>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3">
                     <button @click="closeBulkModal" class="rounded-lg border px-4 py-2 text-sm">Cancel</button>
                     <button @click="performBulkDelete" class="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">Delete selected</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Merge services modal -->
+        <div v-if="showMergeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg">
+                <h3 class="text-lg font-semibold mb-2">Merge services</h3>
+                <p class="text-sm text-gray-600 mb-4">Choose the primary service. All selected services will be merged into the primary; other services will be deleted.</p>
+                <div class="space-y-2 max-h-64 overflow-auto">
+                    <label v-for="s in mergeCandidates" :key="s.id" class="flex items-center gap-2 text-sm">
+                        <input type="radio" name="primary" :value="s.id" v-model.number="mergePrimaryId" />
+                        <span>#{{ s.id }} — {{ s.name }}</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button @click="closeMergeModal" class="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+                    <button @click="performMerge" :disabled="!mergePrimaryId" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50">Merge</button>
                 </div>
             </div>
         </div>
@@ -121,6 +148,10 @@ const allChecked = computed(() => services.value.length > 0 && selectedIds.value
 
 const showBulkModal = ref(false);
 const bulkPreview = ref<any>(null);
+// Merge modal state
+const showMergeModal = ref(false);
+const mergeCandidates = ref<Array<{ id: number; name: string }>>([]);
+const mergePrimaryId = ref<number | null>(null);
 
 async function fetchData() {
     const params = new URLSearchParams();
@@ -205,6 +236,32 @@ async function performBulkDelete() {
     await axios.post('/admin-api/admin-services/bulk/delete', { ids: selectedIds.value });
     selectedIds.value = [];
     closeBulkModal();
+    await fetchData();
+}
+
+function openMergeModal() {
+    const map = new Map(services.value.map(s => [s.id, s.name]));
+    mergeCandidates.value = selectedIds.value
+        .map(id => ({ id, name: map.get(id) || `Service #${id}` }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    mergePrimaryId.value = mergeCandidates.value.length ? mergeCandidates.value[0].id : null;
+    showMergeModal.value = true;
+}
+
+function closeMergeModal() {
+    showMergeModal.value = false;
+    mergeCandidates.value = [];
+    mergePrimaryId.value = null;
+}
+
+async function performMerge() {
+    if (!mergePrimaryId.value || selectedIds.value.length < 2) return;
+    await axios.post('/admin-api/admin-services/merge', {
+        service_ids: selectedIds.value,
+        primary_id: mergePrimaryId.value,
+    });
+    closeMergeModal();
+    selectedIds.value = [mergePrimaryId.value];
     await fetchData();
 }
 

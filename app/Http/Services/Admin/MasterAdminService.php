@@ -3,6 +3,7 @@
 namespace App\Http\Services\Admin;
 
 use App\Models\Master;
+use App\Models\City;
 use App\Models\Review;
 use App\Models\Service;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,8 +15,9 @@ class MasterAdminService
     public function listMasters(array $params): LengthAwarePaginator
     {
         $query = Master::query()
-            ->with(['services', 'user'])
-            ->withAvg('reviews', 'rating');
+            ->with(['services', 'user', 'city'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('gallery');
 
         $this->applyFilters($query, $params);
         $this->applySorting($query, $params['sort_by'] ?? 'created_at', $params['sort_dir'] ?? 'desc');
@@ -26,7 +28,7 @@ class MasterAdminService
 
     public function getMaster(int $id): Master
     {
-        return Master::with(['services', 'user', 'reviews'])
+        return Master::with(['services', 'user', 'reviews', 'gallery', 'city'])
             ->withAvg('reviews', 'rating')
             ->findOrFail($id);
     }
@@ -156,6 +158,11 @@ class MasterAdminService
             $query->whereHas('services', fn ($q) => $q->where('services.id', $serviceId));
         }
 
+        if (! empty($filters['city_id'])) {
+            $cityId = (int) $filters['city_id'];
+            $query->where('city_id', $cityId);
+        }
+
         if (isset($filters['uses_system']) && $filters['uses_system'] !== '') {
             if (filter_var($filters['uses_system'], FILTER_VALIDATE_BOOLEAN)) {
                 $query->where('user_id', '!=', 1);
@@ -165,10 +172,18 @@ class MasterAdminService
         }
     }
 
+    public function listCities()
+    {
+        return City::query()->orderBy('name')->get(['id', 'name']);
+    }
+
     private function applySorting(Builder $query, string $sortBy, string $sortDir): void
     {
         $direction = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
         switch ($sortBy) {
+            case 'id':
+                $query->orderBy('masters.id', $direction);
+                break;
             case 'uses_system':
                 $query->orderByRaw('(CASE WHEN user_id != 1 THEN 1 ELSE 0 END) '.$direction);
                 break;
@@ -177,9 +192,26 @@ class MasterAdminService
                     ->select('masters.*')
                     ->orderBy('users.last_login_at', $direction);
                 break;
+            case 'city':
+                $query->leftJoin('cities', 'cities.id', '=', 'masters.city_id')
+                    ->select('masters.*')
+                    ->orderBy('cities.name', $direction);
+                break;
             case 'rating':
                 // Sort by average rating from reviews (use withAvg alias)
                 $query->orderBy('reviews_avg_rating', $direction);
+                break;
+            case 'photos_count':
+                // withCount('gallery') alias is gallery_count
+                $query->orderBy('gallery_count', $direction);
+                break;
+            case 'available':
+                $query->orderBy('available', $direction);
+                break;
+            case 'photo':
+                // Sort by presence of photo (non-null and non-empty)
+                $query->orderByRaw('(CASE WHEN photo IS NOT NULL AND photo != "" THEN 1 ELSE 0 END) '.$direction)
+                    ->orderBy('id', 'desc');
                 break;
             case 'name':
             case 'age':

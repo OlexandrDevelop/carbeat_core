@@ -34,13 +34,19 @@ class AdminMasterResource extends JsonResource
             'name' => (string) $this->name,
             'description' => $this->description,
             'address' => $this->address,
+            'city' => $this->whenLoaded('city', function () {
+                return $this->city ? ['id' => (int) $this->city->id, 'name' => (string) $this->city->name] : null;
+            }),
+            'city_id' => (int) ($this->city_id ?? 0),
             'age' => (int) $this->age,
             'phone' => $this->phone,
             'available' => (bool) $this->available,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'reviews_count' => (int) $this->reviews_count,
+            'photos_count' => (int) ($this->gallery_count ?? 0),
             'main_photo' => $photoUrl,
+            'main_thumb_url' => $this->main_thumb_url ? url('storage/'.$this->main_thumb_url) : null,
             'service_id' => $this->service_id,
             'tariff_id' => $this->tariff_id,
             'slug' => (string) $this->slug,
@@ -48,6 +54,12 @@ class AdminMasterResource extends JsonResource
                 return $this->services->map(fn ($s) => [
                     'id' => (int) $s->id,
                     'name' => (string) $s->name,
+                ]);
+            }),
+            'photos' => $this->whenLoaded('gallery', function () {
+                return $this->gallery->map(fn ($g) => [
+                    'id' => (int) $g->id,
+                    'url' => (string) url('storage/'.$g->photo),
                 ]);
             }),
         ];

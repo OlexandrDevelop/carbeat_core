@@ -217,7 +217,7 @@ const { t, locale } = useI18n();
 const page = usePage();
 
 // SEO Configuration
-const seoConfig = getSEOConfig('auto_mechanics'); // Can be changed based on environment
+const seoConfig = getSEOConfig();
 const metaTags = computed(() => generateMetaTags(seoConfig, locale.value));
 
 // State

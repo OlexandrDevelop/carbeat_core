@@ -69,6 +69,11 @@ class MasterController extends Controller
         return response()->json($this->service->listServices());
     }
 
+    public function cities(): JsonResponse
+    {
+        return response()->json($this->service->listCities());
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $this->service->deleteMaster($id);

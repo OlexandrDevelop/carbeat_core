@@ -11,6 +11,7 @@ use App\Models\MasterGallery;
 use App\Models\Service;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -26,9 +27,9 @@ class RatelistImportService
      * Public wrapper to get detail links for progress estimation.
      * @return array<int,string>
      */
-    public function getDetailLinks(string $listUrl): array
+    public function getDetailLinks(string $listUrl, ?int $maxPages = null): array
     {
-        return $this->extractDetailLinks($listUrl);
+        return $this->extractDetailLinks($listUrl, $maxPages);
     }
 
     /**
@@ -40,16 +41,25 @@ class RatelistImportService
      * @param callable|null $onProgress Optional callback reporting progress
      * @return array{imported:int, skipped:int}
      */
-    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null): array
+    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null): array
     {
         $imported = 0;
         $skipped = 0;
-        $max = $limit ?? 0;
+        $stopped = false;
 
-        $detailUrls = $this->extractDetailLinks($listUrl);
+        // Use pre-fetched URLs if provided (prevents double processing)
+        $detailUrls = $prefetchedDetailUrls ?? $this->extractDetailLinks($listUrl);
         foreach ($detailUrls as $detailUrl) {
-            if ($max > 0 && $imported >= $max) {
-                break;
+            // Stop flag via redis cache for admin-initiated jobs
+            $jobId = $GLOBALS['current_job_id'] ?? '';
+            if ($jobId) {
+                $stopKey = "import_stop_{$jobId}";
+                if (Cache::store('redis')->get($stopKey)) {
+                    // clear the flag and stop
+                    Cache::store('redis')->forget($stopKey);
+                    $stopped = true;
+                    break;
+                }
             }
             try {
                 $dto = $this->scrapeDetail($detailUrl);
@@ -68,6 +78,20 @@ class RatelistImportService
                 if (empty($dto['lat']) || empty($dto['lng'])) {
                     $skipped++;
                     Log::warning('Ratelist import: missing coordinates', ['url' => $detailUrl]);
+                    if ($onProgress) {
+                        $onProgress([
+                            'imported' => $imported,
+                            'skipped' => $skipped,
+                            'processed' => $imported + $skipped
+                        ]);
+                    }
+                    continue;
+                }
+
+                // Require main photo from specific blocks; skip if missing
+                if (empty($dto['main_photo'])) {
+                    $skipped++;
+                    Log::info('Ratelist import: missing required main photo from business image block', ['url' => $detailUrl]);
                     if ($onProgress) {
                         $onProgress([
                             'imported' => $imported,
@@ -107,6 +131,7 @@ class RatelistImportService
                     ],
                     'main_photo' => $dto['main_photo'] ?? null,
                     'reviews' => $dto['reviews'] ?? [],
+					'working_hours' => $dto['working_hours'] ?? null,
                     'place_id' => $dto['place_id'] ?? null,
                     'rating_google' => null,
                 ];
@@ -119,22 +144,33 @@ class RatelistImportService
                         $ids = array_map(fn($s) => $s->id, $serviceModels);
                         $master->services()->syncWithoutDetaching($ids);
                     }
-                    // Save gallery photos if any
+                    // Save gallery photos if any (dedupe by content hash per master)
                     if (! empty($dto['gallery'])) {
                         foreach ($dto['gallery'] as $imgUrl) {
                             $base64 = $this->photoHelper->downloadAndConvertToBase64($imgUrl);
-                            if ($base64) {
-                                $stored = $this->photoHelper->saveBase64($base64);
-                                if ($stored) {
-                                    MasterGallery::firstOrCreate([
-                                        'master_id' => $master->id,
-                                        'photo' => $stored,
-                                    ], [
-                                        'master_id' => $master->id,
-                                        'photo' => $stored,
-                                    ]);
-                                }
+                            if (! $base64) { continue; }
+                            $decoded = $this->photoHelper->base64ToDecoded($base64);
+                            if (! $decoded) { continue; }
+                            $hash = sha1($decoded['decoded']);
+                            // Skip if this master already has an image with same hash (stored in filename)
+                            $exists = MasterGallery::where('master_id', $master->id)
+                                ->where('photo', 'like', "%$hash%")
+                                ->exists();
+                            if ($exists) { continue; }
+
+                            // Use hash in filename to ensure stable identity
+                            $path = 'images/' . $hash . '.' . strtolower($decoded['extension']);
+                            if (! \Storage::disk('public')->exists($path)) {
+                                \Storage::disk('public')->put($path, $decoded['decoded']);
                             }
+
+                            MasterGallery::firstOrCreate([
+                                'master_id' => $master->id,
+                                'photo' => $path,
+                            ], [
+                                'master_id' => $master->id,
+                                'photo' => $path,
+                            ]);
                         }
                     }
                     DB::commit();
@@ -180,54 +216,99 @@ class RatelistImportService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped];
+        return ['imported' => $imported, 'skipped' => $skipped, 'stopped' => $stopped];
     }
 
     /**
      * Extract business detail links from a listing page.
      * @return array<int,string>
      */
-    private function extractDetailLinks(string $listUrl): array
+    private function extractDetailLinks(string $listUrl, ?int $maxPages = null): array
     {
-        $urls = [];
-        $resp = Http::withHeaders($this->defaultHeaders())->retry(2, 200)->get($listUrl);
-        if (! $resp->successful()) {
-            return $urls;
-        }
-        $crawler = new Crawler($resp->body(), $listUrl);
+        $allUrls = [];
 
-        // Primary: compose from list item ids
-        $crawler->filter('li.company_card[data-id]')->each(function (Crawler $li) use (&$urls) {
-            $id = trim($li->attr('data-id') ?? '');
-            if ($id !== '' && ctype_digit($id)) {
-                $urls[] = 'https://ratelist.top/' . $id;
+        // Determine total pages from first page
+        $baseUrl = $this->stripPageParam($listUrl);
+        $firstResp = Http::withHeaders($this->defaultHeaders())->retry(2, 200)->get($this->withPage($baseUrl, 1));
+        if (! $firstResp->successful()) { return $allUrls; }
+        $firstCrawler = new Crawler($firstResp->body(), $baseUrl);
+        $totalPages = $this->extractTotalPages($firstCrawler) ?: 1;
+        if ($maxPages && $maxPages > 0) {
+            $totalPages = min($totalPages, $maxPages);
+        }
+
+        for ($page = 1; $page <= $totalPages; $page++) {
+            $pageUrl = $this->withPage($baseUrl, $page);
+            $resp = $page === 1 ? $firstResp : Http::withHeaders($this->defaultHeaders())->retry(2, 200)->get($pageUrl);
+            if (! $resp->successful()) { continue; }
+            $crawler = new Crawler($resp->body(), $pageUrl);
+
+            $urls = [];
+            // Primary: compose from list item ids
+            $crawler->filter('li.company_card[data-id]')->each(function (Crawler $li) use (&$urls) {
+                $id = trim($li->attr('data-id') ?? '');
+                if ($id !== '' && ctype_digit($id)) { $urls[] = 'https://ratelist.top/' . $id; }
+            });
+            // Fallback: explicit hidden link attribute
+            if (empty($urls)) {
+                $crawler->filter('a[data-hidden-link]')->each(function (Crawler $a) use (&$urls, $pageUrl) {
+                    $href = trim($a->attr('data-hidden-link') ?? '');
+                    if ($href !== '') { $urls[] = $this->absoluteUrl($href, $pageUrl); }
+                });
             }
+            // Final fallback: any anchors that look like detail pages with numeric path
+            if (empty($urls)) {
+                $crawler->filter('a')->each(function (Crawler $a) use (&$urls, $pageUrl) {
+                    $href = $a->attr('href') ?? '';
+                    if (! $href) { return; }
+                    $abs = $this->absoluteUrl($href, $pageUrl);
+                    if (preg_match('#^https?://ratelist\.top/\d{4,}$#', $abs)) { $urls[] = $abs; }
+                });
+            }
+
+            foreach ($urls as $u) { $allUrls[] = $u; }
+        }
+
+        return array_values(array_unique($allUrls));
+    }
+
+    private function extractTotalPages(Crawler $crawler): int
+    {
+        $maxPage = 1;
+        // Look for pagination block
+        $crawler->filter('.pagination.pagination_js a[data-ci-pagination-page]')->each(function (Crawler $a) use (&$maxPage) {
+            $num = (int) ($a->attr('data-ci-pagination-page') ?? 0);
+            if ($num > $maxPage) { $maxPage = $num; }
         });
+        return $maxPage > 0 ? $maxPage : 1;
+    }
 
-        // Fallback: explicit hidden link attribute
-        if (empty($urls)) {
-            $crawler->filter('a[data-hidden-link]')->each(function (Crawler $a) use (&$urls, $listUrl) {
-                $href = trim($a->attr('data-hidden-link') ?? '');
-                if ($href !== '') {
-                    $urls[] = $this->absoluteUrl($href, $listUrl);
-                }
-            });
+    private function stripPageParam(string $url): string
+    {
+        $parts = parse_url($url);
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $path = $parts['path'] ?? '';
+        $query = [];
+        if (! empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+            unset($query['page']);
         }
+        $qs = http_build_query($query);
+        return $scheme . '://' . $host . $path . ($qs ? ('?' . $qs) : '');
+    }
 
-        // Final fallback: any anchors that look like detail pages with numeric path
-        if (empty($urls)) {
-            $crawler->filter('a')->each(function (Crawler $a) use (&$urls, $listUrl) {
-                $href = $a->attr('href') ?? '';
-                if (! $href) { return; }
-                $abs = $this->absoluteUrl($href, $listUrl);
-                if (preg_match('#^https?://ratelist\.top/\d{4,}$#', $abs)) {
-                    $urls[] = $abs;
-                }
-            });
-        }
-
-        // Deduplicate and keep order
-        return array_values(array_unique($urls));
+    private function withPage(string $baseUrl, int $page): string
+    {
+        $parts = parse_url($baseUrl);
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $path = $parts['path'] ?? '';
+        $query = [];
+        if (! empty($parts['query'])) { parse_str($parts['query'], $query); }
+        $query['page'] = $page;
+        $qs = http_build_query($query);
+        return $scheme . '://' . $host . $path . '?' . $qs;
     }
 
     /**
@@ -285,23 +366,30 @@ class RatelistImportService
             if ($t !== '') { $services[] = $t; }
         });
 
-        // Photos
-        $imageUrls = [];
-        $og = $this->firstAttr($crawler, 'meta[property="og:image"]', 'content');
-        if ($og) { $imageUrls[] = $this->absoluteUrl($og, $detailUrl); }
-        $crawler->filter('[data-fancybox]')->each(function (Crawler $a) use (&$imageUrls, $detailUrl) {
-            $src = $a->attr('data-src') ?? '';
-            if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
-        });
-        $crawler->filter('img')->each(function (Crawler $img) use (&$imageUrls, $detailUrl) {
-            $src = $img->attr('src') ?? '';
-            if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
-        });
-        $imageUrls = array_values(array_unique($imageUrls));
-        $mainPhoto = $imageUrls[0] ?? null;
-        $gallery = array_slice($imageUrls, 1, 12);
+		// Photos: prefer business image block; fallback to right slider block
+		$imageUrls = [];
+		// Primary block
+		$crawler->filter('.bussiness_page_image_link_img img.img_flow')->each(function (Crawler $img) use (&$imageUrls, $detailUrl) {
+			$src = $img->attr('src') ?? '';
+			if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
+		});
+		// Fallback block: right slider (data-src on <a>, and <img> within)
+		if (empty($imageUrls)) {
+			$crawler->filter('#bussiness_page_right a[data-src]')->each(function (Crawler $a) use (&$imageUrls, $detailUrl) {
+				$src = $a->attr('data-src') ?? '';
+				if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
+			});
+			$crawler->filter('#bussiness_page_right img.bussiness_page_one_slide')->each(function (Crawler $img) use (&$imageUrls, $detailUrl) {
+				$src = $img->attr('src') ?? '';
+				if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
+			});
+		}
+		$imageUrls = array_values(array_unique($imageUrls));
 
-        // Reviews
+		$mainPhoto = $imageUrls[0] ?? null;
+		$gallery = array_slice($imageUrls, 1, 12);
+
+		// Reviews
         $reviews = [];
         if (! empty($ld['review']) && is_array($ld['review'])) {
             foreach ($ld['review'] as $rev) {
@@ -332,7 +420,10 @@ class RatelistImportService
             });
         }
 
-        $placeId = 'ratelist:' . md5($detailUrl);
+		// Working hours block
+		$workingHours = $this->extractWorkingHours($crawler);
+
+		$placeId = 'ratelist:' . md5($detailUrl);
 
         return [
             'name' => $name,
@@ -345,9 +436,52 @@ class RatelistImportService
             'gallery' => $gallery,
             'reviews' => $reviews,
             'services' => $services,
-            'place_id' => $placeId,
+			'place_id' => $placeId,
+			'working_hours' => $workingHours,
         ];
     }
+
+	private function extractWorkingHours(Crawler $crawler): array
+	{
+		$hours = [];
+		$dayMap = [
+			'Понеділок' => 'monday',
+			'Вівторок' => 'tuesday',
+			'Середа' => 'wednesday',
+			'Четвер' => 'thursday',
+			"П'ятниця" => 'friday',
+			'Субота' => 'saturday',
+			'Неділя' => 'sunday',
+		];
+
+		// Initialize all days to empty (closed)
+		foreach ($dayMap as $key) {
+			$hours[$key] = [];
+		}
+
+		$crawler->filter('.company_info_working_hours table tr')->each(function (Crawler $tr) use (&$hours, $dayMap) {
+			$tds = $tr->filter('td');
+			if ($tds->count() < 2) { return; }
+			$dayUa = trim(preg_replace('/\s+/u', ' ', $tds->eq(0)->text('')));
+			$timeText = trim(preg_replace('/\s+/u', ' ', $tds->eq(1)->text('')));
+			if ($dayUa === '' || ! isset($dayMap[$dayUa])) { return; }
+			$key = $dayMap[$dayUa];
+			if (mb_stripos($timeText, 'Закрито') !== false) {
+				$hours[$key] = [];
+				return;
+			}
+			if (preg_match('/(\d{1,2}:\d{2})\s*[–\-]\s*(\d{1,2}:\d{2})/u', $timeText, $m)) {
+				$open = $m[1];
+				$close = $m[2];
+				$hours[$key] = [[
+					'open' => $open,
+					'close' => $close,
+				]];
+			}
+		});
+
+		return $hours;
+	}
 
     private function extractLatLng(string $html, Crawler $crawler): array
     {

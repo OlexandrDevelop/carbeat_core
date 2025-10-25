@@ -49,4 +49,39 @@ class PhotoHelper
 
         return $fileName;
     }
+
+    /**
+     * Decode base64-encoded image string and return binary and extension.
+     * @return array{decoded:string, extension:string}|null
+     */
+    public function base64ToDecoded(string $base64): ?array
+    {
+        if (empty($base64)) {
+            return null;
+        }
+        if (!preg_match('/^data:image\/(\w+);base64,/', $base64, $matches)) {
+            return null;
+        }
+        $extension = strtolower($matches[1]);
+        $data = substr($base64, strpos($base64, ',') + 1);
+        /** @var string|false $decoded */
+        $decoded = base64_decode($data);
+        if ($decoded === false) {
+            return null;
+        }
+        return ['decoded' => $decoded, 'extension' => $extension];
+    }
+
+    /**
+     * Save already decoded image binary to storage and return relative path.
+     */
+    public function saveDecoded(string $binary, string $extension): ?string
+    {
+        if ($binary === '' || $extension === '') {
+            return null;
+        }
+        $fileName = 'images/' . uniqid('', true) . '.' . strtolower($extension);
+        Storage::disk('public')->put($fileName, $binary);
+        return $fileName;
+    }
 }

@@ -62,6 +62,7 @@ class MasterResource extends JsonResource
             'reviews_count' => (int) $this->reviews_count,
             'rating' => (float) round($this->rating, 1),
             'main_photo' => (string) 'storage/'.$this->photo,
+            'main_thumb_url' => $this->main_thumb_url ? (string) ('storage/'.$this->main_thumb_url) : null,
             'distance' => (float) round($this->distance, 3),
             'main_service_id' => (int) $this->service_id,
             'available' => array_key_exists($this->id, $this->availabilityMap)

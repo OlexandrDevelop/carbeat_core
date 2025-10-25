@@ -8,13 +8,55 @@ use Illuminate\Support\Facades\Redis;
 class AppointmentRedisService
 {
 
-    //check if the master is available at the given time
+    //check if the master is available at the given time (now unused param kept for BC)
     public function getAvailability(int $masterId, Carbon $checkTime): bool
     {
         return $this->isMasterAvailableAt($masterId, $checkTime);
     }
 
+    // ---- Availability FLAG (free/busy) ----
+    public function getAvailabilityFlagKey(int $masterId): string
+    {
+        return "master:{$masterId}:available";
+    }
 
+    public function setAvailableFlag(int $masterId): void
+    {
+        Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+    }
+
+    public function setUnavailableFlag(int $masterId): void
+    {
+        Redis::del($this->getAvailabilityFlagKey($masterId));
+    }
+
+    public function isAvailableFlag(int $masterId): bool
+    {
+        return (bool) Redis::exists($this->getAvailabilityFlagKey($masterId));
+    }
+
+    public function getAvailabilityFlagsForMany(array $masterIds): array
+    {
+        $availability = [];
+        /** @phpstan-ignore-next-line */
+        $results = Redis::pipeline(function ($pipe) use ($masterIds) {
+            foreach ($masterIds as $masterId) {
+                $pipe->exists($this->getAvailabilityFlagKey($masterId));
+            }
+        });
+        foreach ($masterIds as $index => $masterId) {
+            $availability[$masterId] = (bool) ($results[$index] ?? false);
+        }
+        return $availability;
+    }
+
+    // ---- Legacy signature kept, now delegates to flag ----
+    public function isMasterAvailableAt(int $masterId, Carbon $checkTime): bool
+    {
+        return $this->isAvailableFlag($masterId);
+    }
+
+    // ---- Booking intervals (kept for booking module only) ----
     public function getMasterBusyIntervalsKey(int $masterId): string
     {
         return "master:{$masterId}:busy_intervals";
@@ -88,6 +130,7 @@ class AppointmentRedisService
         }
     }
 
+    // NOTE: kept only for booking schedule management; availability flag endpoint no longer calls this
     public function markAsFree(int $masterId, Carbon $startTime, Carbon $endTime): void
     {
         $this->clearExpiredIntervals($masterId);
@@ -101,62 +144,54 @@ class AppointmentRedisService
         );
     }
 
-    public function isMasterAvailableAt(int $masterId, Carbon $checkTime): bool
-    {
-        $freeIntervals = Redis::zrangebyscore(
-            $this->getMasterFreeIntervalsKey($masterId),
-            '-inf',
-            '+inf',
-            ['WITHSCORES']
-        );
-
-        return $this->isTimestampInFreeIntervals($freeIntervals, $checkTime->timestamp);
-    }
-
     public function getAvailabilityForMany(array $masterIds, Carbon $checkTime): array
     {
-        $availability = [];
-        $timestamp = $checkTime->timestamp;
+        // Now returns simple flags map
+        return $this->getAvailabilityFlagsForMany($masterIds);
+    }
 
-        $allFreeIntervals = [];
+    public function getFreeIntervals(int $masterId, ?Carbon $from = null, ?Carbon $to = null): array
+    {
+        $fromScore = $from ? $from->timestamp : '-inf';
+        $toScore = $to ? $to->timestamp : '+inf';
 
-        /** @phpstan-ignore-next-line */
-        $results = Redis::pipeline(function ($pipe) use ($masterIds) {
-            foreach ($masterIds as $masterId) {
-                $pipe->zrangebyscore(
-                    $this->getMasterFreeIntervalsKey($masterId),
-                    '-inf',
-                    '+inf',
-                    ['WITHSCORES']
-                );
+        $raw = Redis::zrangebyscore(
+            $this->getMasterFreeIntervalsKey($masterId),
+            $fromScore,
+            $toScore
+        );
+
+        $intervals = [];
+        foreach ($raw as $r) {
+            $decoded = json_decode($r, true);
+            if (isset($decoded['start'], $decoded['end'])) {
+                $intervals[] = $decoded;
             }
-        });
-
-        // Прив’язуємо результати до masterId
-        foreach ($masterIds as $index => $masterId) {
-            $allFreeIntervals[$masterId] = $results[$index];
         }
 
-        foreach ($masterIds as $index => $masterId) {
-            $freeIntervals = $allFreeIntervals[$masterId] ?? [];
-            // ❗ Тут просто викликаємо ту ж логіку
-            $availability[$masterId] = $this->isTimestampInFreeIntervals($freeIntervals, $timestamp);
-        }
+        return $intervals;
+    }
 
-        return $availability;
+    public function isIntervalFree(int $masterId, Carbon $start, Carbon $end): bool
+    {
+        $intervals = $this->getFreeIntervals($masterId);
+        $s = $start->timestamp;
+        $e = $end->timestamp;
+        foreach ($intervals as $interval) {
+            if ($s >= (int) $interval['start'] && $e <= (int) $interval['end']) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function isTimestampInFreeIntervals(array $intervals, int $timestamp): bool
     {
         foreach ($intervals as $key => $value) {
-            // Якщо індексований — $key буде числовим (0, 1, 2...), і парний (json, score, json, score...)
-            // Якщо асоціативний — $key = json, $value = score
-
             if (is_numeric($key)) {
                 if ($key % 2 !== 0) {
-                    continue; // Пропускаємо score
+                    continue; // skip score
                 }
-
                 $interval = json_decode($value, true);
             } else {
                 $interval = json_decode($key, true);

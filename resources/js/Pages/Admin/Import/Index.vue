@@ -21,27 +21,29 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">RateList URL</label>
-                        <input
-                            v-model="form.url"
-                            type="url"
-                            placeholder="https://ratelist.top/l/kyiv/rating-435"
+                        <label class="block text-sm font-medium text-gray-700">RateList URLs</label>
+                        <textarea
+                            v-model="form.urls_text"
+                            rows="4"
+                            placeholder="One URL per line"
                             class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        />
+                        ></textarea>
+                        <p class="mt-1 text-xs text-gray-500">You can paste multiple links, each on a new line.</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Limit (optional)</label>
+                        <label class="block text-sm font-medium text-gray-700">Pages limit (optional)</label>
                         <input
-                            v-model.number="form.limit"
+                            v-model.number="form.pages"
                             type="number"
                             min="1"
-                            placeholder="Leave empty for no limit"
+                            placeholder="Leave empty for all pages"
                             class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         />
                     </div>
 
-                    <div class="flex justify-end">
+                    <div class="flex justify-between items-center">
+                        <div></div>
                         <button
                             type="submit"
                             :disabled="importing"
@@ -52,48 +54,54 @@
                     </div>
                 </form>
 
-                <!-- Progress -->
-                <div v-if="progress" class="mt-8 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm font-medium text-gray-700">Progress</div>
-                        <div v-if="progress.status !== 'error'" class="text-sm text-gray-500">
-                            {{ progress.processed || 0 }} total
-                            ({{ progress.imported || 0 }} imported, {{ progress.skipped || 0 }} skipped)
-                        </div>
-                    </div>
-
-                    <div class="relative">
-                        <div class="h-4 rounded-full bg-gray-200">
-                            <div
-                                class="h-4 rounded-full transition-all duration-500"
-                                :class="{
-                                    'bg-blue-600': progress.status === 'running',
-                                    'bg-green-600': progress.status === 'completed',
-                                    'bg-red-600': progress.status === 'error'
-                                }"
-                                :style="{ width: progressWidth }"
-                            ></div>
-                        </div>
-                    </div>
-
-                    <div v-if="progress.error" class="rounded-md bg-red-50 p-4">
-                        <div class="flex">
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-800">Error</h3>
-                                <div class="mt-2 text-sm text-red-700">{{ progress.error }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="progress.status === 'completed'" class="rounded-md bg-green-50 p-4">
-                        <div class="flex">
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-green-800">Import completed</h3>
-                                <div class="mt-2 text-sm text-green-700">
-                                    Successfully imported {{ progress.imported || 0 }} masters
-                                    ({{ progress.skipped || 0 }} skipped)
+                <!-- Progress (multiple jobs) -->
+                <div v-if="jobs.length" class="mt-8 space-y-6">
+                    <div
+                        v-for="job in jobs"
+                        :key="job.job_id"
+                        class="rounded-xl border border-gray-200 p-4"
+                    >
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm font-medium text-gray-700">{{ job.url }}</div>
+                                <div v-if="job.progress && job.progress.eta_seconds != null" class="text-xs text-gray-500 mt-1">
+                                    ETA: {{ formatSeconds(job.progress.eta_seconds) }}
                                 </div>
                             </div>
+                            <button
+                                v-if="['running','queued'].includes(job.progress?.status)"
+                                type="button"
+                                @click.prevent="stopJob(job)"
+                                class="rounded-xl bg-red-600 px-3 py-1.5 text-xs text-white shadow-sm hover:bg-red-700"
+                            >
+                                Stop
+                            </button>
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="h-3 rounded-full bg-gray-200">
+                                <div
+                                    class="h-3 rounded-full transition-all duration-500"
+                                    :class="{
+                                        'bg-blue-600': job.progress?.status === 'running' || job.progress?.status === 'queued',
+                                        'bg-green-600': job.progress?.status === 'completed',
+                                        'bg-red-600': job.progress?.status === 'error'
+                                    }"
+                                    :style="{ width: jobProgressWidth(job) }"
+                                ></div>
+                            </div>
+                            <div v-if="job.progress && job.progress.status !== 'error'" class="mt-1 text-xs text-gray-600">
+                                {{ job.progress.processed || 0 }} / {{ job.progress.total_urls || 0 }}
+                                ({{ job.progress.imported || 0 }} imported, {{ job.progress.skipped || 0 }} skipped)
+                            </div>
+                        </div>
+
+                        <div v-if="job.progress?.error" class="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                            {{ job.progress.error }}
+                        </div>
+
+                        <div v-if="job.progress?.status === 'completed'" class="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
+                            Completed: {{ job.progress.imported || 0 }} imported ({{ job.progress.skipped || 0 }} skipped)
                         </div>
                     </div>
                 </div>
@@ -103,33 +111,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import axios from 'axios';
 
 const services = ref([]);
 const importing = ref(false);
-const progress = ref(null);
-const currentJobId = ref(null);
+const jobs = ref([]); // [{ job_id, url, progress }]
 let progressInterval = null;
 
 const form = ref({
     service_id: 0,
-    url: '',
-    limit: null
+    urls_text: '',
+    pages: null
 });
 
-const progressWidth = computed(() => {
-    if (!progress.value || progress.value.status === 'error') return '0%';
-    if (progress.value.status === 'completed') return '100%';
-
-    const total = progress.value.total_urls || form.value.limit || 100;
+function jobProgressWidth(job) {
+    const p = job.progress;
+    if (!p || p.status === 'error') return '0%';
+    if (p.status === 'completed') return '100%';
+    const total = p.total_urls || 100;
     if (total > 0) {
-        const percentage = (progress.value.processed / total) * 100;
+        const percentage = (p.processed / total) * 100;
         return `${Math.min(percentage, 100)}%`;
     }
-
     return '60%';
-});
+}
 
 async function loadServices() {
     try {
@@ -142,27 +148,40 @@ async function loadServices() {
 
 async function startImport() {
     if (importing.value) return;
-
     try {
         importing.value = true;
-        progress.value = {
-            status: 'running',
-            imported: 0,
-            skipped: 0,
-            processed: 0
-        };
+        jobs.value = [];
 
-        const response = await axios.post('/admin-api/import/start', form.value);
-        currentJobId.value = response.data.job_id;
+        const payload = {
+            service_id: form.value.service_id,
+            pages: form.value.pages,
+            urls_text: form.value.urls_text,
+        };
+        const response = await axios.post('/admin-api/import/start', payload);
+        const startedJobs = response.data?.data?.jobs || response.data?.jobs || [];
+        jobs.value = startedJobs.map((j) => ({ job_id: j.job_id, url: j.url, progress: { status: 'queued', imported: 0, skipped: 0, processed: 0, total_urls: 0 } }));
         startProgressPolling();
     } catch (error) {
         console.error('Failed to start import:', error);
-        progress.value = {
-            status: 'error',
-            error: error.response?.data?.message || 'Failed to start import'
-        };
+        jobs.value = [];
         importing.value = false;
     }
+}
+
+async function stopJob(job) {
+    try {
+        await axios.post(`/admin-api/import/stop/${job.job_id}`);
+    } catch (e) {
+        console.error('Failed to stop import', e);
+    }
+}
+
+function formatSeconds(sec) {
+    const s = Math.max(0, Math.floor(sec));
+    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${h}:${m}:${ss}`;
 }
 
 function startProgressPolling() {
@@ -171,28 +190,35 @@ function startProgressPolling() {
     }
 
     progressInterval = setInterval(async () => {
-        if (!currentJobId.value) return;
+        if (!jobs.value.length) return;
 
         try {
-            const response = await axios.get(`/admin-api/import/progress/${currentJobId.value}`);
-            progress.value = response.data;
+            let allDone = true;
+            await Promise.all(
+                jobs.value.map(async (job) => {
+                    try {
+                        const resp = await axios.get(`/admin-api/import/progress/${job.job_id}`);
+                        job.progress = resp.data?.data || resp.data;
+                        if (!['completed', 'error', 'stopped'].includes(job.progress?.status)) {
+                            allDone = false;
+                        }
+                    } catch (err) {
+                        if (err.response?.status === 404) {
+                            job.progress = { status: 'error', error: 'Job not found' };
+                        } else {
+                            console.error('Progress error for job', job.job_id, err);
+                        }
+                    }
+                })
+            );
 
-            if (response.data.status === 'completed' || response.data.status === 'error') {
+            if (allDone) {
                 importing.value = false;
                 clearInterval(progressInterval);
                 progressInterval = null;
             }
         } catch (error) {
             console.error('Failed to fetch progress:', error);
-            if (error.response?.status === 404) {
-                importing.value = false;
-                clearInterval(progressInterval);
-                progressInterval = null;
-                progress.value = {
-                    status: 'error',
-                    error: 'Import job not found or expired'
-                };
-            }
         }
     }, 1000);
 }

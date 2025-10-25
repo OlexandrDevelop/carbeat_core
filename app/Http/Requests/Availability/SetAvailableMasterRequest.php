@@ -7,12 +7,6 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-/**
- * @property mixed $phone
- * @property mixed $country_code
- * @property mixed $latitude
- * @property mixed $longitude
- */
 class SetAvailableMasterRequest extends FormRequest
 {
     protected function failedValidation(Validator $validator)
@@ -24,10 +18,7 @@ class SetAvailableMasterRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'start_time' => 'required|date',
-            'duration' => 'required|integer', //in minutes
-        ];
+        return [];
     }
 
     public function withValidator(\Illuminate\Validation\Validator $validator): void

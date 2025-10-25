@@ -23,7 +23,7 @@ class ImportMasters implements ShouldQueue
         private readonly string $jobId,
         private readonly int $serviceId,
         private readonly string $url,
-        private readonly ?int $limit
+        private readonly ?int $pages
     ) {}
 
     public function handle(RatelistImportService $importService): void
@@ -32,11 +32,13 @@ class ImportMasters implements ShouldQueue
             'job_id' => $this->jobId,
             'service_id' => $this->serviceId,
             'url' => $this->url,
-            'limit' => $this->limit
+            'pages' => $this->pages
         ]);
 
         try {
-            $detailUrls = $importService->getDetailLinks($this->url);
+            // Expose job id for stop checks inside the service
+            $GLOBALS['current_job_id'] = $this->jobId;
+            $detailUrls = $importService->getDetailLinks($this->url, $this->pages);
             Log::info('Extracted detail URLs', [
                 'job_id' => $this->jobId,
                 'count' => count($detailUrls)
@@ -55,16 +57,22 @@ class ImportMasters implements ShouldQueue
                 now()->addHour()
             );
 
+            $start = microtime(true);
             $result = $importService->performImport(
                 $this->serviceId,
                 $this->url,
-                $this->limit,
-                function (array $context) use ($detailUrls) {
+                null,
+                function (array $context) use ($detailUrls, $start) {
                     Log::info('Import progress update', [
                         'job_id' => $this->jobId,
                         'context' => $context,
                         'total_urls' => count($detailUrls)
                     ]);
+
+                    $processed = (int) ($context['processed'] ?? 0);
+                    $elapsed = microtime(true) - $start;
+                    $rate = $processed > 0 ? $elapsed / $processed : 0;
+                    $eta = count($detailUrls) > 0 ? max(0, (count($detailUrls) - $processed) * $rate) : null;
 
                     Cache::store('redis')->put(
                         "import_progress_{$this->jobId}",
@@ -73,12 +81,14 @@ class ImportMasters implements ShouldQueue
                             'imported' => (int) ($context['imported'] ?? 0),
                             'skipped' => (int) ($context['skipped'] ?? 0),
                             'processed' => (int) ($context['processed'] ?? 0),
+                            'eta_seconds' => $eta !== null ? (int) $eta : null,
                             'error' => null,
                             'total_urls' => count($detailUrls)
                         ],
                         now()->addHour()
                     );
-                }
+                },
+                $detailUrls
             );
 
             Log::info('Import completed', [
@@ -90,15 +100,29 @@ class ImportMasters implements ShouldQueue
             Cache::store('redis')->put(
                 "import_progress_{$this->jobId}",
                 [
-                    'status' => 'completed',
+                    'status' => ($result['stopped'] ?? false) ? 'stopped' : 'completed',
                     'imported' => (int) $result['imported'],
                     'skipped' => (int) $result['skipped'],
                     'processed' => (int) ($result['imported'] + $result['skipped']),
+                    'eta_seconds' => 0,
                     'error' => null,
                     'total_urls' => count($detailUrls)
                 ],
                 now()->addHour()
             );
+
+            // Dispatch thumbnail creation job for all affected masters (ids where main photo exists and no thumb yet)
+            $masterIds = \App\Models\Master::query()
+                ->whereNotNull('photo')
+                ->where(function ($q) {
+                    $q->where('main_thumb_generated', false)->orWhereNull('main_thumb_generated');
+                })
+                ->limit(2000)
+                ->pluck('id')
+                ->all();
+            if (!empty($masterIds)) {
+                dispatch(new \App\Jobs\CreateMasterThumbnails($masterIds));
+            }
 
         } catch (\Exception $e) {
             Log::error('Import failed', [
@@ -120,6 +144,8 @@ class ImportMasters implements ShouldQueue
             );
 
             throw $e;
+        } finally {
+            unset($GLOBALS['current_job_id']);
         }
     }
 

@@ -12,7 +12,7 @@ class ImportRatelist extends Command
      *
      * @var string
      */
-    protected $signature = 'masters:import-ratelist {service_id : Service ID (0 for auto-detect)} {url : RateList rating URL} {--limit= : Optional limit of masters to import}';
+    protected $signature = 'masters:import-ratelist {service_id : Service ID (0 for auto-detect)} {url : RateList rating URL} {--pages= : Optional limit of pages to parse}';
 
     /**
      * The console command description.
@@ -28,30 +28,44 @@ class ImportRatelist extends Command
     {
         $serviceId = (int) $this->argument('service_id');
         $url = (string) $this->argument('url');
-        $limitOpt = $this->option('limit');
-        $limit = is_null($limitOpt) || $limitOpt === '' ? null : (int) $limitOpt;
+        $pagesOpt = $this->option('pages');
+        $pages = is_null($pagesOpt) || $pagesOpt === '' ? null : (int) $pagesOpt;
 
         $this->info('Starting import from RateList...');
-        $this->line('Service ID: ' . $serviceId . '; URL: ' . $url . '; Limit: ' . ($limit ?? 'no limit'));
+        $this->line('Service ID: ' . $serviceId . '; URL: ' . $url . '; Pages: ' . ($pages ?? 'all'));
 
         $processed = 0;
-        $bar = $this->output->createProgressBar($limit ?? 500);
+        $detailUrls = $importService->getDetailLinks($url, $pages);
+        $total = count($detailUrls);
+        $bar = $this->output->createProgressBar($total > 0 ? $total : 500);
         $bar->setBarWidth(50);
         $bar->start();
 
-        $result = $importService->performImport($serviceId, $url, $limit, function (array $context) use (&$processed, $bar, $limit) {
-            $processed = $context['processed'] ?? $processed + 1;
-            if ($limit) {
-                $bar->setMaxSteps($limit);
-                $bar->advance();
-            } else {
-                $bar->advance();
-            }
-        });
+        $start = microtime(true);
+        $result = $importService->performImport($serviceId, $url, null, function (array $context) use (&$processed, $bar, $total, $start) {
+            $processed = $context['processed'] ?? ($processed + 1);
+            if ($total) { $bar->setMaxSteps($total); }
+            $bar->advance();
+            // Show ETA in console title
+            $elapsed = microtime(true) - $start;
+            $rate = $processed > 0 ? $elapsed / $processed : 0;
+            $remaining = $total > 0 ? max(0, ($total - $processed) * $rate) : 0;
+            $this->output->write("\rETA: " . gmdate('H:i:s', (int)$remaining) . '   ');
+        }, $detailUrls);
 
         $bar->finish();
         $this->newLine(2);
         $this->info('Imported: ' . $result['imported'] . '; Skipped: ' . $result['skipped']);
+
+        // Dispatch thumbnails creation for updated masters
+        \App\Jobs\CreateMasterThumbnails::dispatch(
+            \App\Models\Master::query()
+                ->whereNotNull('photo')
+                ->where(function ($q) { $q->where('main_thumb_generated', false)->orWhereNull('main_thumb_generated'); })
+                ->limit(2000)
+                ->pluck('id')
+                ->all()
+        );
 
         return Command::SUCCESS;
     }

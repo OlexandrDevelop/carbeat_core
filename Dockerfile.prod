@@ -2,7 +2,18 @@
 FROM webdevops/php-nginx:8.4-alpine
 COPY docker/php/local.ini /opt/docker/etc/php/php.ini
 COPY docker/nginx/vhost.conf /opt/docker/etc/nginx/vhost.conf
-RUN apk add --no-cache nodejs npm curl
+RUN apk add --no-cache nodejs npm curl \
+    freetype freetype-dev \
+    libjpeg-turbo libjpeg-turbo-dev \
+    libpng libpng-dev \
+    libwebp libwebp-dev \
+    autoconf make g++
+
+# Enable GD with JPEG/Freetype on Alpine (phpize flow)
+RUN docker-php-source extract \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install gd \
+    && docker-php-source delete
 
 #composer
 WORKDIR /app
