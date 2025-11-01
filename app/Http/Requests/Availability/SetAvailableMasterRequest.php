@@ -18,7 +18,10 @@ class SetAvailableMasterRequest extends FormRequest
 
     public function rules(): array
     {
-        return [];
+        return [
+            'start_time' => ['nullable', 'date'],
+            'duration' => ['required', 'integer', 'min:1', 'max:1440'], // minutes
+        ];
     }
 
     public function withValidator(\Illuminate\Validation\Validator $validator): void

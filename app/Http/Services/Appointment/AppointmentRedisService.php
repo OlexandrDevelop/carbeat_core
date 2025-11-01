@@ -20,15 +20,22 @@ class AppointmentRedisService
         return "master:{$masterId}:available";
     }
 
-    public function setAvailableFlag(int $masterId): void
+    public function setAvailableFlag(int $masterId, ?int $ttlSeconds = null, ?int $expiresAtTimestamp = null): void
     {
-        $ttl = (int) env('AVAILABILITY_TTL_SECONDS', 3600);
-        if ($ttl > 0) {
-            Redis::set($this->getAvailabilityFlagKey($masterId), 1, 'EX', $ttl);
+        $effectiveTtl = $ttlSeconds ?? (int) env('AVAILABILITY_TTL_SECONDS', 3600);
+
+        if ($effectiveTtl > 0) {
+            Redis::set($this->getAvailabilityFlagKey($masterId), 1, 'EX', $effectiveTtl);
         } else {
             Redis::set($this->getAvailabilityFlagKey($masterId), 1);
         }
-        $this->publishAvailabilityEvent($masterId, true, $ttl > 0 ? now()->addSeconds($ttl)->timestamp : null);
+
+        $finalExpiresAt = $expiresAtTimestamp;
+        if ($finalExpiresAt === null && $effectiveTtl > 0) {
+            $finalExpiresAt = now()->addSeconds($effectiveTtl)->timestamp;
+        }
+
+        $this->publishAvailabilityEvent($masterId, true, $finalExpiresAt);
     }
 
     public function setUnavailableFlag(int $masterId): void
