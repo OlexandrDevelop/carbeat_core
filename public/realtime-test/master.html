@@ -19,7 +19,9 @@
   <h2>Master Control</h2>
   <div class="row">
     <label>Master ID: <input id="masterId" type="number" min="1" value="1"></label>
-    <button id="btnAvail">Set Available (POST)</button>
+    <label style="margin-left:12px;">Duration, min: <input id="duration" type="number" min="1" max="1440" value="60" required></label>
+    <label style="margin-left:12px;">Start time (optional): <input id="startTime" type="datetime-local"></label>
+    <button id="btnAvail">Set Available (POST, requires duration)</button>
     <button id="btnUnavail">Set Unavailable (DELETE)</button>
     <button id="btnPing">Ping Socket</button>
   </div>
@@ -54,8 +56,28 @@
     async function call(method) {
       const id = document.getElementById('masterId').value;
       const url = `/api/masters/${encodeURIComponent(id)}/availability`;
+      const durationEl = document.getElementById('duration');
+      const startTimeEl = document.getElementById('startTime');
       try {
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' } });
+        let options = { method, headers: { 'Content-Type': 'application/json' } };
+        if (method === 'POST') {
+          const durationVal = parseInt((durationEl.value || '').toString(), 10);
+          if (!Number.isFinite(durationVal) || durationVal <= 0) {
+            throw new Error('Duration is required and must be > 0 minutes');
+          }
+          let startIso = undefined;
+          const raw = (startTimeEl.value || '').toString();
+          if (raw) {
+            // Convert "YYYY-MM-DDTHH:mm" (local) to ISO string
+            const dt = new Date(raw);
+            if (!isNaN(dt.getTime())) startIso = dt.toISOString();
+          }
+          options.body = JSON.stringify({
+            duration: durationVal,
+            ...(startIso ? { start_time: startIso } : {})
+          });
+        }
+        const res = await fetch(url, options);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(JSON.stringify(data));
         log(`${method} ${url} -> ${res.status} ${JSON.stringify(data)}`);

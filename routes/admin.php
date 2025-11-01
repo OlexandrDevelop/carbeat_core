@@ -32,6 +32,11 @@ Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, '
     Route::get('/maintenance', function () {
         return Inertia::render('Admin/Maintenance/Index');
     })->name('admin.maintenance.index');
+
+    // Realtime monitoring: availability events dashboard
+    Route::get('/realtime/availability', function () {
+        return Inertia::render('Admin/Realtime/Availability');
+    })->name('admin.realtime.availability');
 });
 
 // Admin JSON API routes
