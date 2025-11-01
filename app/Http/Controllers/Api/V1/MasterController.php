@@ -114,7 +114,11 @@ class MasterController extends Controller
         // Availability: set flag to unavailable
         $appointmentRedisService->setUnavailableFlag($id);
 
-        return response()->json(['message' => 'Master is unavailable']);
+        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+            'message' => 'Master is unavailable',
+            'master_id' => $id,
+            'available' => false,
+        ]))->response();
     }
 
     public function getAvailability(string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
@@ -136,7 +140,11 @@ class MasterController extends Controller
         // Availability: set flag to available
         $appointmentRedisService->setAvailableFlag($id);
 
-        return response()->json(['message' => 'Master is available']);
+        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+            'message' => 'Master is available',
+            'master_id' => $id,
+            'available' => true,
+        ]))->response();
     }
 
     public function storeFromExternal(int $serviceId, ImportExternalMasterRequest $request, MasterService $masterService, ClientService $clientService)

@@ -22,17 +22,39 @@ class AppointmentRedisService
 
     public function setAvailableFlag(int $masterId): void
     {
-        Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+        $ttl = (int) env('AVAILABILITY_TTL_SECONDS', 3600);
+        if ($ttl > 0) {
+            Redis::set($this->getAvailabilityFlagKey($masterId), 1, 'EX', $ttl);
+        } else {
+            Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+        }
+        $this->publishAvailabilityEvent($masterId, true, $ttl > 0 ? now()->addSeconds($ttl)->timestamp : null);
     }
 
     public function setUnavailableFlag(int $masterId): void
     {
         Redis::del($this->getAvailabilityFlagKey($masterId));
+        $this->publishAvailabilityEvent($masterId, false, null);
     }
 
     public function isAvailableFlag(int $masterId): bool
     {
         return (bool) Redis::exists($this->getAvailabilityFlagKey($masterId));
+    }
+
+    private function publishAvailabilityEvent(int $masterId, bool $available, ?int $expiresAt): void
+    {
+        $payload = json_encode([
+            'id' => $masterId,
+            'available' => $available,
+            'expiresAt' => $expiresAt,
+            'ts' => now()->timestamp,
+        ]);
+        try {
+            Redis::publish('availability:events', $payload);
+        } catch (\Throwable $e) {
+            // Intentionally ignore publish errors to avoid breaking main flow
+        }
     }
 
     public function getAvailabilityFlagsForMany(array $masterIds): array

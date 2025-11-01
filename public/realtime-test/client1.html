@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Client #1 - Availability Listener</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; max-width: 720px; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+    th { background: #f3f4f6; }
+    .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .on { background: #d1fae5; color: #065f46; }
+    .off { background: #fee2e2; color: #991b1b; }
+    #log { white-space: pre-wrap; background: #0b1020; color: #d6e1ff; padding: 10px; border-radius: 6px; height: 180px; overflow: auto; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <h2>Client #1</h2>
+  <div>Socket state: <span id="state">connecting…</span></n></div>
+  <div style="margin: 10px 0;">
+    <button id="clearLog">Clear log</button>
+    <button id="clearTable">Clear table</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Master ID</th><th>Status</th><th>Expires At</th><th>Updated At</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="log"></div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const tbody = document.getElementById('tbody');
+    const logEl = document.getElementById('log');
+    const stateEl = document.getElementById('state');
+    const statusMap = new Map();
+
+    function renderRow(id, available, expiresAt, ts) {
+      let tr = document.getElementById('row-' + id);
+      if (!tr) {
+        tr = document.createElement('tr');
+        tr.id = 'row-' + id;
+        tr.innerHTML = `<td>${id}</td><td></td><td></td><td></td>`;
+        tbody.appendChild(tr);
+      }
+      tr.children[1].innerHTML = available ? `<span class="tag on">available</span>` : `<span class="tag off">unavailable</span>`;
+      tr.children[2].textContent = expiresAt ? new Date(expiresAt * 1000).toISOString() : '';
+      tr.children[3].textContent = ts ? new Date(ts * 1000).toISOString() : new Date().toISOString();
+    }
+
+    function log(msg) { logEl.textContent += msg + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+
+    const socket = io('/', { path: '/socket.io/' });
+    socket.on('connect', () => { stateEl.textContent = 'connected'; });
+    socket.on('disconnect', () => { stateEl.textContent = 'disconnected'; });
+    socket.on('connect_error', (e) => { stateEl.textContent = 'error'; log('connect_error: ' + e.message); });
+    socket.on('availability:update', (m) => {
+      const { id, available, expiresAt, ts } = m || {};
+      if (typeof id !== 'number') { log('invalid event: ' + JSON.stringify(m)); return; }
+      statusMap.set(id, { available: !!available, expiresAt: expiresAt || null, ts: ts || Math.floor(Date.now()/1000) });
+      renderRow(id, !!available, expiresAt || null, ts || Math.floor(Date.now()/1000));
+    });
+
+    document.getElementById('clearLog').onclick = () => { logEl.textContent = ''; };
+    document.getElementById('clearTable').onclick = () => { tbody.innerHTML = ''; statusMap.clear(); };
+  </script>
+</body>
+</html>
+
+
