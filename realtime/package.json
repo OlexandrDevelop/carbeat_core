@@ -1,0 +1,16 @@
+{
+  "name": "garage-realtime",
+  "version": "1.0.0",
+  "description": "Socket.IO realtime server for availability updates",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5",
+    "redis": "^4.6.13"
+  }
+}
+
+

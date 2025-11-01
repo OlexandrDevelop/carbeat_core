@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master Control - Availability Toggle</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; }
+    .row { margin-bottom: 12px; }
+    input, button { padding: 8px 10px; font-size: 14px; }
+    button { cursor: pointer; }
+    #log { white-space: pre-wrap; background: #0b1020; color: #d6e1ff; padding: 10px; border-radius: 6px; height: 240px; overflow: auto; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .ok { background: #d1fae5; color: #065f46; }
+    .err { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h2>Master Control</h2>
+  <div class="row">
+    <label>Master ID: <input id="masterId" type="number" min="1" value="1"></label>
+    <label style="margin-left:12px;">Duration, min: <input id="duration" type="number" min="1" max="1440" value="60" required></label>
+    <label style="margin-left:12px;">Start time (optional): <input id="startTime" type="datetime-local"></label>
+    <button id="btnAvail">Set Available (POST, requires duration)</button>
+    <button id="btnUnavail">Set Unavailable (DELETE)</button>
+    <button id="btnPing">Ping Socket</button>
+  </div>
+  <div class="row">
+    Socket: <span id="sockState" class="badge">disconnected</span>
+  </div>
+  <div class="row">
+    <button id="clearLog">Clear log</button>
+  </div>
+  <div id="log"></div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const logEl = document.getElementById('log');
+    const sockStateEl = document.getElementById('sockState');
+    function log(msg, type) {
+      const time = new Date().toISOString();
+      const prefix = type === 'err' ? '[ERR]' : '[OK]';
+      logEl.textContent += `${time} ${prefix} ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const socket = io('/', { path: '/socket.io/' });
+    socket.on('connect', () => { sockStateEl.textContent = 'connected'; sockStateEl.className = 'badge ok'; log('socket connected: ' + socket.id); });
+    socket.on('disconnect', () => { sockStateEl.textContent = 'disconnected'; sockStateEl.className = 'badge err'; log('socket disconnected'); });
+    socket.on('connect_error', (e) => { sockStateEl.textContent = 'error'; sockStateEl.className = 'badge err'; log('socket error: ' + e.message, 'err'); });
+    socket.on('availability:update', (m) => log('event availability:update ' + JSON.stringify(m)));
+
+    document.getElementById('btnPing').onclick = () => socket.emit('ping');
+    document.getElementById('clearLog').onclick = () => { logEl.textContent = ''; };
+
+    async function call(method) {
+      const id = document.getElementById('masterId').value;
+      const url = `/api/masters/${encodeURIComponent(id)}/availability`;
+      const durationEl = document.getElementById('duration');
+      const startTimeEl = document.getElementById('startTime');
+      try {
+        let options = { method, headers: { 'Content-Type': 'application/json' } };
+        if (method === 'POST') {
+          const durationVal = parseInt((durationEl.value || '').toString(), 10);
+          if (!Number.isFinite(durationVal) || durationVal <= 0) {
+            throw new Error('Duration is required and must be > 0 minutes');
+          }
+          let startIso = undefined;
+          const raw = (startTimeEl.value || '').toString();
+          if (raw) {
+            // Convert "YYYY-MM-DDTHH:mm" (local) to ISO string
+            const dt = new Date(raw);
+            if (!isNaN(dt.getTime())) startIso = dt.toISOString();
+          }
+          options.body = JSON.stringify({
+            duration: durationVal,
+            ...(startIso ? { start_time: startIso } : {})
+          });
+        }
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(JSON.stringify(data));
+        log(`${method} ${url} -> ${res.status} ${JSON.stringify(data)}`);
+      } catch (e) {
+        log(`${method} ${url} -> ${e}`, 'err');
+      }
+    }
+
+    document.getElementById('btnAvail').onclick = () => call('POST');
+    document.getElementById('btnUnavail').onclick = () => call('DELETE');
+  </script>
+</body>
+</html>
+
+

@@ -98,6 +98,22 @@ services:
         networks:
             - garage_network
 
+    socketio:
+        build:
+            context: ./realtime
+            dockerfile: Dockerfile
+        container_name: garage_socketio
+        depends_on:
+            - redis
+        restart: unless-stopped
+        environment:
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            CORS_ORIGIN: "*"
+            SOCKET_IO_PORT: 3000
+        networks:
+            - garage_network
+
 networks:
     garage_network:
         driver: bridge

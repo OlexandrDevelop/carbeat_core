@@ -28,6 +28,7 @@ use App\Models\MasterGallery;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -114,7 +115,11 @@ class MasterController extends Controller
         // Availability: set flag to unavailable
         $appointmentRedisService->setUnavailableFlag($id);
 
-        return response()->json(['message' => 'Master is unavailable']);
+        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+            'message' => 'Master is unavailable',
+            'master_id' => $id,
+            'available' => false,
+        ]))->response();
     }
 
     public function getAvailability(string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
@@ -133,10 +138,38 @@ class MasterController extends Controller
     {
         $id = (int) $id;
 
-        // Availability: set flag to available
-        $appointmentRedisService->setAvailableFlag($id);
+        $data = $request->validated();
+        $durationMinutes = isset($data['duration']) ? (int) $data['duration'] : null;
+        $startTimeRaw = $data['start_time'] ?? null;
 
-        return response()->json(['message' => 'Master is available']);
+        $ttlSeconds = null;
+        $expiresAtTimestamp = null;
+        if ($durationMinutes !== null) {
+            if ($startTimeRaw) {
+                try {
+                    $start = Carbon::parse($startTimeRaw);
+                    $expiresAt = $start->copy()->addMinutes($durationMinutes);
+                    $expiresAtTimestamp = $expiresAt->timestamp;
+                    $delta = $expiresAt->timestamp - now()->timestamp;
+                    $ttlSeconds = $delta > 0 ? $delta : 1; // ensure positive TTL
+                } catch (\Throwable $_) {
+                    $ttlSeconds = max(1, $durationMinutes * 60);
+                    $expiresAtTimestamp = now()->addSeconds($ttlSeconds)->timestamp;
+                }
+            } else {
+                $ttlSeconds = max(1, $durationMinutes * 60);
+                $expiresAtTimestamp = now()->addSeconds($ttlSeconds)->timestamp;
+            }
+        }
+
+        // Availability: set flag to available with calculated TTL/expiry
+        $appointmentRedisService->setAvailableFlag($id, $ttlSeconds, $expiresAtTimestamp);
+
+        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+            'message' => 'Master is available',
+            'master_id' => $id,
+            'available' => true,
+        ]))->response();
     }
 
     public function storeFromExternal(int $serviceId, ImportExternalMasterRequest $request, MasterService $masterService, ClientService $clientService)

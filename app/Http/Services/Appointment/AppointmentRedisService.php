@@ -20,19 +20,48 @@ class AppointmentRedisService
         return "master:{$masterId}:available";
     }
 
-    public function setAvailableFlag(int $masterId): void
+    public function setAvailableFlag(int $masterId, ?int $ttlSeconds = null, ?int $expiresAtTimestamp = null): void
     {
-        Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+        $effectiveTtl = $ttlSeconds ?? (int) env('AVAILABILITY_TTL_SECONDS', 3600);
+
+        if ($effectiveTtl > 0) {
+            Redis::set($this->getAvailabilityFlagKey($masterId), 1, 'EX', $effectiveTtl);
+        } else {
+            Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+        }
+
+        $finalExpiresAt = $expiresAtTimestamp;
+        if ($finalExpiresAt === null && $effectiveTtl > 0) {
+            $finalExpiresAt = now()->addSeconds($effectiveTtl)->timestamp;
+        }
+
+        $this->publishAvailabilityEvent($masterId, true, $finalExpiresAt);
     }
 
     public function setUnavailableFlag(int $masterId): void
     {
         Redis::del($this->getAvailabilityFlagKey($masterId));
+        $this->publishAvailabilityEvent($masterId, false, null);
     }
 
     public function isAvailableFlag(int $masterId): bool
     {
         return (bool) Redis::exists($this->getAvailabilityFlagKey($masterId));
+    }
+
+    private function publishAvailabilityEvent(int $masterId, bool $available, ?int $expiresAt): void
+    {
+        $payload = json_encode([
+            'id' => $masterId,
+            'available' => $available,
+            'expiresAt' => $expiresAt,
+            'ts' => now()->timestamp,
+        ]);
+        try {
+            Redis::publish('availability:events', $payload);
+        } catch (\Throwable $e) {
+            // Intentionally ignore publish errors to avoid breaking main flow
+        }
     }
 
     public function getAvailabilityFlagsForMany(array $masterIds): array
