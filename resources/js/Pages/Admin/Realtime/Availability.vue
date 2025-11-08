@@ -143,7 +143,9 @@ function clearAll() {
 let socket: any = null;
 onMounted(() => {
     try {
-        socket = io('/', { path: '/socket.io/' });
+        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
+        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        socket = io(socketUrl, { path: socketPath });
         socket.on('connect', () => { connected.value = true; });
         socket.on('disconnect', () => { connected.value = false; });
         socket.on('availability:update', (m: any) => {
