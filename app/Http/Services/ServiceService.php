@@ -12,7 +12,9 @@ class ServiceService
 {
     public function getServices(Request $request): Collection|array|LengthAwarePaginator
     {
-        $query = Service::query();
+        $query = Service::query()
+            ->select(['id', 'name'])
+            ->withCount('masters');
 
         $page = $request->input('page');
 

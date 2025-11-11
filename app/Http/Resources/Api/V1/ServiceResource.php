@@ -16,7 +16,7 @@ class ServiceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->tempTranslateUkraineMap($this->name),
-            'masters_count' => $this->masters->count(),
+            'masters_count' => $this->masters_count ?? 0,
         ];
     }
 
