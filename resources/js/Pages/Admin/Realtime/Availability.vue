@@ -143,8 +143,8 @@ function clearAll() {
 let socket: any = null;
 onMounted(() => {
     try {
-        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
-        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        const socketUrl = 'https://socket.carbeat.online';
+        const socketPath = '/socket.io/';
         socket = io(socketUrl, { path: socketPath });
         socket.on('connect', () => { connected.value = true; });
         socket.on('disconnect', () => { connected.value = false; });
