@@ -91,6 +91,27 @@ async function subscribeWithRetry() {
                     }
                 },
             );
+            // Subscribe to master lifecycle events and relay to clients
+            await subscriber.pSubscribe(
+                '*masters:events',
+                (message, channel) => {
+                    try {
+                        const data = JSON.parse(message);
+                        const type = (data && data.type) || 'master:updated';
+                        console.log('redis event', channel, type);
+                        // Relay specific event types for client-side handlers
+                        if (type === 'master:created') {
+                            io.emit('master:created', data);
+                        } else if (type === 'master:updated') {
+                            io.emit('master:updated', data);
+                        } else {
+                            io.emit('master:event', data);
+                        }
+                    } catch (e) {
+                        console.error('masters:events parse error', e, message);
+                    }
+                },
+            );
             // Subscribe to keyevent expired notifications
             await subscriber.pSubscribe(
                 '__keyevent@*__:expired',

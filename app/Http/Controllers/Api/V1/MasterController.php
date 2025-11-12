@@ -30,6 +30,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Redis;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class MasterController extends Controller
@@ -60,7 +61,7 @@ class MasterController extends Controller
     /**
      * @throws Exception
      */
-    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService): JsonResponse
+    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService): JsonResponse
     {
         $data = $request->validated();
 
@@ -73,6 +74,16 @@ class MasterController extends Controller
         $user = $userService->createOrUpdateFromMaster($master);
 
         $token = JWTAuth::claims(['phone' => $user->phone])->fromUser($user);
+
+        // Publish "master created" event to Redis for realtime map updates
+        try {
+            $available = $appointmentRedisService->isAvailableFlag($master->id);
+            $payload = (new MasterResource($master, [$master->id => $available]))->toArray($request);
+            $event = array_merge(['type' => 'master:created'], $payload);
+            Redis::publish('masters:events', json_encode($event));
+        } catch (\Throwable $e) {
+            // Non-fatal: do not block registration on realtime error
+        }
 
         return response()->json([
             'master' => new MasterResource($master),

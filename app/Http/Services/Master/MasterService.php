@@ -4,8 +4,10 @@ namespace App\Http\Services\Master;
 
 use App\Helpers\PhoneHelper;
 use App\Helpers\PhotoHelper;
+use App\Jobs\CreateMasterThumbnails;
 use App\Http\Services\ClientService;
 use App\Http\Services\PaginatorService;
+use App\Http\Services\TelegramService;
 use App\Models\Master;
 use App\Models\City;
 use App\Models\Service;
@@ -13,8 +15,10 @@ use App\Models\Tariff;
 use Cocur\Slugify\Slugify;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Log\LogServiceProvider;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use NotificationChannels\Telegram\TelegramMessage;
 
 class MasterService
 {
@@ -95,6 +99,13 @@ class MasterService
                 $photoName = uniqid().'.'.$extension;
                 Storage::disk('public')->put('images/'.$photoName, $photo);
                 $master->update(['photo' => 'images/'.$photoName]);
+                // Generate a square thumbnail immediately so clients can display it
+                try {
+                    (new CreateMasterThumbnails([$master->id]))->handle();
+                } catch (\Throwable $e) {
+                    // Non-fatal if thumbnail creation fails; leave for maintenance command
+
+                }
             } else {
                 throw new Exception('The provided photo is not a valid Base64 image.');
             }

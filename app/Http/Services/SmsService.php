@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 
 class SmsService
 {
-    public function generateAndSendCode(string $phone, int $length = 6): string
+    public function generateAndSendCode(string $phone, int $length = 4): string
     {
         $code = str_pad(strval(random_int(0, pow(10, $length) - 1)), $length, '0', STR_PAD_LEFT);
         // Cache for 5 minutes by requirement
