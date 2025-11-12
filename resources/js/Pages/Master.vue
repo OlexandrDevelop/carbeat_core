@@ -125,24 +125,18 @@
                                 <div
                                     :class="[
                                         'absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white dark:border-gray-800',
-                                        props.master &&
-                                        props.master.data &&
-                                        typeof props.master.data.available !==
-                                            'undefined' &&
-                                        props.master.data.available
-                                            ? 'bg-green-500'
-                                            : 'bg-red-500',
+                                        isAvailable ? 'bg-green-500' : 'bg-red-500',
                                     ]"
                                 >
                                     <i
                                         :class="[
                                             'fa text-sm text-white',
-                                            props.master.data.available
+                                            isAvailable
                                                 ? 'fa-check'
                                                 : 'fa-times',
                                         ]"
                                         :aria-label="
-                                            props.master.data.available
+                                            isAvailable
                                                 ? $t('common.available')
                                                 : $t('common.not_available')
                                         "
@@ -639,13 +633,13 @@
                                     <p
                                         :class="[
                                             'font-medium',
-                                            props.master.data.available
+                                            isAvailable
                                                 ? 'text-green-600 dark:text-green-400'
                                                 : 'text-red-600 dark:text-red-400',
                                         ]"
                                     >
                                         {{
-                                            props.master.data.available
+                                            isAvailable
                                                 ? $t(
                                                       'masters.contact.available_now',
                                                   )
@@ -687,8 +681,9 @@ import Breadcrumbs from '@/Components/Breadcrumbs.vue';
 import MastersMap from '@/Components/MastersMap.vue';
 import { getSEOConfig } from '@/config/seo';
 import { Head } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { io } from 'socket.io-client';
 
 const { t } = useI18n();
 
@@ -700,6 +695,8 @@ const props = defineProps({
 const reviews = ref<any[]>(props.master?.data?.reviews || []);
 const newReview = ref({ user_name: '', comment: '', rating: 0 });
 const showReviewForm = ref(false);
+// Realtime available state
+const isAvailable = ref(!!props.master?.data?.available);
 
 // SEO Configuration
 const seoConfig = getSEOConfig();
@@ -946,6 +943,29 @@ onMounted(() => {
         console.log('Master data:', props.master.data);
         injectStructuredData();
     }
+    // Realtime availability updates
+    try {
+        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
+        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        const socket = io(socketUrl, { path: socketPath });
+        const masterId = props.master?.data?.id;
+        if (masterId) {
+            socket.on('availability:update', (m: any) => {
+                try {
+                    if (m && typeof m === 'object' && Number(m.id) === Number(masterId)) {
+                        const avail = typeof m.available === 'boolean'
+                            ? m.available
+                            : !!(m.status ?? m.is_available);
+                        isAvailable.value = avail;
+                    }
+                } catch (_) {}
+            });
+        }
+        // Clean up on unmount
+        onUnmounted(() => {
+            try { socket?.disconnect?.(); } catch (_) {}
+        });
+    } catch (_) {}
 });
 
 // Watch for master data changes

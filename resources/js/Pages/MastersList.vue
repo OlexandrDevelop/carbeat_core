@@ -197,6 +197,8 @@
 import { Head, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { computed, onMounted, ref, watch } from 'vue';
+import { onUnmounted } from 'vue';
+import { io } from 'socket.io-client';
 import { useI18n } from 'vue-i18n';
 
 // Components
@@ -439,6 +441,28 @@ const getRating = (master: Master) => {
     return Math.round(val * 10) / 10;
 };
 
+// Realtime: update availability via Socket.IO
+let socket: any = null;
+function applyAvailabilityUpdate(id: number, available: boolean) {
+    try {
+        const list = masters.value?.data || [];
+        let changed = false;
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                if ((list[i] as any).available !== available) {
+                    (list[i] as any).available = available;
+                    changed = true;
+                }
+                break;
+            }
+        }
+        if (changed) {
+            // Trigger reactivity by replacing the array reference
+            masters.value = { ...masters.value, data: [...list] };
+        }
+    } catch (_) {}
+}
+
 // Lifecycle
 onMounted(() => {
     fetchMasters();
@@ -456,6 +480,26 @@ onMounted(() => {
     if (seoConfig.seo_settings.enable_structured_data) {
         injectStructuredData();
     }
+
+    // Connect to Socket.IO for realtime availability updates
+    try {
+        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
+        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        socket = io(socketUrl, { path: socketPath });
+        socket.on('availability:update', (m: any) => {
+            if (m && typeof m === 'object' && typeof m.id === 'number') {
+                const available =
+                    typeof m.available === 'boolean'
+                        ? m.available
+                        : !!(m.status ?? m.is_available);
+                applyAvailabilityUpdate(m.id, available);
+            }
+        });
+    } catch (_) {}
+});
+
+onUnmounted(() => {
+    try { socket?.disconnect?.(); } catch (_) {}
 });
 
 // Inject structured data script into document head
