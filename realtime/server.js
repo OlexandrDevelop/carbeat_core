@@ -97,7 +97,8 @@ async function subscribeWithRetry() {
                 (message, channel) => {
                     try {
                         const key = message;
-                        const m = /^master:(\d+):available$/.exec(key);
+                        // Allow optional Redis key prefix (Laravel adds one)
+                        const m = /master:(\d+):available$/.exec(key);
                         if (m) {
                             const id = Number(m[1]);
                             const payload = { id, available: false, expiresAt: null, ts: Math.floor(Date.now() / 1000) };
@@ -145,7 +146,8 @@ async function reconcileLoop() {
             client.on('error', (e) => console.error('Redis reconcile error', e));
             await client.connect();
 
-            const scanPattern = 'master:*:available';
+            // Allow optional Redis key prefix (Laravel sets REDIS_PREFIX)
+            const scanPattern = '*master:*:available';
             let cursor = 0;
             const nowAvailable = new Set();
             do {
@@ -153,7 +155,7 @@ async function reconcileLoop() {
                 cursor = res.cursor;
                 const keys = res.keys || res[1] || [];
                 for (const key of keys) {
-                    const m = /^master:(\d+):available$/.exec(key);
+                    const m = /master:(\d+):available$/.exec(key);
                     if (m) nowAvailable.add(Number(m[1]));
                 }
             } while (cursor !== 0);
