@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\MasterSlotsController;
+use App\Http\Controllers\Api\V1\AppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,9 @@ Route::prefix('services')->group(function () {
     Route::get('/{id}', [ServiceController::class, 'getService']);
     Route::get('/get-for-master/{master_id}', [ServiceController::class, 'getServicesForMaster']);
 });
+
+// App versioning endpoint
+Route::get('/app/version', [AppController::class, 'version']);
 
 Route::prefix('auth')->group(function () {
     Route::post('/request-otp', [AuthController::class, 'requestOtp']);
