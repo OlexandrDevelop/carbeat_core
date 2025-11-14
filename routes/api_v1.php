@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\MasterSlotsController;
 use App\Http\Controllers\Api\V1\AppController;
+use App\Http\Controllers\Api\V1\UserStatusController;
 
 /*
 |--------------------------------------------------------------------------
@@ -111,8 +112,11 @@ Route::prefix('booking')->group(function () {
 Route::prefix('subscription')->middleware('auth:api')->group(function () {
     Route::post('/check', [SubscriptionController::class, 'check']);
     Route::get('/status', [SubscriptionController::class, 'status']);
+    Route::post('/trial', [SubscriptionController::class, 'startTrial']);
 });
 
+// User status (limits)
+Route::middleware('auth:api')->get('/user/status', [UserStatusController::class, 'status']);
 
 
 Route::group(['middleware' => 'auth:api'], function () {

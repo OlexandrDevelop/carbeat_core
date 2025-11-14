@@ -26,6 +26,8 @@ class Master extends Model
         'reviews_count' => 'integer',
         'working_hours' => 'array',
         'main_thumb_generated' => 'boolean',
+        'is_premium' => 'boolean',
+        'premium_until' => 'datetime',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -45,7 +47,6 @@ class Master extends Model
         'main_thumb_url',
         'service_id',
         'city_id',
-        'tariff_id',
         'slug',
         'user_id',
         'place_id',
@@ -56,6 +57,8 @@ class Master extends Model
         'city',
         'reviews_count',
         'working_hours',
+        'is_premium',
+        'premium_until',
     ];
 
     // Virtual attribute to keep backward compatibility
@@ -105,10 +108,7 @@ class Master extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function tariff()
-    {
-        return $this->belongsTo(Tariff::class);
-    }
+    // Tariff relation removed in favor of is_premium / premium_until flags
 
     public function bookings(): HasMany
     {

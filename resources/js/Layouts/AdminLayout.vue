@@ -97,6 +97,27 @@
                                                 </li>
                                                 <li>
                                                     <Link
+                                                        :href="route('admin.app_config.index')"
+                                                        :class="[
+                                                            route().current('admin.app_config.*')
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-sliders text-lg"
+                                                            :class="[
+                                                                route().current('admin.app_config.*')
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        App Config
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
                                                         :href="
                                                             route(
                                                                 'admin.services.index',
@@ -225,27 +246,7 @@
                                                         API Документація
                                                     </Link>
                                                 </li>
-                                                <li>
-                                                    <Link
-                                                        :href="route('admin.tariffs.index')"
-                                                        :class="[
-                                                            route().current('admin.tariffs.*')
-                                                                ? 'bg-gray-50 text-blue-600'
-                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
-                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
-                                                        ]"
-                                                    >
-                                                        <i
-                                                            class="fa fa-dollar text-lg"
-                                                            :class="[
-                                                                route().current('admin.tariffs.*')
-                                                                    ? 'text-blue-600'
-                                                                    : 'text-gray-400 group-hover:text-blue-600',
-                                                            ]"
-                                                        ></i>
-                                                        Tariffs
-                                                    </Link>
-                                                </li>
+                                               
                                                 <li>
                                                     <Link
                                                         :href="route('admin.maintenance.index')"
@@ -326,6 +327,27 @@
                     <ul role="list" class="flex flex-1 flex-col gap-y-7">
                         <li>
                             <ul role="list" class="-mx-2 space-y-1">
+                                <li>
+                                    <Link
+                                        :href="route('admin.app_config.index')"
+                                        :class="[
+                                            route().current('admin.app_config.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-sliders text-lg"
+                                            :class="[
+                                                route().current('admin.app_config.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        App Config
+                                    </Link>
+                                </li>
                                 <li>
                                     <Link
                                         :href="route('admin.masters.index')"
@@ -461,27 +483,7 @@
                                         Import
                                     </Link>
                                 </li>
-                                <li>
-                                    <Link
-                                        :href="route('admin.tariffs.index')"
-                                        :class="[
-                                            route().current('admin.tariffs.*')
-                                                ? 'bg-gray-50 text-blue-600'
-                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
-                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
-                                        ]"
-                                    >
-                                        <i
-                                            class="fa fa-dollar text-lg"
-                                            :class="[
-                                                route().current('admin.tariffs.*')
-                                                    ? 'text-blue-600'
-                                                    : 'text-gray-400 group-hover:text-blue-600',
-                                            ]"
-                                        ></i>
-                                        Tariffs
-                                    </Link>
-                                </li>
+                                
                                 <li>
                                     <Link
                                         :href="route('admin.maintenance.index')"

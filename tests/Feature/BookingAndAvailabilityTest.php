@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Client;
 use App\Models\Master;
 use App\Models\Subscription;
-use App\Models\Tariff;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -98,16 +97,11 @@ class BookingAndAvailabilityTest extends TestCase
      */
     public function test_client_books_and_master_sees_booking(): void
     {
-        // Prepare master and tariff with booking_management feature
-        $tariff = Tariff::firstOrCreate(['name' => 'pro'], [
-            'price' => 0,
-            'currency' => 'USD',
-            'features' => ['booking_management'],
+        // Prepare master with premium enabled
+        $master = Master::factory()->create([
+            'is_premium' => true,
+            'premium_until' => Carbon::now()->addMonth(),
         ]);
-
-        $master = Master::factory()->create();
-        $master->tariff_id = $tariff->id;
-        $master->save();
 
         $masterUser = $master->user;
         // Active subscription

@@ -237,8 +237,8 @@ interface Master {
     slug: string;
     services: Array<{ id: number; name: string }>;
     available: boolean;
-    tariff_id: number;
-    tariff: string;
+    is_premium: boolean;
+    premium_until: string | null;
     approved: boolean;
     latitude?: number;
     longitude?: number;

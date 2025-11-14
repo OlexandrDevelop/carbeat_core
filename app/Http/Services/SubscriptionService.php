@@ -3,6 +3,7 @@
 namespace App\Http\Services;
 
 use App\DTO\SubscriptionStatus;
+use App\Models\Master;
 use App\Models\AppSetting;
 use App\Models\Subscription;
 use Carbon\Carbon;
@@ -31,6 +32,16 @@ class SubscriptionService
             ]
         );
 
+        // Sync premium flags to master's record(s) for this user
+        try {
+            Master::where('user_id', $userId)->update([
+                'is_premium' => (bool) $result->active,
+                'premium_until' => $expiresAt,
+            ]);
+        } catch (\Throwable $_) {
+            // Soft-fail; do not block subscription flow
+        }
+
         return new SubscriptionStatus(
             active: (bool) $result->active,
             platform: $platform,
@@ -55,6 +66,58 @@ class SubscriptionService
         );
     }
 
+    public function startTrial(int $userId): SubscriptionStatus
+    {
+        // Admin configurable subscription config
+        $admin = \App\Models\AppSetting::where('key', 'subscription_config')->value('value') ?? [];
+        $trialEnabled = array_key_exists('trial_enabled', $admin) ? (bool) $admin['trial_enabled'] : (bool) config('subscription.trial_enabled');
+        $trialDays = array_key_exists('trial_days', $admin) ? (int) $admin['trial_days'] : (int) config('subscription.trial_days', 30);
+
+        if (! $trialEnabled) {
+            abort(403, 'Trial disabled');
+        }
+        // If user has any active subscription (including trial), deny
+        $current = $this->getStatus($userId);
+        if ($current->active) {
+            abort(409, 'Subscription already active');
+        }
+        // Prevent multiple trials: if user had internal trial before, deny
+        $hadTrial = Subscription::where('user_id', $userId)
+            ->where('platform', 'internal')
+            ->where('product_id', 'trial')
+            ->exists();
+        if ($hadTrial) {
+            abort(409, 'Trial already used');
+        }
+
+        $expiresAt = now()->addDays($trialDays);
+        $trial = Subscription::create([
+            'user_id' => $userId,
+            'platform' => 'internal',
+            'product_id' => 'trial',
+            'external_id' => 'trial_'.uniqid(),
+            'status' => 'active',
+            'expires_at' => $expiresAt,
+            'last_verified_at' => now(),
+            'raw_payload' => ['type' => 'free_trial'],
+        ]);
+
+        // Sync premium flags to master's record(s) for this user
+        try {
+            \App\Models\Master::where('user_id', $userId)->update([
+                'is_premium' => true,
+                'premium_until' => $expiresAt,
+            ]);
+        } catch (\Throwable $_) {
+        }
+
+        return new SubscriptionStatus(
+            active: true,
+            platform: $trial->platform,
+            product_id: $trial->product_id,
+            expires_at: $trial->expires_at
+        );
+    }
     public function assertUserHasActiveSubscription(int $userId): void
     {
         $status = $this->getStatus($userId);

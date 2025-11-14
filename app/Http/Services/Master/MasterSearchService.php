@@ -28,8 +28,8 @@ class MasterSearchService
         masters.age,
         masters.photo,
         masters.service_id,
-        masters.tariff_id,
-        COALESCE(tariffs.name, \'free\') as tariff,
+        masters.is_premium,
+        masters.premium_until,
         CASE WHEN masters.user_id IS NULL THEN 0 ELSE 1 END as approved,
         (
             6371 * acos(
@@ -41,7 +41,6 @@ class MasterSearchService
         COALESCE(reviews_summary.rating, masters.rating_google, 0) as rating
     FROM
         masters
-    LEFT JOIN tariffs ON tariffs.id = masters.tariff_id
     LEFT JOIN (
         SELECT
             master_id,

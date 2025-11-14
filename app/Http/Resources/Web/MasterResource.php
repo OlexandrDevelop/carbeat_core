@@ -85,8 +85,8 @@ class MasterResource extends JsonResource
                 ];
             }) : [],
             'available' => $appointmentRedisService->isMasterAvailableAt($this->id, now()),
-            'tariff_id' => (int) $this->tariff_id,
-            'tariff' => is_object($this->tariff) ? (string) $this->tariff->name : (string) $this->tariff,
+            'is_premium' => (bool) $this->is_premium,
+            'premium_until' => optional($this->premium_until)->toISOString(),
             'approved' => isset($this->approved)
                 ? (bool) $this->approved
                 : (bool) ($this->user_id ?? 0),

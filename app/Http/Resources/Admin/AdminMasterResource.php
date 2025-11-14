@@ -48,7 +48,8 @@ class AdminMasterResource extends JsonResource
             'main_photo' => $photoUrl,
             'main_thumb_url' => $this->main_thumb_url ? url('storage/'.$this->main_thumb_url) : null,
             'service_id' => $this->service_id,
-            'tariff_id' => $this->tariff_id,
+            'is_premium' => (bool) $this->is_premium,
+            'premium_until' => optional($this->premium_until)->toISOString(),
             'slug' => (string) $this->slug,
             'services' => $this->whenLoaded('services', function () {
                 return $this->services->map(fn ($s) => [

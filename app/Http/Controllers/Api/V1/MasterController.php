@@ -224,12 +224,8 @@ class MasterController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    public function addGalleryPhotos(Request $request, int $id): JsonResponse
+    public function addGalleryPhotos(\App\Http\Requests\AddMasterGalleryPhotosRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'photos' => ['required', 'array', 'max:10'],
-            'photos.*' => ['required', new \App\Rules\Base64Image],
-        ]);
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
 

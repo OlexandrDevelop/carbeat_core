@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\AppVersionRequest;
 use App\Http\Resources\Api\V1\AppVersionResource;
+use App\Models\AppSetting;
 
 class AppController extends Controller
 {
@@ -13,8 +14,10 @@ class AppController extends Controller
         $platform = $request->input('platform');
         $build = (int) ($request->input('build') ?? 0);
 
-        $config = config('app_versions');
-        $data = $config[$platform] ?? [
+        // Prefer admin-configured versions from app_settings
+        $admin = AppSetting::where('key', 'app_versions')->value('value') ?? [];
+        $source = !empty($admin) ? $admin : config('app_versions');
+        $data = $source[$platform] ?? [
             'min_supported_build' => 1,
             'recommended_build' => 1,
             'store_url' => '',
@@ -31,5 +34,6 @@ class AppController extends Controller
         ]);
     }
 }
+
 
 

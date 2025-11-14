@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Tariff;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,10 +15,15 @@ class EnsurePlanAllowsFeature
             abort(403);
         }
 
-        $tariff = $user->master->tariff;
-        $features = $tariff?->features ?? [];
-        if (! in_array($featureKey, $features, true)) {
-            abort(403, 'Feature not allowed for current plan');
+        $master = $user->master;
+        if (in_array($featureKey, ['premium', 'premium_only'], true)) {
+            $isPremiumActive = (bool) ($master->is_premium ?? false);
+            if ($isPremiumActive && $master->premium_until) {
+                $isPremiumActive = now()->lessThanOrEqualTo($master->premium_until);
+            }
+            if (! $isPremiumActive) {
+                abort(403, 'Feature not allowed: premium required');
+            }
         }
 
         return $next($request);

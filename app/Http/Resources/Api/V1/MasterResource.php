@@ -72,8 +72,8 @@ class MasterResource extends JsonResource
             'approved' => isset($this->approved)
                 ? (bool) $this->approved
                 : (bool) ($this->user_id ?? 0),
-            'tariff' => is_object($this->tariff) ? (string) $this->tariff->name : (string) $this->tariff,
-            'tariff_id' => (int) $this->tariff_id,
+            'is_premium' => (bool) $this->is_premium,
+            'premium_until' => optional($this->premium_until)->toISOString(),
             'slug' => (string) $this->slug,
             // Include services only for single master endpoint (when Eloquent relation is loaded)
             'services' => $this->when(

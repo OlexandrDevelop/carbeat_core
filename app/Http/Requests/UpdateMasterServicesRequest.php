@@ -27,4 +27,34 @@ class UpdateMasterServicesRequest extends FormRequest
     {
         return true;
     }
+
+    protected function passedValidation(): void
+    {
+        $masterId = (int) $this->route('id');
+        $master = \App\Models\Master::findOrFail($masterId);
+        $isPremium = (bool) $master->is_premium;
+        if ($master->premium_until && $master->premium_until->isFuture()) {
+            $isPremium = true;
+        }
+
+        $limit = $isPremium
+            ? (int) config('limits.max_services_premium')
+            : (int) config('limits.max_services_free');
+
+        $serviceIds = collect($this->input('service_ids', []))
+            ->map(fn ($v) => (int) $v)
+            ->unique()
+            ->values();
+
+        $count = $serviceIds->count();
+        if ($count > $limit) {
+            $resource = new \App\Http\Resources\Api\V1\ErrorResponse([
+                'error' => 'services_limit',
+                'message' => 'Досягнуто максимальну кількість послуг',
+                'limit' => $limit,
+                'upgrade_required' => !$isPremium,
+            ]);
+            throw new \Illuminate\Http\Exceptions\HttpResponseException($resource->response()->setStatusCode(403));
+        }
+    }
 }
