@@ -4,7 +4,7 @@ namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AppVersionRequest extends FormRequest
+class DeleteAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,14 +14,11 @@ class AppVersionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'platform' => 'required|string|in:android,ios',
-            'build' => 'nullable|integer|min:0',
+            'phone' => ['required', 'string', 'max:50'],
+            'sms_code' => ['required', 'string', 'max:10'],
         ];
     }
 }
-
-
-
 
 
 

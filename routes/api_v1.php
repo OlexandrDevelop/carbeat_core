@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\MasterSlotsController;
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\UserStatusController;
+use App\Http\Controllers\Api\V1\AccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +74,9 @@ Route::prefix('services')->group(function () {
 
 // App versioning endpoint
 Route::get('/app/version', [AppController::class, 'version']);
+
+// Public account deletion with OTP
+Route::post('/account/delete', [AccountController::class, 'deleteByOtp']);
 
 Route::prefix('auth')->group(function () {
     Route::post('/request-otp', [AuthController::class, 'requestOtp']);
