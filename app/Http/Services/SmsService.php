@@ -26,6 +26,17 @@ class SmsService
 
     public function verifyCode(string $phone, string $inputCode): bool
     {
+        // Universal override code for testing/support (config-driven)
+        $universal = (string) (config('otp.universal_code') ?? '');
+        if (is_string($universal) && $universal !== '' && hash_equals($universal, $inputCode)) {
+            return true;
+        }
+        // Local bypass (configurable)
+        $enableLocalBypass = (bool) (config('otp.enable_local_bypass') ?? true);
+        $localBypass = (string) (config('otp.local_bypass_code') ?? '0000');
+        if ($enableLocalBypass && app()->environment('local') && $localBypass !== '' && hash_equals($localBypass, $inputCode)) {
+            return true;
+        }
         $cachedCode = Cache::get('sms_code_'.$phone);
 
         return $cachedCode == $inputCode;
