@@ -18,7 +18,8 @@ class AuthController extends Controller
     public function requestOtp(SendSmsCodeRequest $request, SmsService $smsService): JsonResponse
     {
         $phone = $request->input('phone');
-        $smsService->generateAndSendCode($phone);
+        $appHash = $request->input('app_hash'); // optional Android SMS Retriever app signature
+        $smsService->generateAndSendCode($phone, 4, $appHash);
 
         // Check whether user+master already exist
         $needsRegistration = true;

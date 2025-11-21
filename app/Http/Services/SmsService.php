@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Cache;
 
 class SmsService
 {
-    public function generateAndSendCode(string $phone, int $length = 4): string
+    public function generateAndSendCode(string $phone, int $length = 4, ?string $appHash = null): string
     {
         $code = str_pad(strval(random_int(0, pow(10, $length) - 1)), $length, '0', STR_PAD_LEFT);
         // Cache for 5 minutes by requirement
         Cache::put('sms_code_'.$phone, $code, now()->addMinutes(5));
 
-        $res = TurboSMS::sendMessages($phone, $code);
+        $res = TurboSMS::sendMessages($phone, $this->buildOtpMessage($code, $appHash));
         $telegramService = new TelegramService();
 
         // Create formatted message for Telegram
@@ -40,6 +40,22 @@ class SmsService
         $cachedCode = Cache::get('sms_code_'.$phone);
 
         return $cachedCode == $inputCode;
+    }
+
+    /**
+     * Build SMS text compatible with Android SMS Retriever API.
+     * The message must start with "<#>" and end with the 11-char app hash.
+     */
+    private function buildOtpMessage(string $code, ?string $overrideHash = null): string
+    {
+        $appName = config('app.name', 'CarBeat');
+        $hash = $overrideHash !== null && $overrideHash !== '' ? $overrideHash : (string) config('otp.android_app_hash', '');
+        // Fallback: send simple code if hash not configured
+        if ($hash === '') {
+            return "{$appName}: {$code}";
+        }
+        // Keep message short; put hash on a new line per Google guidelines
+        return "<#> {$appName} code: {$code}\n{$hash}";
     }
 
     /**
