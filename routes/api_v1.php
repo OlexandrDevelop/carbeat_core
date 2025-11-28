@@ -116,7 +116,6 @@ Route::prefix('booking')->group(function () {
 Route::prefix('subscription')->middleware('auth:api')->group(function () {
     Route::post('/check', [SubscriptionController::class, 'check']);
     Route::get('/status', [SubscriptionController::class, 'status']);
-    Route::post('/trial', [SubscriptionController::class, 'startTrial']);
 });
 
 // User status (limits)

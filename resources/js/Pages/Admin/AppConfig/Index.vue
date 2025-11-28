@@ -42,28 +42,7 @@
       </div>
     </section>
 
-    <section class="border rounded p-4">
-      <h2 class="font-semibold mb-3">Subscription (Trial)</h2>
-      <div class="flex items-center gap-3 mb-2">
-        <label class="inline-flex items-center gap-2">
-          <input type="checkbox" v-model="subscription.trial_enabled" />
-          <span>Trial enabled</span>
-        </label>
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-700">Кількість днів (1–365)</label>
-          <input v-model.number="subscription.trial_days" type="number" min="1" max="365"
-                 class="border p-2 rounded w-32" />
-        </div>
-      </div>
-      <div class="space-y-2">
-        <button @click="saveSubscription" :disabled="savingSubscription" class="bg-blue-600 disabled:opacity-60 text-white px-4 py-2 rounded">
-          {{ savingSubscription ? 'Saving...' : 'Save Trial' }}
-        </button>
-        <div v-if="messageSubscription.text" :class="['text-sm', messageSubscription.type === 'success' ? 'text-green-700' : 'text-red-700']">
-          {{ messageSubscription.text }}
-        </div>
-      </div>
-    </section>
+    <!-- Subscription (Trial) controls removed: free trial is managed by stores (Google Play / App Store) -->
   </div>
   </template>
 
@@ -75,7 +54,7 @@
     android: { min_supported_build: 1, recommended_build: 1, message: '', store_url: '' },
     ios: { min_supported_build: 1, recommended_build: 1, message: '', store_url: '' },
   })
-  const subscription = ref({ trial_enabled: true, trial_days: 30 })
+  const subscription = ref({ trial_enabled: false, trial_days: 0 })
 
   const savingVersions = ref(false)
   const savingSubscription = ref(false)
@@ -108,17 +87,8 @@
     }
   }
   const saveSubscription = async () => {
-    if (savingSubscription.value) return
-    savingSubscription.value = true
-    try {
-      await axios.post('/admin-api/app-config/subscription', subscription.value)
-      showMessage(messageSubscription, 'success', 'Налаштування trial збережено')
-    } catch (e) {
-      const msg = e?.response?.data?.message || 'Помилка збереження налаштувань trial'
-      showMessage(messageSubscription, 'error', msg)
-    } finally {
-      savingSubscription.value = false
-    }
+    // Deprecated: trial is fully managed by stores; keep function to avoid runtime errors.
+    showMessage(messageSubscription, 'success', 'Trial керується Google Play / App Store');
   }
 
   onMounted(load)

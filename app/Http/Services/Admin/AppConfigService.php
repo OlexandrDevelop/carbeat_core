@@ -7,7 +7,6 @@ use App\Models\AppSetting;
 class AppConfigService
 {
     private const KEY_VERSIONS = 'app_versions';
-    private const KEY_SUBSCRIPTION = 'subscription_config';
 
     public function getVersions(): array
     {
@@ -24,15 +23,17 @@ class AppConfigService
 
     public function getSubscription(): array
     {
-        return AppSetting::where('key', self::KEY_SUBSCRIPTION)->value('value') ?? $this->defaultSubscription();
+        return [
+            'trial_enabled' => false,
+            'trial_days' => 0,
+        ];
     }
 
     public function updateSubscription(array $data): array
     {
-        $current = $this->getSubscription();
-        $merged = array_replace_recursive($current, $data);
-        AppSetting::updateOrCreate(['key' => self::KEY_SUBSCRIPTION], ['value' => $merged]);
-        return $merged;
+        // Trial is now fully managed by Google Play / App Store.
+        // Keep a dummy response for backward compatibility of the admin UI.
+        return $this->getSubscription();
     }
 
     private function defaultVersions(): array
@@ -53,13 +54,6 @@ class AppConfigService
         ];
     }
 
-    private function defaultSubscription(): array
-    {
-        return [
-            'trial_enabled' => true,
-            'trial_days' => 30,
-        ];
-    }
 }
 
 

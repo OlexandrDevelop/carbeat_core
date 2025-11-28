@@ -42,14 +42,4 @@ class SubscriptionController extends Controller
         $statusDto = $this->subscriptionService->getStatus($user->id);
         return new SubscriptionStatusResource($statusDto);
     }
-
-    /**
-     * Start a one-time free trial for the authenticated user.
-     */
-    public function startTrial(): SubscriptionStatusResource
-    {
-        $user = JWTAuth::user();
-        $statusDto = $this->subscriptionService->startTrial($user->id);
-        return new SubscriptionStatusResource($statusDto);
-    }
 }
