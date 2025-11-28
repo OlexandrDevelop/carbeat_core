@@ -26,6 +26,28 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+                        <div class="text-sm text-gray-600">Subscription</div>
+                        <div class="mt-1 text-2xl font-semibold"
+                             :class="isPremium ? 'text-purple-700' : 'text-gray-800'">
+                            {{ isPremium ? 'Premium' : 'Free plan' }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ isPremium ? `Valid until ${premiumExpiresLabel}` : 'No active subscription' }}
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+                        <div class="text-sm text-gray-600">Limits</div>
+                        <div class="mt-1 text-sm text-gray-800">
+                            {{ isPremium ? 'Premium limits applied (photos, description, services)' : 'Free limits applied' }}
+                        </div>
+                        <div v-if="master?.premium_until" class="text-xs text-gray-500 mt-1">
+                            Expires: {{ premiumExpiresLabel }}
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Name</label>
@@ -159,7 +181,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -191,6 +213,11 @@ const reviews = ref<Array<{ id: number; rating: number; review: string; created_
 const newReview = reactive<{ user_id: number | null; rating: number | null; review: string | null }>({ user_id: null, rating: null, review: '' });
 
 const previewUrl = ref<string | null>(null);
+const isPremium = computed(() => !!master.value?.is_premium);
+const premiumExpiresLabel = computed(() => {
+    if (!master.value?.premium_until) return '—';
+    return new Date(master.value.premium_until).toLocaleString();
+});
 function openPreview(url: string) { previewUrl.value = url; }
 function closePreview() { previewUrl.value = null; }
 

@@ -33,9 +33,6 @@ class UpdateMasterServicesRequest extends FormRequest
         $masterId = (int) $this->route('id');
         $master = \App\Models\Master::findOrFail($masterId);
         $isPremium = (bool) $master->is_premium;
-        if ($master->premium_until && $master->premium_until->isFuture()) {
-            $isPremium = true;
-        }
 
         $limit = $isPremium
             ? (int) config('limits.max_services_premium')

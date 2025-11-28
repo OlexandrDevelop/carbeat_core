@@ -17,6 +17,11 @@ class SubscriptionService
 
         $expiresAt = $result->expires_at ? Carbon::parse($result->expires_at) : null;
 
+        $isActive = (bool) $result->active;
+        if ($expiresAt instanceof Carbon) {
+            $isActive = $expiresAt->isFuture();
+        }
+
         $subscription = Subscription::updateOrCreate(
             [
                 'user_id' => $userId,
@@ -35,7 +40,7 @@ class SubscriptionService
         // Sync premium flags to master's record(s) for this user
         try {
             Master::where('user_id', $userId)->update([
-                'is_premium' => (bool) $result->active,
+                'is_premium' => $isActive,
                 'premium_until' => $expiresAt,
             ]);
         } catch (\Throwable $_) {
@@ -43,7 +48,7 @@ class SubscriptionService
         }
 
         return new SubscriptionStatus(
-            active: (bool) $result->active,
+            active: $isActive,
             platform: $platform,
             product_id: $subscription->product_id,
             expires_at: $subscription->expires_at

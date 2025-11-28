@@ -15,13 +15,7 @@ class UpdateMasterRequest extends FormRequest
         if ($errors->has('description')) {
             $masterId = (int) $this->route('id');
             $master = \App\Models\Master::find($masterId);
-            $isPremium = false;
-            if ($master) {
-                $isPremium = (bool) $master->is_premium;
-                if ($master->premium_until && $master->premium_until->isFuture()) {
-                    $isPremium = true;
-                }
-            }
+            $isPremium = $master?->is_premium ?? false;
             $limit = $isPremium
                 ? (int) config('limits.max_description_premium')
                 : (int) config('limits.max_description_free');
@@ -42,13 +36,7 @@ class UpdateMasterRequest extends FormRequest
     {
         $masterId = (int) $this->route('id');
         $master = \App\Models\Master::find($masterId);
-        $isPremium = false;
-        if ($master) {
-            $isPremium = (bool) $master->is_premium;
-            if ($master->premium_until && $master->premium_until->isFuture()) {
-                $isPremium = true;
-            }
-        }
+        $isPremium = $master?->is_premium ?? false;
         $maxLength = $isPremium
             ? (int) config('limits.max_description_premium')
             : (int) config('limits.max_description_free');

@@ -14,15 +14,8 @@ class UserStatusController extends Controller
         $user = Auth::guard('api')->user();
         $master = $user ? Master::where('user_id', $user->id)->first() : null;
 
-        $isPremium = false;
-        $premiumUntilIso = null;
-        if ($master) {
-            $isPremium = (bool) $master->is_premium;
-            if ($master->premium_until && $master->premium_until->isFuture()) {
-                $isPremium = true;
-            }
-            $premiumUntilIso = $master->premium_until?->toIso8601String();
-        }
+        $isPremium = $master?->is_premium ?? false;
+        $premiumUntilIso = $master?->premium_until?->toIso8601String();
 
         $data = [
             'is_premium' => $isPremium,

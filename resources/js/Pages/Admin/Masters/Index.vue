@@ -55,6 +55,9 @@
                                 <span>Rating</span>
                                 <span v-if="filters.sort_by === 'rating'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
                             </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                Subscription
+                            </th>
                             <th @click="setSort('photos_count')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
                                 <span>Photos</span>
                                 <span v-if="filters.sort_by === 'photos_count'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
@@ -92,6 +95,19 @@
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.city?.name ?? '—' }}</td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.reviews_avg_rating != null ? Number(m.reviews_avg_rating).toFixed(1) : '0.0' }}</td>
+                            <td class="px-6 py-3 text-sm">
+                                <div class="flex flex-col">
+                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                          :class="m.is_premium ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'">
+                                        <span class="h-1.5 w-1.5 rounded-full"
+                                              :class="m.is_premium ? 'bg-purple-600' : 'bg-gray-500'" />
+                                        {{ m.is_premium ? 'Premium' : 'Free' }}
+                                    </span>
+                                    <span class="text-xs text-gray-500 mt-1">
+                                        {{ m.premium_until ? new Date(m.premium_until).toLocaleDateString() : '—' }}
+                                    </span>
+                                </div>
+                            </td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.photos_count ?? 0 }}</td>
                             <td class="px-6 py-3 text-sm">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" :class="m.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">

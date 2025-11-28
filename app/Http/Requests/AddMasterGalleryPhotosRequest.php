@@ -38,9 +38,6 @@ class AddMasterGalleryPhotosRequest extends FormRequest
 
         $currentCount = $master->gallery()->count();
         $isPremium = (bool) $master->is_premium;
-        if ($master->premium_until && $master->premium_until->isFuture()) {
-            $isPremium = true;
-        }
 
         $limit = $isPremium
             ? (int) config('limits.max_photos_premium')

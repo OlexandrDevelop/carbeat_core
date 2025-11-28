@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -80,6 +81,16 @@ class Master extends Model
     public function getMainPhotoAttribute(): ?string
     {
         return $this->photo ?? '/images/default-master.jpg';
+    }
+
+    public function getIsPremiumAttribute($value): bool
+    {
+        $until = $this->premium_until;
+        if ($until instanceof Carbon) {
+            return $until->isFuture();
+        }
+
+        return (bool) $value;
     }
 
     public function services(): BelongsToMany
