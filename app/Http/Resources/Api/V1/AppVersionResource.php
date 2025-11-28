@@ -36,3 +36,4 @@ class AppVersionResource extends JsonResource
 
 
 
+
