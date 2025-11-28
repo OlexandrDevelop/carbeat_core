@@ -22,6 +22,7 @@ use App\Http\Services\ClientService;
 use App\Http\Services\Master\MasterFetcher;
 use App\Http\Services\Master\MasterService;
 use App\Http\Services\SmsService;
+use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
 use App\Models\Master;
 use App\Models\MasterGallery;
@@ -61,7 +62,7 @@ class MasterController extends Controller
     /**
      * @throws Exception
      */
-    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService): JsonResponse
+    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService): JsonResponse
     {
         $data = $request->validated();
 
@@ -73,7 +74,9 @@ class MasterController extends Controller
 
         $user = $userService->createOrUpdateFromMaster($master);
 
-        $token = JWTAuth::claims(['phone' => $user->phone])->fromUser($user);
+        $accessToken = $tokenService->createAccessToken($user);
+        $refreshModel = $tokenService->createRefreshToken($user);
+        $expiresIn = 60 * config('auth.access_token_ttl', 15);
 
         // Publish "master created" event to Redis for realtime map updates
         try {
@@ -88,7 +91,11 @@ class MasterController extends Controller
         return response()->json([
             'master' => new MasterResource($master),
             'user' => new UserResource($user),
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshModel->plain_token,
+            'expires_in' => $expiresIn,
+            // Backward compatibility for legacy apps expecting "token"
+            'token' => $accessToken,
         ]);
     }
 

@@ -21,6 +21,8 @@ use NotificationChannels\Telegram\TelegramMessage;
 
 class MasterService
 {
+    protected array $cityCoordinateCache = [];
+
     protected Master $model;
 
     protected PaginatorService $paginatorService;
@@ -68,6 +70,7 @@ class MasterService
         $master = Master::updateOrCreate(['contact_phone' => $data['contact_phone'] ?? null], $data);
 
         $this->handlePhoto($master, $photo);
+        $this->assignNearestCity($master);
 
         return $master;
     }
@@ -109,6 +112,7 @@ class MasterService
             unset($data['photo']);
         }
         $master->update($data);
+        $this->assignNearestCity($master);
     }
 
     public function addReview(mixed $data): Model
@@ -179,5 +183,66 @@ class MasterService
         }
 
         return $master;
+    }
+
+    protected function assignNearestCity(Master $master): void
+    {
+        $lat = $master->latitude;
+        $lng = $master->longitude;
+        if ($lat === null || $lng === null) {
+            return;
+        }
+        $cityId = $this->resolveNearestCityId((float) $lat, (float) $lng);
+        if ($cityId !== null && $master->city_id !== $cityId) {
+            $master->city_id = $cityId;
+            $master->save();
+        }
+    }
+
+    protected function resolveNearestCityId(float $lat, float $lng): ?int
+    {
+        $cities = $this->getCityCoordinateCache();
+        if (empty($cities)) {
+            return null;
+        }
+        $nearestId = null;
+        $minDistance = PHP_FLOAT_MAX;
+        foreach ($cities as $city) {
+            $distance = $this->calculateDistance($lat, $lng, $city['latitude'], $city['longitude']);
+            if ($distance < $minDistance) {
+                $minDistance = $distance;
+                $nearestId = $city['id'];
+            }
+        }
+        return $nearestId;
+    }
+
+    protected function getCityCoordinateCache(): array
+    {
+        if (! empty($this->cityCoordinateCache)) {
+            return $this->cityCoordinateCache;
+        }
+        $this->cityCoordinateCache = City::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get(['id', 'latitude', 'longitude'])
+            ->map(fn ($city) => [
+                'id' => $city->id,
+                'latitude' => (float) $city->latitude,
+                'longitude' => (float) $city->longitude,
+            ])
+            ->toArray();
+
+        return $this->cityCoordinateCache;
+    }
+
+    protected function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) * sin($dLat / 2)
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
     }
 }
