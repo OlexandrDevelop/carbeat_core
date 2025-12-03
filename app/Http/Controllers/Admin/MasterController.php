@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AdminMasterInviteRequest;
 use App\Http\Requests\Admin\AdminMasterUpdateRequest;
 use App\Http\Requests\Admin\AdminReviewStoreRequest;
 use App\Http\Requests\Admin\AdminReviewUpdateRequest;
@@ -25,7 +26,9 @@ class MasterController extends Controller
     // Inertia pages
     public function index(): Response
     {
-        return Inertia::render('Admin/Masters/Index');
+        return Inertia::render('Admin/Masters/Index', [
+            'defaultInviteMessage' => config('app.master_invite_template'),
+        ]);
     }
 
     public function edit(int $id): Response
@@ -84,6 +87,16 @@ class MasterController extends Controller
     {
         $deleted = $this->service->deleteAllMasters();
         return response()->json(new AdminMasterBulkDeleteResponse(['deleted' => $deleted]));
+    }
+
+    public function invite(AdminMasterInviteRequest $request): JsonResponse
+    {
+        $result = $this->service->sendInvites(
+            $request->input('master_ids', []),
+            $request->input('message')
+        );
+
+        return response()->json($result);
     }
 
     // Reviews endpoints

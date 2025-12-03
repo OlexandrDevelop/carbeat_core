@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -37,6 +38,9 @@ class MasterFactory extends Factory
             'description' => fake()->text(200),
             'address' => fake()->address(),
             'photo' => $this->getImageUrl(),
+            'is_claimed' => false,
+            'claim_token' => Str::random(40),
+            'phone_verified_at' => null,
         ];
     }
 

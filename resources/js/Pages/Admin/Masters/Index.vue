@@ -31,10 +31,39 @@
         </header>
 
         <main class="mx-auto max-w-7xl px-6 py-6">
+            <div v-if="inviteFeedback" class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <span>{{ inviteFeedback }}</span>
+                <button class="text-emerald-700 underline" @click="inviteFeedback = null">Закрити</button>
+            </div>
+
+            <div
+                v-if="selectedCount"
+                class="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+            >
+                <span>Обрано {{ selectedCount }} майстрів</span>
+                <div class="flex gap-3">
+                    <button
+                        @click="openInviteModal"
+                        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
+                        Надіслати інвайт
+                    </button>
+                    <button @click="clearSelection" class="text-blue-700 underline">Очистити</button>
+                </div>
+            </div>
+
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="px-4 py-3">
+                                <input
+                                    type="checkbox"
+                                    :checked="allVisibleSelected"
+                                    @change="toggleSelectAllVisible"
+                                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                            </th>
                             <th @click="setSort('id')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
                                 <span>ID</span>
                                 <span v-if="filters.sort_by === 'id'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
@@ -74,7 +103,20 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <tr v-for="m in masters" :key="m.id" class="hover:bg-gray-50" :class="m.user_id !== 1 ? 'bg-yellow-50/50' : ''">
+                        <tr
+                            v-for="m in masters"
+                            :key="m.id"
+                            class="hover:bg-gray-50"
+                            :class="[m.user_id !== 1 ? 'bg-yellow-50/50' : '', selectedIds.includes(m.id) ? 'bg-blue-50/80' : '']"
+                        >
+                            <td class="px-4 py-3">
+                                <input
+                                    type="checkbox"
+                                    :checked="selectedIds.includes(m.id)"
+                                    @change="toggleSelection(m.id)"
+                                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                            </td>
                             <td class="px-6 py-3 text-sm text-gray-600">{{ m.id }}</td>
                             <td class="px-6 py-3">
                                 <div class="h-10 w-10 overflow-hidden rounded bg-gray-100 ring-2" :class="m.user_id !== 1 ? 'ring-yellow-300' : 'ring-transparent'">
@@ -141,12 +183,46 @@
             </div>
         </main>
     </div>
+
+    <div v-if="inviteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
+        <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-slate-900">Надіслати інвайт</h3>
+                <button class="text-slate-500 hover:text-slate-700" @click="closeInviteModal">✕</button>
+            </div>
+            <p class="text-sm text-slate-600">
+                Текст повідомлення. Використайте плейсхолдер
+                <code class="rounded bg-slate-100 px-1 py-0.5">:link</code>
+                — він буде автоматично замінений на діп-лінк до застосунку.
+            </p>
+            <textarea
+                v-model="inviteMessage"
+                rows="5"
+                class="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            ></textarea>
+            <p v-if="inviteError" class="mt-3 text-sm text-red-600">{{ inviteError }}</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button @click="closeInviteModal" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                    Скасувати
+                </button>
+                <button
+                    @click="sendInvites"
+                    :disabled="sendingInvite"
+                    class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {{ sendingInvite ? 'Надсилання...' : 'Надіслати' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+
+const props = defineProps<{ defaultInviteMessage: string }>();
 
 const masters = ref<any[]>([]);
 const services = ref<Array<{ id: number; name: string }>>([]);
@@ -165,6 +241,19 @@ const filters = ref<{ search: string; available: string; service_id: string | nu
 
 const page = ref(1);
 const jumpPage = ref<number | null>(null);
+
+const selectedIds = ref<number[]>([]);
+const inviteModalOpen = ref(false);
+const inviteMessage = ref('');
+const inviteError = ref<string | null>(null);
+const inviteFeedback = ref<string | null>(null);
+const sendingInvite = ref(false);
+
+const visibleMasterIds = computed(() => masters.value.map((m) => m.id));
+const allVisibleSelected = computed(
+    () => visibleMasterIds.value.length > 0 && visibleMasterIds.value.every((id) => selectedIds.value.includes(id)),
+);
+const selectedCount = computed(() => selectedIds.value.length);
 
 async function fetchData() {
     const params = new URLSearchParams();
@@ -237,6 +326,60 @@ async function confirmDeleteAll() {
     await axios.delete('/admin-api/masters');
     page.value = 1;
     await fetchData();
+}
+
+function toggleSelection(id: number) {
+    if (selectedIds.value.includes(id)) {
+        selectedIds.value = selectedIds.value.filter((item) => item !== id);
+    } else {
+        selectedIds.value = [...selectedIds.value, id];
+    }
+}
+
+function toggleSelectAllVisible() {
+    if (allVisibleSelected.value) {
+        selectedIds.value = selectedIds.value.filter((id) => !visibleMasterIds.value.includes(id));
+    } else {
+        const newIds = visibleMasterIds.value.filter((id) => !selectedIds.value.includes(id));
+        selectedIds.value = [...selectedIds.value, ...newIds];
+    }
+}
+
+function clearSelection() {
+    selectedIds.value = [];
+}
+
+function openInviteModal() {
+    inviteMessage.value = inviteMessage.value || props.defaultInviteMessage || 'Carbeat: керуйте своїм профілем → :link';
+    inviteModalOpen.value = true;
+    inviteError.value = null;
+}
+
+function closeInviteModal() {
+    inviteModalOpen.value = false;
+}
+
+async function sendInvites() {
+    if (! selectedIds.value.length) {
+        return;
+    }
+
+    sendingInvite.value = true;
+    inviteError.value = null;
+
+    try {
+        const { data } = await axios.post('/admin-api/masters/invite', {
+            master_ids: selectedIds.value,
+            message: inviteMessage.value,
+        });
+        inviteFeedback.value = `Відправлено ${data.sent} із ${data.requested}. Пропущено ${data.skipped.length}.`;
+        inviteModalOpen.value = false;
+        selectedIds.value = [];
+    } catch (error: any) {
+        inviteError.value = error?.response?.data?.message || 'Не вдалося надіслати інвайти';
+    } finally {
+        sendingInvite.value = false;
+    }
 }
 
 onMounted(async () => {
