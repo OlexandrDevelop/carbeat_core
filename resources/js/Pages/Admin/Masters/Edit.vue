@@ -4,7 +4,15 @@
             <div class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
                 <h1 class="text-2xl font-semibold text-gray-900">Edit Master #{{ master?.id }}</h1>
                 <div class="flex items-center gap-2">
-                    <a v-if="master?.slug" :href="`/masters/${master.slug}`" target="_blank" rel="noopener" class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View public page</a>
+                    <a
+                        v-if="master?.slug"
+                        :href="`/m/${master.slug}`"
+                        target="_blank"
+                        rel="noopener"
+                        class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                        View public page
+                    </a>
                     <Link href="/admin/masters" class="text-gray-600 hover:text-gray-900">Back</Link>
                     <button @click="save" :disabled="saving" class="rounded-xl bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
                         {{ saving ? 'Saving...' : 'Save' }}
@@ -91,13 +99,6 @@
                         <label class="block text-sm font-medium text-gray-700">Location</label>
                         <div id="map" class="mt-2 h-64 w-full rounded-xl overflow-hidden border"></div>
                         <div class="mt-1 text-xs text-gray-500">Drag the marker or click on map to set coordinates</div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Available</label>
-                        <select v-model="form.available" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm">
-                            <option :value="true">Available</option>
-                            <option :value="false">Unavailable</option>
-                        </select>
                     </div>
                 </div>
 
@@ -195,14 +196,13 @@ const services = ref<Array<{ id: number; name: string }>>([]);
 const cities = ref<Array<{ id: number; name: string }>>([]);
 const users = ref<Array<{ id: number; name: string | null; phone: string | null }>>([]);
 
-const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; available: boolean; description: string | null; service_id: number | null; service_ids: number[]; city_id: number | null }>({
+const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; description: string | null; service_id: number | null; service_ids: number[]; city_id: number | null }>({
     name: '',
     slug: '',
     phone: '',
     address: '',
     latitude: null,
     longitude: null,
-    available: false,
     description: '',
     service_id: null,
     service_ids: [],
@@ -244,7 +244,6 @@ async function load() {
     form.address = master.value.address ?? '';
     form.latitude = master.value.latitude ?? null;
     form.longitude = master.value.longitude ?? null;
-    form.available = !!master.value.available;
     form.description = master.value.description ?? '';
     form.service_id = master.value.service_id ?? null;
     form.service_ids = (master.value.services || []).map((s: any) => s.id);

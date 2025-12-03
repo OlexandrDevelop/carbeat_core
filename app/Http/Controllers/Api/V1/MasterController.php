@@ -208,6 +208,23 @@ class MasterController extends Controller
         return response()->json(['master' => new MasterResource($master->refresh())]);
     }
 
+    public function updateOwnProfile(UpdateMasterRequest $request, MasterService $masterService): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = JWTAuth::user();
+
+        if (! $user || ! $user->master) {
+            return response()->json(['error' => 'master_not_found'], 404);
+        }
+
+        $master = $user->master;
+        $this->authorize('update', $master);
+
+        $masterService->updateDetails($master, $request->validated());
+
+        return response()->json(['master' => new MasterResource($master->refresh())]);
+    }
+
     /**
      * Update master's additional services (pivot) without touching main service_id.
      */

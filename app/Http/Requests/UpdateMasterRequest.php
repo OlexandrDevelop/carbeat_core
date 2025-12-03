@@ -13,7 +13,7 @@ class UpdateMasterRequest extends FormRequest
     {
         $errors = $validator->errors();
         if ($errors->has('description')) {
-            $masterId = (int) $this->route('id');
+            $masterId = $this->determineMasterId();
             $master = \App\Models\Master::find($masterId);
             $isPremium = $master?->is_premium ?? false;
             $limit = $isPremium
@@ -34,8 +34,8 @@ class UpdateMasterRequest extends FormRequest
 
     public function rules(): array
     {
-        $masterId = (int) $this->route('id');
-        $master = \App\Models\Master::find($masterId);
+        $masterId = $this->determineMasterId();
+        $master = $masterId ? \App\Models\Master::find($masterId) : null;
         $isPremium = $master?->is_premium ?? false;
         $maxLength = $isPremium
             ? (int) config('limits.max_description_premium')
@@ -53,5 +53,20 @@ class UpdateMasterRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    private function determineMasterId(): int
+    {
+        $routeId = $this->route('id');
+        if ($routeId) {
+            return (int) $routeId;
+        }
+
+        $user = $this->user();
+        if ($user && $user->master) {
+            return (int) $user->master->id;
+        }
+
+        return 0;
     }
 }

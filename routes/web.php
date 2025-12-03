@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\ClaimLinkController;
+use App\Http\Controllers\PublicMasterController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
+Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 
 Route::redirect('/', '/admin');
 

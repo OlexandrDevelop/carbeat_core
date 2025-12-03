@@ -19,7 +19,6 @@ class AdminMasterUpdateRequest extends FormRequest
             'address' => 'sometimes|nullable|string|max:255',
             'age' => 'sometimes|integer|min:0',
             'phone' => 'sometimes|nullable|string|max:50',
-            'available' => 'sometimes|boolean',
             'service_id' => 'sometimes|integer|exists:services,id',
             'city_id' => 'sometimes|nullable|integer|exists:cities,id',
             'is_premium' => 'sometimes|boolean',

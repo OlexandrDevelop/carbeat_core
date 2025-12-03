@@ -54,6 +54,17 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'claim_base_url' => env('CLAIM_BASE_URL', 'https://carbeat.online/claim'),
+    'deep_links' => [
+        'scheme' => env('APP_DEEP_LINK_SCHEME', 'carbeat'),
+        'host' => env('APP_DEEP_LINK_HOST', 'claim'),
+        'android_package' => env('ANDROID_PACKAGE_NAME', 'online.carbeat.app'),
+        'android_store_url' => env('ANDROID_STORE_URL', 'https://play.google.com/store/apps/details?id=online.carbeat.app'),
+        'ios_bundle' => env('IOS_BUNDLE_IDENTIFIER', 'com.example.garagePlantMobile'),
+        'ios_store_url' => env('IOS_STORE_URL', 'https://apps.apple.com/'),
+    ],
+    'master_invite_template' => env('MASTER_INVITE_TEMPLATE', 'Carbeat: ваш профіль вже створено. Керуйте ним тут: :link'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

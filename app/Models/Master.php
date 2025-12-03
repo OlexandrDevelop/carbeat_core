@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Master extends Model
 {
@@ -17,6 +18,7 @@ class Master extends Model
         'updated_at',
         'password',
         'photo',
+        'claim_token',
     ];
 
     protected $casts = [
@@ -29,6 +31,8 @@ class Master extends Model
         'main_thumb_generated' => 'boolean',
         'is_premium' => 'boolean',
         'premium_until' => 'datetime',
+        'is_claimed' => 'boolean',
+        'phone_verified_at' => 'datetime',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -60,7 +64,23 @@ class Master extends Model
         'working_hours',
         'is_premium',
         'premium_until',
+        'is_claimed',
+        'claim_token',
+        'phone_verified_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Master $master) {
+            if (empty($master->claim_token)) {
+                $master->claim_token = Str::random(40);
+            }
+
+            if ($master->is_claimed === null) {
+                $master->is_claimed = false;
+            }
+        });
+    }
 
     // Virtual attribute to keep backward compatibility
     protected $appends = ['phone', 'main_photo'];
