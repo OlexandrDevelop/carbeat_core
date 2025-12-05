@@ -197,455 +197,214 @@ function claimProfile() {
 <template>
     <Head :title="`${master.name} · Carbeat`" />
 
-    <div class="min-h-screen bg-slate-950 text-white">
-        <!-- HERO -->
-        <header
-            class="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
-        >
-            <div class="pointer-events-none absolute inset-0">
-                <div class="absolute -top-10 right-20 h-72 w-72 rounded-full bg-sky-500/25 blur-3xl" />
-                <div class="absolute bottom-10 left-3 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
-            </div>
-
-            <div class="relative mx-auto max-w-6xl px-4 py-20 lg:py-24">
-                <div class="flex items-center justify-between gap-4 pb-8 text-xs text-white/60">
-                    <span class="rounded-full bg-white/5 px-3 py-1 uppercase tracking-[0.35em]">
-                        публічний профіль
-                    </span>
-                    <span class="hidden items-center gap-2 rounded-full bg-white/5 px-3 py-1 sm:inline-flex">
-                        <span class="h-2 w-2 rounded-full bg-emerald-400/80" />
-                        <span class="uppercase tracking-[0.35em] text-white/70">carbeat</span>
+    <!-- Dark theme wrapper matching the app style -->
+    <div class="min-h-screen bg-[#111315] font-sans text-[#E1E3E5]">
+        <!-- HERO / HEADER -->
+        <header class="relative px-4 pb-12 pt-6">
+            <div class="mx-auto max-w-lg">
+                <!-- Top bar -->
+                <div class="mb-8 flex items-center justify-between">
+                    <span class="text-lg font-bold tracking-tight text-white">Carbeat</span>
+                    <span
+                        v-if="master.is_claimed"
+                        class="inline-flex items-center gap-1.5 rounded-full bg-[#1C1F22] px-3 py-1.5 text-xs font-medium text-[#4CD964]"
+                    >
+                        <span class="h-1.5 w-1.5 rounded-full bg-[#4CD964]" />
+                        Підтверджено
                     </span>
                 </div>
 
-                <div class="grid items-center gap-10 lg:grid-cols-[1.35fr_0.65fr]">
-                    <!-- LEFT SIDE -->
-                    <div class="space-y-7">
-                        <div>
-                            <h1
-                                class="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
-                            >
-                                {{ master.name }}
-                            </h1>
-                            <p
-                                v-if="locationLine"
-                                class="mt-4 text-base font-medium text-white/80 sm:text-lg"
-                            >
-                                {{ locationLine }}
-                            </p>
+                <!-- Master Card / Avatar Area -->
+                <div class="flex flex-col items-center text-center">
+                    <div class="relative mb-6">
+                        <img
+                            v-if="master.main_photo"
+                            :src="master.main_photo"
+                            :alt="master.name"
+                            class="h-32 w-32 rounded-full object-cover ring-4 ring-[#1C1F22]"
+                        />
+                        <div
+                            v-else
+                            class="flex h-32 w-32 items-center justify-center rounded-full bg-[#1C1F22] text-4xl font-bold text-white ring-4 ring-[#1C1F22]"
+                        >
+                            {{ masterInitials }}
                         </div>
-
-                        <div class="flex flex-wrap gap-3 text-sm text-white/80">
-                            <span
-                                v-if="hasRating"
-                                class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 ring-1 ring-white/15"
-                            >
-                                <span
-                                    class="inline-flex items-center justify-center rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-100"
-                                >
-                                    ★
-                                </span>
-                                <span class="text-base font-semibold text-amber-100">
-                                    {{ ratingLabel }}
-                                </span>
-                                <span v-if="master.reviews_count" class="text-xs text-white/70">
-                                    · {{ master.reviews_count }} відгуків
-                                </span>
-                            </span>
-
-                            <span
-                                v-if="hasExperience"
-                                class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 ring-1 ring-white/15"
-                            >
-                                <span class="h-1.5 w-1.5 rounded-full bg-white/60" />
-                                {{ master.experience }} років досвіду
-                            </span>
-
-                            <span
-                                :class="[
-                                    'inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold ring-1 ring-white/20',
-                                    master.is_claimed
-                                        ? 'bg-emerald-400/20 text-emerald-100'
-                                        : 'bg-amber-400/20 text-amber-100',
-                                ]"
-                            >
-                                <span
-                                    class="h-1.5 w-1.5 rounded-full"
-                                    :class="master.is_claimed ? 'bg-emerald-300' : 'bg-amber-300'"
-                                />
-                                {{ master.is_claimed ? 'Профіль підтверджено' : 'Очікує підтвердження' }}
-                            </span>
-                        </div>
-
-                        <div class="flex flex-wrap gap-4">
-                            <a
-                                v-if="telLink"
-                                :href="telLink"
-                                class="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-slate-900/30 transition hover:-translate-y-0.5 hover:bg-slate-100"
-                            >
-                                Подзвонити
-                            </a>
-                            <a
-                                v-if="mapsLink"
-                                :href="mapsLink"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                            >
-                                Маршрут
-                            </a>
-                            <button
-                                type="button"
-                                @click="shareProfile"
-                                class="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                            >
-                                {{ canUseShare ? 'Поділитися профілем' : 'Скопіювати посилання' }}
-                            </button>
-                        </div>
-
-                        <div class="grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <p class="text-xs uppercase tracking-[0.35em] text-white/60">
-                                    Основний напрям
-                                </p>
-                                <p class="mt-2 text-lg font-semibold text-white">
-                                    {{ mainService ? mainService.name : 'Послуга не вказана' }}
-                                </p>
-                            </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <p class="text-xs uppercase tracking-[0.35em] text-white/60">Місто</p>
-                                <p class="mt-2 text-lg font-semibold text-white">
-                                    {{ master.city ?? 'Не вказано' }}
-                                </p>
-                            </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <p class="text-xs uppercase tracking-[0.35em] text-white/60">
-                                    Кількість послуг
-                                </p>
-                                <p class="mt-2 text-lg font-semibold text-white">
-                                    {{ services.length }}
-                                </p>
-                            </div>
+                        <div
+                            v-if="hasRating"
+                            class="absolute -bottom-2 -right-2 flex items-center gap-1 rounded-xl bg-[#1C1F22] px-2.5 py-1.5 text-sm font-bold text-white shadow-lg"
+                        >
+                            <span class="text-[#FFD60A]">★</span>
+                            {{ ratingLabel }}
                         </div>
                     </div>
 
-                    <!-- RIGHT CARD -->
-                    <div
-                        class="rounded-[32px] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-blue-900/40 ring-1 ring-white/10 backdrop-blur-xl"
-                    >
-                        <div class="mx-auto w-44">
-                            <img
-                                v-if="master.main_photo"
-                                :src="master.main_photo"
-                                :alt="master.name"
-                                class="h-44 w-44 rounded-[28px] object-cover ring-2 ring-white/40"
-                            />
-                            <div
-                                v-else
-                                class="flex h-44 w-44 items-center justify-center rounded-[28px] bg-gradient-to-br from-slate-700 via-blue-600 to-indigo-500 text-5xl font-semibold tracking-wide text-white ring-2 ring-white/20"
-                            >
-                                {{ masterInitials }}
-                            </div>
-                        </div>
-                        <p v-if="master.description" class="mt-6 text-sm text-white/80 line-clamp-4">
-                            {{ master.description }}
-                        </p>
-                        <p v-else class="mt-6 text-sm text-white/60">
-                            Майстер ще не додав короткий опис.
-                        </p>
+                    <h1 class="mb-2 text-2xl font-bold text-white">{{ master.name }}</h1>
+                    <p v-if="mainService" class="mb-1 text-[15px] font-medium text-[#8E8E93]">
+                        {{ mainService.name }}
+                    </p>
+                    <p v-if="locationLine" class="text-sm text-[#636366]">
+                        {{ locationLine }}
+                    </p>
 
+                    <!-- Primary Action -->
+                    <div class="mt-8 flex w-full gap-3">
+                        <a
+                            v-if="telLink"
+                            :href="telLink"
+                            class="flex flex-1 items-center justify-center rounded-2xl bg-[#0A84FF] px-4 py-3.5 text-[15px] font-semibold text-white transition active:opacity-80"
+                        >
+                            Подзвонити
+                        </a>
                         <button
                             v-if="canClaim"
                             @click="claimProfile"
-                            class="mt-6 w-full rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-md shadow-emerald-500/40 transition hover:bg-emerald-300"
+                            class="flex flex-1 items-center justify-center rounded-2xl bg-[#32D74B] px-4 py-3.5 text-[15px] font-semibold text-black transition active:opacity-80"
                         >
                             Це я
                         </button>
-                        <p
+                        <button
                             v-else
-                            class="mt-6 text-xs uppercase tracking-[0.35em] text-emerald-100/80"
+                            @click="shareProfile"
+                            class="flex flex-1 items-center justify-center rounded-2xl bg-[#1C1F22] px-4 py-3.5 text-[15px] font-semibold text-white transition active:bg-[#2C2F33]"
                         >
-                            Профіль підтверджено
-                        </p>
+                            Поділитися
+                        </button>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- MAIN CONTENT -->
-        <main class="relative z-10 -mt-16 pb-20">
-            <div class="mx-auto max-w-6xl space-y-10 px-4">
-                <!-- CONTACT & SHARE -->
-                <section class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                    <!-- CONTACTS -->
-                    <div
-                        class="rounded-3xl bg-white p-8 text-slate-900 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100"
+        <!-- CONTENT -->
+        <main class="relative z-10 -mt-4 rounded-t-[32px] bg-[#1C1F22] px-4 pb-12 pt-8 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+            <div class="mx-auto max-w-lg space-y-8">
+                <!-- Actions Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <a
+                        v-if="mapsLink"
+                        :href="mapsLink"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
                     >
-                        <div class="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">
-                                    Способи зв'язку
-                                </p>
-                                <h2 class="mt-2 text-2xl font-semibold text-slate-900">
-                                    Контакти та керування
-                                </h2>
-                            </div>
-                            <span
-                                class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-                            >
-                                {{
-                                    services.length
-                                        ? services.length + ' напрямків'
-                                        : 'Послуги не додані'
-                                }}
-                            </span>
+                        <div class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                         </div>
+                        <span class="text-sm font-medium text-white">Маршрут</span>
+                    </a>
 
-                        <div class="mt-6 grid gap-4 md:grid-cols-2">
-                            <a
-                                v-if="telLink"
-                                :href="telLink"
-                                class="group rounded-2xl border border-slate-200/80 bg-slate-50/80 p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white"
-                            >
-                                <div
-                                    class="text-sm font-semibold uppercase tracking-wide text-slate-500"
-                                >
-                                    Подзвонити
-                                </div>
-                                <p class="mt-2 text-lg font-medium text-slate-900">
-                                    {{ master.phone }}
-                                </p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    Відкриє застосунок телефону
-                                </p>
-                            </a>
-                            <div
-                                v-else
-                                class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-sm text-slate-500"
-                            >
-                                Номер телефону відсутній
-                            </div>
-
-                            <a
-                                v-if="mapsLink"
-                                :href="mapsLink"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="group rounded-2xl border border-slate-200/80 bg-slate-50/80 p-5 transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white"
-                            >
-                                <div
-                                    class="text-sm font-semibold uppercase tracking-wide text-slate-500"
-                                >
-                                    Маршрут
-                                </div>
-                                <p class="mt-2 text-lg font-medium text-slate-900">
-                                    Відкрити у Google Maps
-                                </p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    Окрема вкладка зі схемою проїзду
-                                </p>
-                            </a>
-                            <div
-                                v-else
-                                class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-sm text-slate-500"
-                            >
-                                Адреса або координати поки що не вказані
-                            </div>
+                    <button
+                        @click="shareProfile"
+                        class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
+                    >
+                        <div class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
                         </div>
+                        <span class="text-sm font-medium text-white">Поділитися</span>
+                    </button>
+                </div>
 
+                <!-- Deep Link Banner -->
+                <div
+                    v-if="master.claim_link"
+                    class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#0A84FF] to-[#0055D4] p-5 shadow-lg"
+                >
+                    <a :href="master.claim_link" class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-white/70">Власник?</p>
+                            <p class="mt-1 text-[15px] font-semibold text-white">Відкрити у додатку</p>
+                        </div>
+                        <div class="grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- About -->
+                <section v-if="master.description">
+                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Про майстра</h3>
+                    <p class="whitespace-pre-line text-[15px] leading-relaxed text-[#E1E3E5]">
+                        {{ master.description }}
+                    </p>
+                </section>
+
+                <!-- Info Grid -->
+                <section>
+                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Деталі</h3>
+                    <div class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]">
+                        <div v-if="master.experience" class="flex items-center justify-between bg-[#232629] p-4">
+                            <span class="text-[15px] text-[#8E8E93]">Досвід</span>
+                            <span class="text-[15px] font-medium text-white">{{ master.experience }} років</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-[#232629] p-4">
+                            <span class="text-[15px] text-[#8E8E93]">Послуги</span>
+                            <span class="text-[15px] font-medium text-white">{{ services.length }}</span>
+                        </div>
+                        <div v-if="master.city" class="flex items-center justify-between bg-[#232629] p-4">
+                            <span class="text-[15px] text-[#8E8E93]">Місто</span>
+                            <span class="text-[15px] font-medium text-white">{{ master.city }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Schedule -->
+                <section v-if="workingSchedule.length">
+                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Графік роботи</h3>
+                    <div class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]">
                         <div
-                            v-if="master.claim_link"
-                            class="mt-6 rounded-2xl border border-blue-100 bg-blue-50/70 p-5 text-blue-900 transition hover:-translate-y-1 hover:border-blue-200 hover:bg-blue-50"
+                            v-for="item in workingSchedule"
+                            :key="item.day"
+                            class="flex items-center justify-between bg-[#232629] p-4"
                         >
-                            <a :href="master.claim_link" class="flex items-center justify-between">
-                                <div>
-                                    <p
-                                        class="text-xs font-semibold uppercase tracking-wide text-blue-800/90"
-                                    >
-                                        Відкрити у застосунку
-                                    </p>
-                                    <p class="text-sm text-blue-800/90">
-                                        Перейдіть до Carbeat, щоб керувати профілем
-                                    </p>
-                                </div>
-                                <span
-                                    class="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white"
-                                >
-                                    Carbeat
-                                </span>
-                            </a>
+                            <span class="text-[15px] text-[#8E8E93]">{{ item.day }}</span>
+                            <span class="text-[15px] font-medium text-white">{{ item.value }}</span>
                         </div>
-                    </div>
-
-                    <!-- SHARE -->
-                    <div
-                        class="rounded-3xl bg-gradient-to-br from-sky-600 to-indigo-600 p-8 text-white shadow-2xl shadow-slate-900/30 ring-1 ring-white/10"
-                    >
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-2xl font-semibold">Поширити профіль</h3>
-                            <span class="text-xs uppercase tracking-[0.35em] text-white/70">
-                                QR · LINK
-                            </span>
-                        </div>
-                        <p class="mt-2 text-sm text-white/80">
-                            Поділіться посиланням із клієнтом або роздрукуйте QR-код для майстерні.
-                        </p>
-
-                        <button
-                            type="button"
-                            @click="shareProfile"
-                            class="mt-6 w-full rounded-2xl bg-white/95 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:bg-white"
-                        >
-                            {{ canUseShare ? 'Поділитися' : 'Копіювати посилання' }}
-                        </button>
-
-                        <p
-                            v-if="copyFeedback"
-                            class="mt-3 text-center text-sm text-emerald-200 break-all"
-                        >
-                            {{ copyFeedback }}
-                        </p>
-
-                        <div class="mt-6 flex justify-center">
-                            <QrcodeVue
-                                v-if="currentUrl"
-                                :value="currentUrl"
-                                :size="160"
-                                class="rounded-2xl bg-white p-4 text-slate-900 shadow-lg shadow-slate-900/30"
-                            />
-                        </div>
-                        <p class="mt-3 text-center text-xs text-white/70">
-                            Відскануйте, щоб миттєво перейти до профілю
-                        </p>
                     </div>
                 </section>
 
-                <!-- ABOUT + SCHEDULE -->
-                <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                    <article
-                        class="rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100"
-                    >
-                        <div class="flex items-center gap-3">
-                            <span
-                                class="h-12 w-0.5 rounded-full bg-gradient-to-b from-blue-500 to-indigo-500"
-                            />
-                            <div>
-                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">
-                                    Про майстра
-                                </p>
-                                <h2 class="text-2xl font-semibold text-slate-900">
-                                    Що важливо знати
-                                </h2>
-                            </div>
-                        </div>
-                        <p
-                            v-if="master.description"
-                            class="mt-5 whitespace-pre-line text-base leading-relaxed text-slate-600"
-                        >
-                            {{ master.description }}
-                        </p>
-                        <p v-else class="mt-5 text-sm text-slate-500">
-                            Майстер ще не заповнив опис. Зв'яжіться напряму, щоб уточнити деталі.
-                        </p>
-                    </article>
-
-                    <article
-                        class="rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100"
-                    >
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">
-                                    Графік
-                                </p>
-                                <h2 class="text-2xl font-semibold text-slate-900">Режим роботи</h2>
-                            </div>
-                            <span
-                                class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400"
-                            >
-                                UTC+2
-                            </span>
-                        </div>
-
-                        <div v-if="workingSchedule.length" class="mt-6 space-y-2">
-                            <div
-                                v-for="item in workingSchedule"
-                                :key="item.day"
-                                class="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-700"
-                            >
-                                <span class="font-semibold text-slate-900">{{ item.day }}</span>
-                                <span>{{ item.value }}</span>
-                            </div>
-                        </div>
-                        <p
-                            v-else
-                            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-sm text-slate-500"
-                        >
-                            Розклад поки не вказано.
-                        </p>
-                    </article>
-                </section>
-
-                <!-- SERVICES -->
-                <section
-                    class="rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100"
-                >
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Послуги</p>
-                            <h2 class="text-2xl font-semibold text-slate-900">
-                                Компетенції та напрями
-                            </h2>
-                        </div>
-                        <span class="text-xs uppercase tracking-[0.35em] text-slate-400">
-                            Carbeat
-                        </span>
-                    </div>
-
-                    <div v-if="mainService" class="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                        <p class="text-xs uppercase tracking-[0.35em] text-slate-500">
-                            Основний напрям
-                        </p>
-                        <p class="mt-2 text-lg font-semibold text-slate-900">
-                            {{ mainService.name }}
-                        </p>
-                    </div>
-
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        <span
-                            v-for="service in secondaryServices"
-                            :key="service.id"
-                            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm"
-                        >
-                            {{ service.name }}
-                        </span>
-                        <p v-if="!secondaryServices.length && !mainService" class="text-sm text-slate-500">
-                            Послуги наразі не додані.
-                        </p>
-                    </div>
-                </section>
-
-                <!-- GALLERY -->
-                <section
-                    v-if="gallery.length"
-                    class="rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100"
-                >
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Портфоліо</p>
-                            <h2 class="text-2xl font-semibold text-slate-900">Роботи майстра</h2>
-                        </div>
-                        <span class="text-sm text-slate-500">{{ gallery.length }} фото</span>
-                    </div>
-                    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Gallery -->
+                <section v-if="gallery.length">
+                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Портфоліо</h3>
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         <img
                             v-for="photo in gallery"
                             :key="photo.id"
                             :src="photo.url"
                             :alt="`Робота #${photo.id}`"
-                            class="h-48 w-full rounded-2xl object-cover shadow-sm ring-1 ring-slate-100"
+                            class="aspect-square w-full rounded-xl object-cover bg-[#2C2F33]"
                         />
                     </div>
                 </section>
+
+                <!-- Services Tags -->
+                <section v-if="secondaryServices.length">
+                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Всі послуги</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span
+                            v-for="service in secondaryServices"
+                            :key="service.id"
+                            class="rounded-lg bg-[#2C2F33] px-3 py-1.5 text-[14px] text-[#E1E3E5]"
+                        >
+                            {{ service.name }}
+                        </span>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <div class="flex flex-col items-center gap-6 pt-8 text-center">
+                    <div v-if="currentUrl" class="rounded-2xl bg-white p-3">
+                        <QrcodeVue :value="currentUrl" :size="120" />
+                    </div>
+                    <p class="text-xs font-medium text-[#636366]">
+                        Відскануйте, щоб відкрити в Carbeat
+                    </p>
+                </div>
             </div>
         </main>
     </div>

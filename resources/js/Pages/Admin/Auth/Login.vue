@@ -53,7 +53,7 @@
                             <label class="block text-sm font-medium text-gray-700">Enter OTP</label>
                             <input v-model="otp" type="text" inputmode="numeric" maxlength="6" placeholder="000000"
                                    class="tracking-widest w-full rounded-2xl bg-gray-100 px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            <button @click="verifyOtp" :disabled="loading || otp.length !== 6"
+                            <button @click="verifyOtp" :disabled="loading || otp.length !== 4"
                                     class="mt-2 w-full rounded-2xl bg-black px-4 py-3 text-sm text-white transition hover:opacity-90 disabled:opacity-50">
                                 {{ loading ? 'Verifying...' : 'Verify' }}
                             </button>
