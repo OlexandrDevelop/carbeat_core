@@ -12,10 +12,10 @@ class SmsVerificationController extends Controller
     public function sendCode(SendSmsCodeRequest $request, SmsService $smsService): JsonResponse
     {
         $phone = $request->input('phone');
-        $code = $smsService->generateAndSendCode($phone);
+        $smsService->generateAndSendCode($phone);
 
         return response()->json([
-            'message' => 'The code was sent successfully, code: '.$code,
+            'message' => 'The code was sent successfully',
         ], 200);
     }
 }

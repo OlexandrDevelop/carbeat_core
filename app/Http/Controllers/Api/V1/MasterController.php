@@ -22,6 +22,7 @@ use App\Http\Services\ClientService;
 use App\Http\Services\Master\MasterFetcher;
 use App\Http\Services\Master\MasterService;
 use App\Http\Services\SmsService;
+use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
 use App\Models\Master;
 use App\Models\MasterGallery;
@@ -30,6 +31,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Redis;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class MasterController extends Controller
@@ -60,7 +62,7 @@ class MasterController extends Controller
     /**
      * @throws Exception
      */
-    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService): JsonResponse
+    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService): JsonResponse
     {
         $data = $request->validated();
 
@@ -72,12 +74,28 @@ class MasterController extends Controller
 
         $user = $userService->createOrUpdateFromMaster($master);
 
-        $token = JWTAuth::claims(['phone' => $user->phone])->fromUser($user);
+        $accessToken = $tokenService->createAccessToken($user);
+        $refreshModel = $tokenService->createRefreshToken($user);
+        $expiresIn = 60 * config('auth.access_token_ttl', 15);
+
+        // Publish "master created" event to Redis for realtime map updates
+        try {
+            $available = $appointmentRedisService->isAvailableFlag($master->id);
+            $payload = (new MasterResource($master, [$master->id => $available]))->toArray($request);
+            $event = array_merge(['type' => 'master:created'], $payload);
+            Redis::publish('masters:events', json_encode($event));
+        } catch (\Throwable $e) {
+            // Non-fatal: do not block registration on realtime error
+        }
 
         return response()->json([
             'master' => new MasterResource($master),
             'user' => new UserResource($user),
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshModel->plain_token,
+            'expires_in' => $expiresIn,
+            // Backward compatibility for legacy apps expecting "token"
+            'token' => $accessToken,
         ]);
     }
 
@@ -190,6 +208,23 @@ class MasterController extends Controller
         return response()->json(['master' => new MasterResource($master->refresh())]);
     }
 
+    public function updateOwnProfile(UpdateMasterRequest $request, MasterService $masterService): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = JWTAuth::user();
+
+        if (! $user || ! $user->master) {
+            return response()->json(['error' => 'master_not_found'], 404);
+        }
+
+        $master = $user->master;
+        $this->authorize('update', $master);
+
+        $masterService->updateDetails($master, $request->validated());
+
+        return response()->json(['master' => new MasterResource($master->refresh())]);
+    }
+
     /**
      * Update master's additional services (pivot) without touching main service_id.
      */
@@ -213,12 +248,8 @@ class MasterController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    public function addGalleryPhotos(Request $request, int $id): JsonResponse
+    public function addGalleryPhotos(\App\Http\Requests\AddMasterGalleryPhotosRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'photos' => ['required', 'array', 'max:10'],
-            'photos.*' => ['required', new \App\Rules\Base64Image],
-        ]);
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
 

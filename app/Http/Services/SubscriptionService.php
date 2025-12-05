@@ -3,6 +3,7 @@
 namespace App\Http\Services;
 
 use App\DTO\SubscriptionStatus;
+use App\Models\Master;
 use App\Models\AppSetting;
 use App\Models\Subscription;
 use Carbon\Carbon;
@@ -15,6 +16,11 @@ class SubscriptionService
         $result = $this->verifyRemote($platform, $receiptOrToken, $productId);
 
         $expiresAt = $result->expires_at ? Carbon::parse($result->expires_at) : null;
+
+        $isActive = (bool) $result->active;
+        if ($expiresAt instanceof Carbon) {
+            $isActive = $expiresAt->isFuture();
+        }
 
         $subscription = Subscription::updateOrCreate(
             [
@@ -31,8 +37,18 @@ class SubscriptionService
             ]
         );
 
+        // Sync premium flags to master's record(s) for this user
+        try {
+            Master::where('user_id', $userId)->update([
+                'is_premium' => $isActive,
+                'premium_until' => $expiresAt,
+            ]);
+        } catch (\Throwable $_) {
+            // Soft-fail; do not block subscription flow
+        }
+
         return new SubscriptionStatus(
-            active: (bool) $result->active,
+            active: $isActive,
             platform: $platform,
             product_id: $subscription->product_id,
             expires_at: $subscription->expires_at
@@ -54,7 +70,6 @@ class SubscriptionService
             expires_at: $sub?->expires_at
         );
     }
-
     public function assertUserHasActiveSubscription(int $userId): void
     {
         $status = $this->getStatus($userId);

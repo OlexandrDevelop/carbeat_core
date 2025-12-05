@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\GenerateSlugForMasters;
+use App\Console\Commands\SyncSubscriptions;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
 use App\Http\Services\TelegramService;
@@ -10,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Support\Facades\Log;
 use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -55,12 +57,17 @@ return Application::configure(basePath: dirname(__DIR__))
             ->at('00:00')
             ->onSuccess(fn () => Log::info('Sitemap generated successfully'))
             ->onFailure(fn () => Log::error('Failed to generate sitemap'));
+
+        $schedule->command('subscriptions:sync')
+            ->twiceDaily(0, 12)
+            ->runInBackground();
     })
     ->withCommands(
         [
             GenerateSlugForMasters::class,
             \App\Console\Commands\ImportRatelist::class,
             \App\Commands\GenerateSitemap::class,
+            SyncSubscriptions::class,
         ]
     )
     ->create();

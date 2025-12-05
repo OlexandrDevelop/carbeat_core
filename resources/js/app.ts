@@ -6,7 +6,6 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, DefineComponent, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
-import AuthenticatedLayout from './Layouts/AuthenticatedLayout.vue';
 import AdminLayout from './Layouts/AdminLayout.vue';
 import i18n from './i18n';
 
@@ -19,13 +18,8 @@ createInertiaApp({
             `./Pages/${name}.vue`,
             import.meta.glob<DefineComponent>('./Pages/**/*.vue'),
         ).then((page) => {
-            const isAuthenticated = (window as any).Laravel?.isAuthenticated || false;
-            const isAdminPage = name.startsWith('Admin/');
-
-            if (isAdminPage) {
+            if (name.startsWith('Admin/')) {
                 page.default.layout = AdminLayout;
-            } else if (isAuthenticated && name !== 'MastersList') {
-                page.default.layout = AuthenticatedLayout;
             }
 
             return page;

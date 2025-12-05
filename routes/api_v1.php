@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\ClaimController;
 use App\Http\Controllers\Api\V1\GoogleImportController;
 use App\Http\Controllers\Api\V1\MasterController;
 use App\Http\Controllers\Api\V1\ServiceController;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\MasterSlotsController;
+use App\Http\Controllers\Api\V1\AppController;
+use App\Http\Controllers\Api\V1\UserStatusController;
+use App\Http\Controllers\Api\V1\AccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +34,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/test', function () {
     return true;
+});
+
+Route::prefix('public')->group(function () {
+    Route::get('/claim/{token}', [ClaimController::class, 'publicInfo']);
 });
 
 Route::prefix('masters')->group(function () {
@@ -69,10 +77,18 @@ Route::prefix('services')->group(function () {
     Route::get('/get-for-master/{master_id}', [ServiceController::class, 'getServicesForMaster']);
 });
 
+// App versioning endpoint
+Route::get('/app/version', [AppController::class, 'version']);
+
+// Public account deletion with OTP
+Route::post('/account/delete', [AccountController::class, 'deleteByOtp']);
+
 Route::prefix('auth')->group(function () {
     Route::post('/request-otp', [AuthController::class, 'requestOtp']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::post('/claim/send_sms', [ClaimController::class, 'sendSms']);
+    Route::post('/claim/verify', [ClaimController::class, 'verify']);
     Route::middleware('auth:api')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -109,6 +125,10 @@ Route::prefix('subscription')->middleware('auth:api')->group(function () {
     Route::get('/status', [SubscriptionController::class, 'status']);
 });
 
+// User status (limits)
+Route::middleware('auth:api')->get('/user/status', [UserStatusController::class, 'status']);
+
+Route::middleware('auth:api')->post('/master/update', [MasterController::class, 'updateOwnProfile']);
 
 
 Route::group(['middleware' => 'auth:api'], function () {

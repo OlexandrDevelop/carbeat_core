@@ -12,6 +12,8 @@ class City extends Model
 
     protected $fillable = [
         'name',
+        'latitude',
+        'longitude',
     ];
 
     public function masters(): HasMany

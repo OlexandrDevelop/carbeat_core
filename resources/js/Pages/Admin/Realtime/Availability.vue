@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, computed } from 'vue';
+import { io } from 'socket.io-client';
 
 // UI state
 const connected = ref(false);
@@ -140,11 +141,11 @@ function clearAll() {
 }
 
 let socket: any = null;
-onMounted(async () => {
+onMounted(() => {
     try {
-        // dynamic import of socket.io-client from CDN ESM build
-        const { io } = await import('https://cdn.socket.io/4.7.5/socket.io.esm.min.js');
-        socket = io('/', { path: '/socket.io/' });
+        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
+        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        socket = io(socketUrl, { path: socketPath });
         socket.on('connect', () => { connected.value = true; });
         socket.on('disconnect', () => { connected.value = false; });
         socket.on('availability:update', (m: any) => {

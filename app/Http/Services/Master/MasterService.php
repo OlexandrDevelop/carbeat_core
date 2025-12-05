@@ -4,20 +4,25 @@ namespace App\Http\Services\Master;
 
 use App\Helpers\PhoneHelper;
 use App\Helpers\PhotoHelper;
+use App\Jobs\CreateMasterThumbnails;
 use App\Http\Services\ClientService;
 use App\Http\Services\PaginatorService;
+use App\Http\Services\TelegramService;
 use App\Models\Master;
 use App\Models\City;
 use App\Models\Service;
-use App\Models\Tariff;
 use Cocur\Slugify\Slugify;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Log\LogServiceProvider;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use NotificationChannels\Telegram\TelegramMessage;
 
 class MasterService
 {
+    protected array $cityCoordinateCache = [];
+
     protected Master $model;
 
     protected PaginatorService $paginatorService;
@@ -64,16 +69,8 @@ class MasterService
 
         $master = Master::updateOrCreate(['contact_phone' => $data['contact_phone'] ?? null], $data);
 
-        // Ensure default tariff "free" if not set
-        if (! $master->tariff_id) {
-            $freeId = Tariff::where('name', 'free')->value('id');
-            if ($freeId) {
-                $master->tariff_id = $freeId;
-                $master->save();
-            }
-        }
-
         $this->handlePhoto($master, $photo);
+        $this->assignNearestCity($master);
 
         return $master;
     }
@@ -95,6 +92,13 @@ class MasterService
                 $photoName = uniqid().'.'.$extension;
                 Storage::disk('public')->put('images/'.$photoName, $photo);
                 $master->update(['photo' => 'images/'.$photoName]);
+                // Generate a square thumbnail immediately so clients can display it
+                try {
+                    (new CreateMasterThumbnails([$master->id]))->handle();
+                } catch (\Throwable $e) {
+                    // Non-fatal if thumbnail creation fails; leave for maintenance command
+
+                }
             } else {
                 throw new Exception('The provided photo is not a valid Base64 image.');
             }
@@ -108,6 +112,7 @@ class MasterService
             unset($data['photo']);
         }
         $master->update($data);
+        $this->assignNearestCity($master);
     }
 
     public function addReview(mixed $data): Model
@@ -178,5 +183,66 @@ class MasterService
         }
 
         return $master;
+    }
+
+    protected function assignNearestCity(Master $master): void
+    {
+        $lat = $master->latitude;
+        $lng = $master->longitude;
+        if ($lat === null || $lng === null) {
+            return;
+        }
+        $cityId = $this->resolveNearestCityId((float) $lat, (float) $lng);
+        if ($cityId !== null && $master->city_id !== $cityId) {
+            $master->city_id = $cityId;
+            $master->save();
+        }
+    }
+
+    protected function resolveNearestCityId(float $lat, float $lng): ?int
+    {
+        $cities = $this->getCityCoordinateCache();
+        if (empty($cities)) {
+            return null;
+        }
+        $nearestId = null;
+        $minDistance = PHP_FLOAT_MAX;
+        foreach ($cities as $city) {
+            $distance = $this->calculateDistance($lat, $lng, $city['latitude'], $city['longitude']);
+            if ($distance < $minDistance) {
+                $minDistance = $distance;
+                $nearestId = $city['id'];
+            }
+        }
+        return $nearestId;
+    }
+
+    protected function getCityCoordinateCache(): array
+    {
+        if (! empty($this->cityCoordinateCache)) {
+            return $this->cityCoordinateCache;
+        }
+        $this->cityCoordinateCache = City::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get(['id', 'latitude', 'longitude'])
+            ->map(fn ($city) => [
+                'id' => $city->id,
+                'latitude' => (float) $city->latitude,
+                'longitude' => (float) $city->longitude,
+            ])
+            ->toArray();
+
+        return $this->cityCoordinateCache;
+    }
+
+    protected function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) * sin($dLat / 2)
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
     }
 }

@@ -4,7 +4,15 @@
             <div class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
                 <h1 class="text-2xl font-semibold text-gray-900">Edit Master #{{ master?.id }}</h1>
                 <div class="flex items-center gap-2">
-                    <a v-if="master?.slug" :href="`/masters/${master.slug}`" target="_blank" rel="noopener" class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View public page</a>
+                    <a
+                        v-if="master?.slug"
+                        :href="`/m/${master.slug}`"
+                        target="_blank"
+                        rel="noopener"
+                        class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                        View public page
+                    </a>
                     <Link href="/admin/masters" class="text-gray-600 hover:text-gray-900">Back</Link>
                     <button @click="save" :disabled="saving" class="rounded-xl bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
                         {{ saving ? 'Saving...' : 'Save' }}
@@ -23,6 +31,28 @@
                         <div class="text-sm text-gray-700">Rating</div>
                         <div class="text-2xl font-semibold">{{ master?.reviews_avg_rating != null ? Number(master.reviews_avg_rating).toFixed(1) : '0.0' }}</div>
                         <div class="text-xs text-gray-500">Auto-updates from reviews</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+                        <div class="text-sm text-gray-600">Subscription</div>
+                        <div class="mt-1 text-2xl font-semibold"
+                             :class="isPremium ? 'text-purple-700' : 'text-gray-800'">
+                            {{ isPremium ? 'Premium' : 'Free plan' }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ isPremium ? `Valid until ${premiumExpiresLabel}` : 'No active subscription' }}
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+                        <div class="text-sm text-gray-600">Limits</div>
+                        <div class="mt-1 text-sm text-gray-800">
+                            {{ isPremium ? 'Premium limits applied (photos, description, services)' : 'Free limits applied' }}
+                        </div>
+                        <div v-if="master?.premium_until" class="text-xs text-gray-500 mt-1">
+                            Expires: {{ premiumExpiresLabel }}
+                        </div>
                     </div>
                 </div>
 
@@ -69,13 +99,6 @@
                         <label class="block text-sm font-medium text-gray-700">Location</label>
                         <div id="map" class="mt-2 h-64 w-full rounded-xl overflow-hidden border"></div>
                         <div class="mt-1 text-xs text-gray-500">Drag the marker or click on map to set coordinates</div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Available</label>
-                        <select v-model="form.available" class="mt-1 w-full rounded-xl bg-gray-100 px-4 py-2 text-sm">
-                            <option :value="true">Available</option>
-                            <option :value="false">Unavailable</option>
-                        </select>
                     </div>
                 </div>
 
@@ -159,7 +182,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -173,14 +196,13 @@ const services = ref<Array<{ id: number; name: string }>>([]);
 const cities = ref<Array<{ id: number; name: string }>>([]);
 const users = ref<Array<{ id: number; name: string | null; phone: string | null }>>([]);
 
-const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; available: boolean; description: string | null; service_id: number | null; service_ids: number[]; city_id: number | null }>({
+const form = reactive<{ name: string; slug: string; phone: string; address: string; latitude: number | null; longitude: number | null; description: string | null; service_id: number | null; service_ids: number[]; city_id: number | null }>({
     name: '',
     slug: '',
     phone: '',
     address: '',
     latitude: null,
     longitude: null,
-    available: false,
     description: '',
     service_id: null,
     service_ids: [],
@@ -191,6 +213,11 @@ const reviews = ref<Array<{ id: number; rating: number; review: string; created_
 const newReview = reactive<{ user_id: number | null; rating: number | null; review: string | null }>({ user_id: null, rating: null, review: '' });
 
 const previewUrl = ref<string | null>(null);
+const isPremium = computed(() => !!master.value?.is_premium);
+const premiumExpiresLabel = computed(() => {
+    if (!master.value?.premium_until) return '—';
+    return new Date(master.value.premium_until).toLocaleString();
+});
 function openPreview(url: string) { previewUrl.value = url; }
 function closePreview() { previewUrl.value = null; }
 
@@ -217,7 +244,6 @@ async function load() {
     form.address = master.value.address ?? '';
     form.latitude = master.value.latitude ?? null;
     form.longitude = master.value.longitude ?? null;
-    form.available = !!master.value.available;
     form.description = master.value.description ?? '';
     form.service_id = master.value.service_id ?? null;
     form.service_ids = (master.value.services || []).map((s: any) => s.id);

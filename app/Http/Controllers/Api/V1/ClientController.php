@@ -7,9 +7,8 @@ use App\Http\Requests\RegisterClientRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Http\Services\ClientService;
 use App\Http\Services\UserService;
+use App\Http\Services\TokenService;
 use Illuminate\Http\JsonResponse;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ClientController extends Controller
 {
@@ -21,22 +20,24 @@ class ClientController extends Controller
      * @param  ClientService  $clientService  The service handling client-related operations.
      * @return JsonResponse The response object containing the result of the registration process.
      */
-    public function register(RegisterClientRequest $request, UserService $userService, ClientService $clientService): JsonResponse
+    public function register(RegisterClientRequest $request, UserService $userService, ClientService $clientService, TokenService $tokenService): JsonResponse
     {
         $validatedData = $request->validated();
         $user = $userService->createOrUpdateForClient($validatedData);
         $validatedData['user_id'] = $user->id;
         $clientService->createOrUpdate($validatedData);
 
-        try {
-            $token = JWTAuth::claims(['phone' => $user->phone])->fromUser($user);
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Token not created '.$e->__toString()], 500);
-        }
+        $accessToken = $tokenService->createAccessToken($user);
+        $refreshModel = $tokenService->createRefreshToken($user);
+        $expiresIn = 60 * config('auth.access_token_ttl', 15);
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshModel->plain_token,
+            'expires_in' => $expiresIn,
+            // Backward compatibility
+            'token' => $accessToken,
         ]);
     }
 }

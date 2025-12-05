@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Admin\AppConfigController;
+use App\Http\Controllers\Admin\SubscriptionsAdminController;
 
 // Admin root redirect
 Route::get('/admin', function () {
@@ -13,7 +15,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth']], function () {
     Route::get('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'index'])->name('admin.masters.index');
     Route::get('/masters/{id}/edit', [\App\Http\Controllers\Admin\MasterController::class, 'edit'])->name('admin.masters.edit');
     Route::get('/import', [\App\Http\Controllers\Admin\ImportController::class, 'index'])->name('admin.import.index');
-Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, 'index'])->name('admin.api-docs.index');
+    Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, 'index'])->name('admin.api-docs.index');
     Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('admin.services.index');
     Route::get('/services/{id}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('admin.services.edit');
 
@@ -24,9 +26,7 @@ Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, '
     // Payment settings
     Route::get('/payments', [\App\Http\Controllers\Admin\PaymentSettingsController::class, 'index'])->name('admin.payments.index');
 
-    // Tariffs
-    Route::get('/tariffs', [\App\Http\Controllers\Admin\TariffController::class, 'index'])->name('admin.tariffs.index');
-    Route::get('/tariffs/{id}/edit', [\App\Http\Controllers\Admin\TariffController::class, 'edit'])->name('admin.tariffs.edit');
+    // Tariffs removed (migrated to premium flags)
 
     // Maintenance tools (UI)
     Route::get('/maintenance', function () {
@@ -37,6 +37,11 @@ Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, '
     Route::get('/realtime/availability', function () {
         return Inertia::render('Admin/Realtime/Availability');
     })->name('admin.realtime.availability');
+
+    // App config UI
+    Route::get('/app-config', [AppConfigController::class, 'index'])->name('admin.app_config.index');
+    // Subscriptions dashboard UI
+    Route::get('/subscriptions-dashboard', [SubscriptionsAdminController::class, 'index'])->name('admin.subscriptions.dashboard');
 });
 
 // Admin JSON API routes
@@ -46,6 +51,7 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
     Route::put('/masters/{id}', [\App\Http\Controllers\Admin\MasterController::class, 'update'])->name('admin.api.masters.update');
     Route::delete('/masters/{id}', [\App\Http\Controllers\Admin\MasterController::class, 'destroy'])->name('admin.api.masters.destroy');
     Route::delete('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'destroyAll'])->name('admin.api.masters.destroy_all');
+    Route::post('/masters/invite', [\App\Http\Controllers\Admin\MasterController::class, 'invite'])->name('admin.api.masters.invite');
     Route::get('/services', [\App\Http\Controllers\Admin\MasterController::class, 'services'])->name('admin.api.services');
     Route::get('/cities', [\App\Http\Controllers\Admin\MasterController::class, 'cities'])->name('admin.api.cities');
     Route::get('/masters/{id}/reviews', [\App\Http\Controllers\Admin\MasterController::class, 'reviews'])->name('admin.api.masters.reviews');
@@ -82,12 +88,17 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], functio
     Route::get('/payment-settings', [\App\Http\Controllers\Admin\PaymentSettingsController::class, 'get'])->name('admin.api.payments.get');
     Route::put('/payment-settings', [\App\Http\Controllers\Admin\PaymentSettingsController::class, 'update'])->name('admin.api.payments.update');
 
-    // Tariffs API
-    Route::get('/tariffs', [\App\Http\Controllers\Admin\TariffController::class, 'list'])->name('admin.api.tariffs.list');
-    Route::get('/tariffs/{id}', [\App\Http\Controllers\Admin\TariffController::class, 'get'])->name('admin.api.tariffs.get');
-    Route::post('/tariffs', [\App\Http\Controllers\Admin\TariffController::class, 'create'])->name('admin.api.tariffs.create');
-    Route::put('/tariffs/{id}', [\App\Http\Controllers\Admin\TariffController::class, 'update'])->name('admin.api.tariffs.update');
-    Route::delete('/tariffs/{id}', [\App\Http\Controllers\Admin\TariffController::class, 'destroy'])->name('admin.api.tariffs.destroy');
+    // App config API
+    Route::get('/app-config/versions', [AppConfigController::class, 'getVersions'])->name('admin.api.app_config.versions.get');
+    Route::post('/app-config/versions', [AppConfigController::class, 'updateVersions'])->name('admin.api.app_config.versions.update');
+    Route::get('/app-config/subscription', [AppConfigController::class, 'getSubscription'])->name('admin.api.app_config.subscription.get');
+    Route::post('/app-config/subscription', [AppConfigController::class, 'updateSubscription'])->name('admin.api.app_config.subscription.update');
+
+    // Subscriptions dashboard data
+    Route::get('/subscriptions-dashboard/list', [SubscriptionsAdminController::class, 'list'])->name('admin.api.subscriptions_dashboard.list');
+    Route::get('/subscriptions-dashboard/stats', [SubscriptionsAdminController::class, 'stats'])->name('admin.api.subscriptions_dashboard.stats');
+
+    // Tariffs API removed
 
     // Maintenance
     Route::post('/maintenance/gallery/cleanup', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cleanupMissingGallery'])->name('admin.api.maintenance.gallery.cleanup');

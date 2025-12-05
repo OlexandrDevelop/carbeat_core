@@ -2,16 +2,24 @@
 
 namespace App\Http\Services\Admin;
 
-use App\Models\Master;
+use App\Helpers\PhoneHelper;
 use App\Models\City;
+use App\Models\Master;
 use App\Models\Review;
 use App\Models\Service;
+use Daaner\TurboSMS\Facades\TurboSMS;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MasterAdminService
 {
+    public function __construct(private readonly PhoneHelper $phoneHelper)
+    {
+    }
+
     public function listMasters(array $params): LengthAwarePaginator
     {
         $query = Master::query()
@@ -221,5 +229,100 @@ class MasterAdminService
             default:
                 $query->orderBy('created_at', 'desc');
         }
+    }
+
+    public function sendInvites(array $masterIds, ?string $customMessage = null): array
+    {
+        $masters = Master::whereIn('id', $masterIds)->get([
+            'id',
+            'name',
+            'slug',
+            'contact_phone',
+            'claim_token',
+        ]);
+
+        $template = $customMessage ?: config('app.master_invite_template');
+
+        $sent = 0;
+        $skipped = [];
+
+        foreach ($masters as $master) {
+            $phone = $master->phone ?? $master->contact_phone;
+
+            if (empty($phone)) {
+                $skipped[] = [
+                    'master_id' => $master->id,
+                    'reason' => 'missing_phone',
+                ];
+                continue;
+            }
+
+            $normalizedPhone = $this->phoneHelper->normalize($phone);
+
+            if (empty($normalizedPhone)) {
+                $skipped[] = [
+                    'master_id' => $master->id,
+                    'reason' => 'invalid_phone',
+                ];
+                continue;
+            }
+
+            $this->ensureClaimToken($master);
+            $link = $this->buildAppLink($master);
+            if (! $link) {
+                $skipped[] = [
+                    'master_id' => $master->id,
+                    'reason' => 'missing_claim_link',
+                ];
+                continue;
+            }
+
+            $message = $template;
+            if (str_contains($message, ':link')) {
+                $message = str_replace(':link', $link, $message);
+            } else {
+                $message = trim($message.' '.$link);
+            }
+
+            try {
+                TurboSMS::sendMessages($normalizedPhone, $message);
+                $sent++;
+            } catch (\Throwable $e) {
+                Log::warning('Failed to send invite SMS', [
+                    'master_id' => $master->id,
+                    'phone' => $normalizedPhone,
+                    'error' => $e->getMessage(),
+                ]);
+                $skipped[] = [
+                    'master_id' => $master->id,
+                    'reason' => 'sms_failed',
+                ];
+            }
+        }
+
+        return [
+            'sent' => $sent,
+            'requested' => count($masterIds),
+            'skipped' => $skipped,
+        ];
+    }
+
+    private function ensureClaimToken(Master $master): void
+    {
+        if (empty($master->claim_token)) {
+            $master->claim_token = Str::random(40);
+            $master->save();
+        }
+    }
+
+    private function buildAppLink(Master $master): ?string
+    {
+        if (empty($master->claim_token)) {
+            return null;
+        }
+
+        $base = rtrim(config('app.claim_base_url'), '/');
+
+        return "{$base}/{$master->claim_token}?master_id={$master->id}";
     }
 }

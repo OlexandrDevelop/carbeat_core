@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Master extends Model
 {
@@ -16,6 +18,7 @@ class Master extends Model
         'updated_at',
         'password',
         'photo',
+        'claim_token',
     ];
 
     protected $casts = [
@@ -26,6 +29,10 @@ class Master extends Model
         'reviews_count' => 'integer',
         'working_hours' => 'array',
         'main_thumb_generated' => 'boolean',
+        'is_premium' => 'boolean',
+        'premium_until' => 'datetime',
+        'is_claimed' => 'boolean',
+        'phone_verified_at' => 'datetime',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -45,7 +52,6 @@ class Master extends Model
         'main_thumb_url',
         'service_id',
         'city_id',
-        'tariff_id',
         'slug',
         'user_id',
         'place_id',
@@ -56,7 +62,25 @@ class Master extends Model
         'city',
         'reviews_count',
         'working_hours',
+        'is_premium',
+        'premium_until',
+        'is_claimed',
+        'claim_token',
+        'phone_verified_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Master $master) {
+            if (empty($master->claim_token)) {
+                $master->claim_token = Str::random(40);
+            }
+
+            if ($master->is_claimed === null) {
+                $master->is_claimed = false;
+            }
+        });
+    }
 
     // Virtual attribute to keep backward compatibility
     protected $appends = ['phone', 'main_photo'];
@@ -77,6 +101,16 @@ class Master extends Model
     public function getMainPhotoAttribute(): ?string
     {
         return $this->photo ?? '/images/default-master.jpg';
+    }
+
+    public function getIsPremiumAttribute($value): bool
+    {
+        $until = $this->premium_until;
+        if ($until instanceof Carbon) {
+            return $until->isFuture();
+        }
+
+        return (bool) $value;
     }
 
     public function services(): BelongsToMany
@@ -105,10 +139,7 @@ class Master extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function tariff()
-    {
-        return $this->belongsTo(Tariff::class);
-    }
+    // Tariff relation removed in favor of is_premium / premium_until flags
 
     public function bookings(): HasMany
     {
