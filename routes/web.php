@@ -10,6 +10,11 @@ use Inertia\Inertia;
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 
+// Public pages
+Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
+Route::get('/privacy', fn () => Inertia::render('Privacy'))->name('privacy');
+Route::get('/data-deletion', fn () => Inertia::render('DataDeletion'))->name('data_deletion');
+
 Route::redirect('/', '/admin');
 
 Route::middleware('guest')->group(function () {
