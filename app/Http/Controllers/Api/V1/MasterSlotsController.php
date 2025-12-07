@@ -3,20 +3,28 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Services\Master\MasterScheduleService;
 use App\Http\Services\ScheduleService;
-use App\Models\MasterWorkSchedule;
-use App\Models\MasterTimeOff;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MasterSlotsController extends Controller
 {
-    public function listDay(int $id, Request $request, ScheduleService $schedule): JsonResponse
+    public function __construct(
+        private readonly MasterScheduleService $scheduleService,
+        private readonly ScheduleService $schedule
+    ) {}
+
+    public function listDay(int $id, Request $request): JsonResponse
     {
         $date = Carbon::parse($request->query('date', now()->toDateString()));
-        $intervals = $schedule->computeDayIntervals($id, $date);
-        return response()->json(['date' => $date->toDateString(), 'intervals' => $intervals]);
+        $intervals = $this->schedule->computeDayIntervals($id, $date);
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'intervals' => $intervals,
+        ]);
     }
 
     public function addRule(int $id, Request $request): JsonResponse
@@ -27,14 +35,16 @@ class MasterSlotsController extends Controller
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'active' => ['sometimes', 'boolean'],
         ]);
-        $data['master_id'] = $id;
-        $rule = MasterWorkSchedule::create($data);
+
+        $rule = $this->scheduleService->createWorkScheduleRule($id, $data);
+
         return response()->json($rule);
     }
 
     public function deleteRule(int $id, int $ruleId): JsonResponse
     {
-        MasterWorkSchedule::where('master_id', $id)->where('id', $ruleId)->delete();
+        $this->scheduleService->deleteWorkScheduleRule($id, $ruleId);
+
         return response()->json(['status' => 'ok']);
     }
 
@@ -45,21 +55,24 @@ class MasterSlotsController extends Controller
             'end_time' => ['required', 'date', 'after:start_time'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
-        $data['master_id'] = $id;
-        $off = MasterTimeOff::create($data);
+
+        $off = $this->scheduleService->createTimeOff($id, $data);
+
         return response()->json($off);
     }
 
     public function deleteTimeOff(int $id, int $offId): JsonResponse
     {
-        MasterTimeOff::where('master_id', $id)->where('id', $offId)->delete();
+        $this->scheduleService->deleteTimeOff($id, $offId);
+
         return response()->json(['status' => 'ok']);
     }
 
-    public function syncDay(int $id, Request $request, ScheduleService $schedule): JsonResponse
+    public function syncDay(int $id, Request $request): JsonResponse
     {
         $date = Carbon::parse($request->query('date', now()->toDateString()));
-        $schedule->syncDayToRedis($id, $date);
+        $this->schedule->syncDayToRedis($id, $date);
+
         return response()->json(['status' => 'ok']);
     }
 }

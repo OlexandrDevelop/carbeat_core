@@ -245,4 +245,34 @@ class MasterService
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return $earthRadius * $c;
     }
+
+    /**
+     * Get master by ID with eager loaded relations.
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function getMasterById(int $id): Master
+    {
+        return Master::with(['services', 'gallery', 'reviews.user'])->findOrFail($id);
+    }
+
+    /**
+     * Update master's additional services (pivot) without touching main service_id.
+     *
+     * @param  array<int>  $serviceIds
+     */
+    public function updateServices(Master $master, array $serviceIds): void
+    {
+        $serviceIds = collect($serviceIds)
+            ->map(fn ($v) => (int) $v)
+            ->unique()
+            ->values();
+
+        // Ensure main service remains represented in pivot for consistency
+        if ($master->service_id && !$serviceIds->contains((int) $master->service_id)) {
+            $serviceIds->push((int) $master->service_id);
+        }
+
+        $master->services()->sync($serviceIds->all());
+    }
 }

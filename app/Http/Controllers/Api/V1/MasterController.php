@@ -25,12 +25,9 @@ use App\Http\Services\SmsService;
 use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
 use App\Models\Master;
-use App\Models\MasterGallery;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Redis;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -52,9 +49,9 @@ class MasterController extends Controller
      * @param  int  $id  The ID of the master resource to retrieve.
      * @return MasterResource The master resource corresponding to the given ID.
      */
-    public function getMaster(int $id): MasterResource
+    public function getMaster(int $id, MasterService $masterService): MasterResource
     {
-        $master = Master::with(['services', 'gallery', 'reviews.user'])->findOrFail($id);
+        $master = $masterService->getMasterById($id);
 
         return new MasterResource($master);
     }
@@ -126,12 +123,14 @@ class MasterController extends Controller
             ]]);
     }
 
-    public function setUnavailable(SetUnavailableMasterRequest $request, string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
-    {
+    public function setUnavailable(
+        SetUnavailableMasterRequest $request,
+        string $id,
+        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+    ): JsonResponse {
         $id = (int) $id;
 
-        // Availability: set flag to unavailable
-        $appointmentRedisService->setUnavailableFlag($id);
+        $availabilityService->setUnavailable($id);
 
         return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
             'message' => 'Master is unavailable',
@@ -140,11 +139,13 @@ class MasterController extends Controller
         ]))->response();
     }
 
-    public function getAvailability(string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
-    {
+    public function getAvailability(
+        string $id,
+        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+    ): JsonResponse {
         $id = (int) $id;
 
-        $availability = $appointmentRedisService->isAvailableFlag($id);
+        $availability = $availabilityService->getAvailability($id);
 
         return response()->json(['availability' => $availability]);
     }
@@ -152,36 +153,19 @@ class MasterController extends Controller
     /**
      * Set the master as available (flag only, for map/list visibility).
      */
-    public function setAvailable(SetAvailableMasterRequest $request, string $id, AppointmentRedisService $appointmentRedisService): JsonResponse
-    {
+    public function setAvailable(
+        SetAvailableMasterRequest $request,
+        string $id,
+        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+    ): JsonResponse {
         $id = (int) $id;
-
         $data = $request->validated();
-        $durationMinutes = isset($data['duration']) ? (int) $data['duration'] : null;
-        $startTimeRaw = $data['start_time'] ?? null;
 
-        $ttlSeconds = null;
-        $expiresAtTimestamp = null;
-        if ($durationMinutes !== null) {
-            if ($startTimeRaw) {
-                try {
-                    $start = Carbon::parse($startTimeRaw);
-                    $expiresAt = $start->copy()->addMinutes($durationMinutes);
-                    $expiresAtTimestamp = $expiresAt->timestamp;
-                    $delta = $expiresAt->timestamp - now()->timestamp;
-                    $ttlSeconds = $delta > 0 ? $delta : 1; // ensure positive TTL
-                } catch (\Throwable $_) {
-                    $ttlSeconds = max(1, $durationMinutes * 60);
-                    $expiresAtTimestamp = now()->addSeconds($ttlSeconds)->timestamp;
-                }
-            } else {
-                $ttlSeconds = max(1, $durationMinutes * 60);
-                $expiresAtTimestamp = now()->addSeconds($ttlSeconds)->timestamp;
-            }
-        }
-
-        // Availability: set flag to available with calculated TTL/expiry
-        $appointmentRedisService->setAvailableFlag($id, $ttlSeconds, $expiresAtTimestamp);
+        $availabilityService->setAvailable(
+            $id,
+            isset($data['duration']) ? (int) $data['duration'] : null,
+            $data['start_time'] ?? null
+        );
 
         return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
             'message' => 'Master is available',
@@ -228,47 +212,43 @@ class MasterController extends Controller
     /**
      * Update master's additional services (pivot) without touching main service_id.
      */
-    public function updateServices(UpdateMasterServicesRequest $request, int $id): JsonResponse
-    {
+    public function updateServices(
+        UpdateMasterServicesRequest $request,
+        int $id,
+        MasterService $masterService
+    ): JsonResponse {
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
 
-        $serviceIds = collect($request->validated()['service_ids'] ?? [])
-            ->map(fn ($v) => (int) $v)
-            ->unique()
-            ->values();
-
-        // Ensure main service remains represented in pivot for consistency
-        if ($master->service_id && ! $serviceIds->contains((int) $master->service_id)) {
-            $serviceIds->push((int) $master->service_id);
-        }
-
-        $master->services()->sync($serviceIds->all());
+        $serviceIds = $request->validated()['service_ids'] ?? [];
+        $masterService->updateServices($master, $serviceIds);
 
         return response()->json(['status' => 'ok']);
     }
 
-    public function addGalleryPhotos(\App\Http\Requests\AddMasterGalleryPhotosRequest $request, int $id): JsonResponse
-    {
+    public function addGalleryPhotos(
+        \App\Http\Requests\AddMasterGalleryPhotosRequest $request,
+        int $id,
+        \App\Http\Services\Master\MasterGalleryService $galleryService
+    ): JsonResponse {
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
 
-        foreach ($request->photos as $img) {
-            $path = app(\App\Helpers\PhotoHelper::class)->saveBase64($img);
-            MasterGallery::create(['master_id' => $master->id, 'photo' => $path]);
-        }
+        $galleryService->addPhotos($master, $request->photos);
 
         return response()->json(['message' => 'uploaded']);
     }
 
-    public function deleteGalleryPhoto(DeleteMasterGalleryPhotoRequest $request, int $id, int $photoId): JsonResponse
-    {
+    public function deleteGalleryPhoto(
+        DeleteMasterGalleryPhotoRequest $request,
+        int $id,
+        int $photoId,
+        \App\Http\Services\Master\MasterGalleryService $galleryService
+    ): JsonResponse {
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
 
-        $photo = MasterGallery::where('master_id', $master->id)->where('id', $photoId)->firstOrFail();
-        Storage::disk('public')->delete($photo->photo);
-        $photo->delete();
+        $galleryService->deletePhoto($master, $photoId);
 
         return response()->json(['message' => 'deleted']);
     }
