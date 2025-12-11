@@ -8,6 +8,7 @@ use App\Http\Resources\Api\V1\DeleteAccountResponse;
 use App\Http\Services\AccountService;
 use App\Http\Services\SmsService;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\JsonResponse;
 
 class AccountController extends Controller
@@ -17,6 +18,9 @@ class AccountController extends Controller
         private readonly SmsService $smsService
     ) {}
 
+    /**
+     * @throws Exception
+     */
     public function deleteByOtp(DeleteAccountRequest $request): JsonResponse
     {
         $phone = (string) $request->input('phone');

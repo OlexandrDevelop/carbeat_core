@@ -30,6 +30,8 @@ class MasterSearchService
         masters.service_id,
         masters.is_premium,
         masters.premium_until,
+        masters.is_claimed,
+        masters.phone_verified_at,
         CASE WHEN masters.user_id IS NULL THEN 0 ELSE 1 END as approved,
         (
             6371 * acos(

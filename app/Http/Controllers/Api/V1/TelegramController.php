@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use NotificationChannels\Telegram\TelegramMessage;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 class TelegramController extends Controller
 {
-    public static function toTelegram(\Throwable $e, $request): \Illuminate\Http\JsonResponse
+    public static function toTelegram(Throwable $e, $request): JsonResponse
     {
         $userId = '';
         $userName = '';
@@ -35,7 +37,7 @@ class TelegramController extends Controller
 
         if ($methodType === 'POST') {
             $postParams = json_encode($request->all(), JSON_PRETTY_PRINT);
-            $message .= ''.'*Post Parameters:*'.'';
+            $message .= '*Post Parameters:*';
             $message .= "```json\n".$postParams."\n```";
         }
 

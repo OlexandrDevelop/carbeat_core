@@ -16,6 +16,6 @@ class SmsVerificationController extends Controller
 
         return response()->json([
             'message' => 'The code was sent successfully',
-        ], 200);
+        ]);
     }
 }

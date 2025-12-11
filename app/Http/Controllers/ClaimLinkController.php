@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AppBrand;
 use App\Models\Master;
 use Illuminate\Http\Request;
 
@@ -26,11 +27,11 @@ class ClaimLinkController extends Controller
 
     private function buildDeepLink(string $token, ?int $masterId): string
     {
-        $scheme = config('app.deep_links.scheme', 'carbeat');
+        $scheme = config('app.deep_links.scheme', AppBrand::CARBEAT);
         $host = config('app.deep_links.host', 'claim');
         $query = $masterId ? '?master_id='.$masterId : '';
 
-        return "{$scheme}://{$host}/{$token}{$query}";
+        return "$scheme://$host/$token$query";
     }
 }
 

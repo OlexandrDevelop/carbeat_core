@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Subscription\CheckSubscriptionRequest;
 use App\Http\Resources\Api\V1\SubscriptionStatusResource;
 use App\Http\Services\SubscriptionService;
-use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class SubscriptionController extends Controller

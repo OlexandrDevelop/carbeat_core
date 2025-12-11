@@ -8,10 +8,82 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use App\Models\Traits\AppScoped;
 
+/**
+ * @property int $id
+ * @property string $app
+ * @property string|null $place_id
+ * @property int|null $user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $contact_phone
+ * @property string $name
+ * @property int $age
+ * @property int $service_id
+ * @property int|null $city_id
+ * @property numeric $longitude
+ * @property numeric $latitude
+ * @property string $description
+ * @property string|null $address
+ * @property array<array-key, mixed>|null $working_hours
+ * @property bool $is_premium
+ * @property \Illuminate\Support\Carbon|null $premium_until
+ * @property bool $is_claimed
+ * @property string|null $claim_token
+ * @property \Illuminate\Support\Carbon|null $phone_verified_at
+ * @property string $photo
+ * @property bool $main_thumb_generated
+ * @property string|null $main_thumb_url
+ * @property string|null $slug
+ * @property float|null $rating_google
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Booking> $bookings
+ * @property-read int|null $bookings_count
+ * @property-read \App\Models\City|null $city
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MasterGallery> $gallery
+ * @property-read int|null $gallery_count
+ * @property-read string|null $main_photo
+ * @property string|null $phone
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Review> $reviews
+ * @property-read int|null $reviews_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Service> $services
+ * @property-read int|null $services_count
+ * @property-read \App\Models\User|null $user
+ * @method static \Database\Factories\MasterFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereAddress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereAge($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereApp($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereCityId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereClaimToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereContactPhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereIsClaimed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereIsPremium($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereLatitude($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereLongitude($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereMainThumbGenerated($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereMainThumbUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master wherePhoneVerifiedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master wherePhoto($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master wherePlaceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master wherePremiumUntil($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereRatingGoogle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereServiceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereSlug($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereWorkingHours($value)
+ * @mixin \Eloquent
+ */
 class Master extends Model
 {
-    use HasFactory;
+    use HasFactory, AppScoped;
 
     protected $hidden = [
         'created_at',

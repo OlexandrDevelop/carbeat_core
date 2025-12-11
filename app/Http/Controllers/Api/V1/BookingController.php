@@ -12,7 +12,6 @@ use App\Http\Resources\Api\V1\SlotResource;
 use App\Http\Services\BookingService;
 use App\Http\Services\SubscriptionService;
 use App\Models\Booking;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;

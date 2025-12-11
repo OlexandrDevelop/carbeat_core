@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         // Check whether user+master already exist
         $needsRegistration = true;
-        $user = \App\Models\User::where('phone', $phone)->first();
+        $user = User::where('phone', $phone)->first();
         if ($user && $user->master) {
             $needsRegistration = false;
         }
@@ -31,7 +31,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'OTP sent',
             'needs_registration' => $needsRegistration,
-        ], 200);
+        ]);
     }
 
     public function verifyOtp(VerifyCodeRequest $request, SmsService $smsService, UserService $userService, TokenService $tokenService): JsonResponse

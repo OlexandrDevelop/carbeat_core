@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\DTO\AvailabilityInterval;
-use App\Helpers\AddressHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AddMasterGalleryPhotosRequest;
 use App\Http\Requests\AddMasterRequest;
 use App\Http\Requests\AddReviewRequest;
 use App\Http\Requests\Availability\SetAvailableMasterRequest;
@@ -14,21 +13,25 @@ use App\Http\Requests\GetMasterRequest;
 use App\Http\Requests\ImportExternalMasterRequest;
 use App\Http\Requests\UpdateMasterRequest;
 use App\Http\Requests\UpdateMasterServicesRequest;
+use App\Http\Resources\Api\V1\AvailabilityResponse;
 use App\Http\Resources\Api\V1\MasterResource;
 use App\Http\Resources\Api\V1\ReviewResource;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Http\Services\Appointment\AppointmentRedisService;
 use App\Http\Services\ClientService;
+use App\Http\Services\Master\MasterAvailabilityService;
 use App\Http\Services\Master\MasterFetcher;
+use App\Http\Services\Master\MasterGalleryService;
 use App\Http\Services\Master\MasterService;
 use App\Http\Services\SmsService;
 use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
 use App\Models\Master;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
+use Throwable;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class MasterController extends Controller
@@ -78,11 +81,12 @@ class MasterController extends Controller
         // Publish "master created" event to Redis for realtime map updates
         try {
             $available = $appointmentRedisService->isAvailableFlag($master->id);
-            $payload = (new MasterResource($master, [$master->id => $available]))->toArray($request);
+            $payload = new MasterResource($master, [$master->id => $available])->toArray($request);
             $event = array_merge(['type' => 'master:created'], $payload);
             Redis::publish('masters:events', json_encode($event));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Non-fatal: do not block registration on realtime error
+            logger()->error('Failed to publish master created event to Redis: '.$e->getMessage());
         }
 
         return response()->json([
@@ -99,7 +103,7 @@ class MasterController extends Controller
     public function addReview(AddReviewRequest $request, MasterService $masterService): ReviewResource
     {
         $data = $request->validated();
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = JWTAuth::user();
         $data['user_id'] = $user->id;
         $review = $masterService->addReview($data);
@@ -107,41 +111,25 @@ class MasterController extends Controller
         return new ReviewResource($review);
     }
 
-    public function fillPlaceId(): JsonResponse
-    {
-        $masters = Master::all();
-        foreach ($masters as $master) {
-            $master->address = AddressHelper::getPlaceId($master->latitude, $master->longitude);
-            $master->save();
-        }
-
-        return response()->json(['message' => 'Place id filled',
-            'masters' => [
-                'count' => $masters->count(),
-                'first' => $masters->first()->place_id,
-                'last' => $masters->last()->place_id,
-            ]]);
-    }
-
     public function setUnavailable(
         SetUnavailableMasterRequest $request,
         string $id,
-        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+        MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
 
         $availabilityService->setUnavailable($id);
 
-        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+        return new AvailabilityResponse([
             'message' => 'Master is unavailable',
             'master_id' => $id,
             'available' => false,
-        ]))->response();
+        ])->response();
     }
 
     public function getAvailability(
         string $id,
-        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+        MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
 
@@ -156,7 +144,7 @@ class MasterController extends Controller
     public function setAvailable(
         SetAvailableMasterRequest $request,
         string $id,
-        \App\Http\Services\Master\MasterAvailabilityService $availabilityService
+        MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
         $data = $request->validated();
@@ -167,11 +155,11 @@ class MasterController extends Controller
             $data['start_time'] ?? null
         );
 
-        return (new \App\Http\Resources\Api\V1\AvailabilityResponse([
+        return new AvailabilityResponse([
             'message' => 'Master is available',
             'master_id' => $id,
             'available' => true,
-        ]))->response();
+        ])->response();
     }
 
     public function storeFromExternal(int $serviceId, ImportExternalMasterRequest $request, MasterService $masterService, ClientService $clientService)
@@ -194,7 +182,7 @@ class MasterController extends Controller
 
     public function updateOwnProfile(UpdateMasterRequest $request, MasterService $masterService): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = JWTAuth::user();
 
         if (! $user || ! $user->master) {
@@ -227,9 +215,9 @@ class MasterController extends Controller
     }
 
     public function addGalleryPhotos(
-        \App\Http\Requests\AddMasterGalleryPhotosRequest $request,
+        AddMasterGalleryPhotosRequest $request,
         int $id,
-        \App\Http\Services\Master\MasterGalleryService $galleryService
+        MasterGalleryService $galleryService
     ): JsonResponse {
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
@@ -243,7 +231,7 @@ class MasterController extends Controller
         DeleteMasterGalleryPhotoRequest $request,
         int $id,
         int $photoId,
-        \App\Http\Services\Master\MasterGalleryService $galleryService
+        MasterGalleryService $galleryService
     ): JsonResponse {
         $master = Master::findOrFail($id);
         $this->authorize('update', $master);
