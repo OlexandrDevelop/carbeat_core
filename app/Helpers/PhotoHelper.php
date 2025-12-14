@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use Illuminate\Support\Facades\Storage;
+use App\Enums\AppBrand;
 
 class PhotoHelper
 {
@@ -24,8 +25,9 @@ class PhotoHelper
 
     /**
      * Persist a base64-encoded image to the public storage disk and return the relative file path.
+     * Optional $flavor parameter controls subfolder (e.g., 'carbeat' or 'floxcity').
      */
-    public function saveBase64(string $base64): ?string
+    public function saveBase64(string $base64, ?string $flavor = null): ?string
     {
         if (empty($base64)) {
             return null;
@@ -44,7 +46,8 @@ class PhotoHelper
             return null;
         }
 
-        $fileName = 'images/' . uniqid('', true) . '.' . $extension;
+        $fl = $this->normalizeFlavor($flavor);
+        $fileName = 'images/' . $fl . '/' . uniqid('', true) . '.' . $extension;
         Storage::disk('public')->put($fileName, $decoded);
 
         return $fileName;
@@ -74,14 +77,28 @@ class PhotoHelper
 
     /**
      * Save already decoded image binary to storage and return relative path.
+     * Optional $flavor will place file under images/<flavor>/
      */
-    public function saveDecoded(string $binary, string $extension): ?string
+    public function saveDecoded(string $binary, string $extension, ?string $flavor = null): ?string
     {
         if ($binary === '' || $extension === '') {
             return null;
         }
-        $fileName = 'images/' . uniqid('', true) . '.' . strtolower($extension);
+        $fl = $this->normalizeFlavor($flavor);
+        $fileName = 'images/' . $fl . '/' . uniqid('', true) . '.' . strtolower($extension);
         Storage::disk('public')->put($fileName, $binary);
         return $fileName;
+    }
+
+    /**
+     * Normalize flavor: use explicit $flavor, or runtime config('app.client') if available, else default 'carbeat'.
+     */
+    private function normalizeFlavor(?string $flavor): string
+    {
+        if (!empty($flavor)) return (string) $flavor;
+        $cfg = config('app.client');
+        if ($cfg instanceof AppBrand) return $cfg->value;
+        if (is_string($cfg) && $cfg !== '') return $cfg;
+        return 'carbeat';
     }
 }

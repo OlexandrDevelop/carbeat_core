@@ -27,7 +27,8 @@
         "symfony/css-selector": "^7.3",
         "symfony/dom-crawler": "^7.3",
         "tightenco/ziggy": "^2.5",
-        "tymon/jwt-auth": "^2.2"
+        "tymon/jwt-auth": "^2.2",
+        "ext-fileinfo": "*"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",

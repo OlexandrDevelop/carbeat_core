@@ -21,7 +21,8 @@ class MasterGalleryService
     public function addPhotos(Master $master, array $photos): void
     {
         foreach ($photos as $img) {
-            $path = $this->photoHelper->saveBase64($img);
+            $fl = !empty($master->app) ? (string) $master->app : null;
+            $path = $this->photoHelper->saveBase64($img, $fl);
             MasterGallery::create([
                 'master_id' => $master->id,
                 'photo' => $path,
@@ -47,4 +48,3 @@ class MasterGalleryService
         $photo->delete();
     }
 }
-

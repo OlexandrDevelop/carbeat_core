@@ -89,9 +89,10 @@ class MasterService
             if (preg_match('/^data:image\/(\w+);base64,/', $photo, $matches)) {
                 $extension = $matches[1];
                 $photo = base64_decode(substr($photo, strpos($photo, ',') + 1));
-                $photoName = uniqid().'.'.$extension;
-                Storage::disk('public')->put('images/'.$photoName, $photo);
-                $master->update(['photo' => 'images/'.$photoName]);
+                // Persist under flavor directory
+                $fl = !empty($master->app) ? (string) $master->app : null;
+                $saved = app(\App\Helpers\PhotoHelper::class)->saveDecoded($photo, $extension, $fl);
+                if ($saved) $master->update(['photo' => $saved]);
                 // Generate a square thumbnail immediately so clients can display it
                 try {
                     (new CreateMasterThumbnails([$master->id]))->handle();

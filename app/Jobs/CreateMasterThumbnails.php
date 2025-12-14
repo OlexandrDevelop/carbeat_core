@@ -61,7 +61,9 @@ class CreateMasterThumbnails implements ShouldQueue
                 imagedestroy($crop);
                 imagedestroy($img);
 
-                $thumbPath = $dir . '/' . $master->id . '.png';
+                $flavor = !empty($master->app) ? (string) $master->app : 'carbeat';
+                $thumbDir = rtrim($dir, '/') . '/' . $flavor;
+                $thumbPath = $thumbDir . '/' . $master->id . '.png';
                 Storage::disk('public')->put($thumbPath, $thumbBinary);
 
                 $master->main_thumb_generated = true;
@@ -75,5 +77,3 @@ class CreateMasterThumbnails implements ShouldQueue
         return $done;
     }
 }
-
-

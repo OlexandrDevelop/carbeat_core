@@ -158,8 +158,16 @@ class RatelistImportService
                                 ->exists();
                             if ($exists) { continue; }
 
-                            // Use hash in filename to ensure stable identity
-                            $path = 'images/' . $hash . '.' . strtolower($decoded['extension']);
+                            // Use hash in filename but place under flavor-specific directory to ensure isolation
+                            $fl = !empty($master->app) ? (string) $master->app : null;
+                            // Resolve runtime config fallback if needed
+                            if (empty($fl)) {
+                                $cfg = config('app.client');
+                                if ($cfg instanceof \App\Enums\AppBrand) $fl = $cfg->value;
+                                elseif (is_string($cfg) && $cfg !== '') $fl = $cfg;
+                                else $fl = 'carbeat';
+                            }
+                            $path = 'images/' . $fl . '/' . $hash . '.' . strtolower($decoded['extension']);
                             if (! \Storage::disk('public')->exists($path)) {
                                 \Storage::disk('public')->put($path, $decoded['decoded']);
                             }

@@ -11,7 +11,7 @@ Route::get('/admin', function () {
 });
 
 // Admin UI routes (Inertia pages)
-Route::group(['prefix' => 'admin', 'middleware' => ['auth']], function () {
+Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.brand']], function () {
     Route::get('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'index'])->name('admin.masters.index');
     Route::get('/masters/{id}/edit', [\App\Http\Controllers\Admin\MasterController::class, 'edit'])->name('admin.masters.edit');
     Route::get('/import', [\App\Http\Controllers\Admin\ImportController::class, 'index'])->name('admin.import.index');
@@ -45,7 +45,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth']], function () {
 });
 
 // Admin JSON API routes
-Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api']], function () {
+Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api', 'admin.brand']], function () {
     Route::get('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'list'])->name('admin.api.masters.list');
     Route::get('/masters/{id}', [\App\Http\Controllers\Admin\MasterController::class, 'get'])->name('admin.api.masters.get');
     Route::put('/masters/{id}', [\App\Http\Controllers\Admin\MasterController::class, 'update'])->name('admin.api.masters.update');

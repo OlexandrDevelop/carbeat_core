@@ -4,6 +4,8 @@ namespace App\Http\Services\Appointment;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redis;
+use App\Models\Master;
+use App\Enums\AppBrand;
 
 class AppointmentRedisService
 {
@@ -15,9 +17,30 @@ class AppointmentRedisService
     }
 
     // ---- Availability FLAG (free/busy) ----
+    // Determine flavor for a given master id. Preference order:
+    // 1) master.app column
+    // 2) runtime config('app.client') set by middleware (AppBrand enum)
+    // 3) default 'carbeat'
+    private function flavorForMaster(int $masterId): string
+    {
+        try {
+            $m = Master::find($masterId);
+            if ($m && ! empty($m->app)) return (string) $m->app;
+        } catch (\Throwable $_) {
+            // ignore DB lookup failures and fallback
+        }
+
+        $cfg = config('app.client');
+        if ($cfg instanceof AppBrand) return $cfg->value;
+        if (is_string($cfg) && $cfg !== '') return $cfg;
+
+        return 'carbeat';
+    }
+
     public function getAvailabilityFlagKey(int $masterId): string
     {
-        return "master:{$masterId}:available";
+        $prefix = $this->flavorForMaster($masterId) . ':';
+        return "{$prefix}master:{$masterId}:available";
     }
 
     public function setAvailableFlag(int $masterId, ?int $ttlSeconds = null, ?int $expiresAtTimestamp = null): void
@@ -51,14 +74,18 @@ class AppointmentRedisService
 
     private function publishAvailabilityEvent(int $masterId, bool $available, ?int $expiresAt): void
     {
-        $payload = json_encode([
+        $flavor = $this->flavorForMaster($masterId);
+        $payloadArr = [
             'id' => $masterId,
             'available' => $available,
             'expiresAt' => $expiresAt,
             'ts' => now()->timestamp,
-        ]);
+            'flavor' => $flavor,
+        ];
+        $payload = json_encode($payloadArr);
         try {
-            Redis::publish('availability:events', $payload);
+            $channel = $flavor . ':availability:events';
+            Redis::publish($channel, $payload);
         } catch (\Throwable $e) {
             // Intentionally ignore publish errors to avoid breaking main flow
         }

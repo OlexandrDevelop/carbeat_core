@@ -5,6 +5,7 @@ use App\Console\Commands\SyncSubscriptions;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\DetectApp;
+use App\Http\Middleware\AdminBrand;
 use App\Http\Services\TelegramService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active.subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
             'plan.feature' => \App\Http\Middleware\EnsurePlanAllowsFeature::class,
+            'admin.brand' => AdminBrand::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

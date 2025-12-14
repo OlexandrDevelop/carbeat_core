@@ -1,7 +1,7 @@
 <template>
     <div class="min-h-screen bg-gray-50">
         <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
-            <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+            <div class="mx-auto max-w-8xl px-6 py-4 flex items-center justify-between">
                 <h1 class="text-2xl font-semibold text-gray-900">Masters</h1>
                 <div class="flex gap-2">
                     <input v-model="filters.search" @input="debouncedFetch" type="search" placeholder="Search"
@@ -30,7 +30,7 @@
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-6 py-6">
+        <main class="mx-auto max-w-8xl px-6 py-6">
             <div v-if="inviteFeedback" class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 <span>{{ inviteFeedback }}</span>
                 <button class="text-emerald-700 underline" @click="inviteFeedback = null">Закрити</button>

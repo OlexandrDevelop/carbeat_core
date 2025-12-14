@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use App\Enums\AppBrand;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -31,6 +32,46 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Determine brand for this request in the same order as AdminBrand middleware
+        // so that Inertia shares reflect the immediate query param / session / cookie.
+        $selected = null;
+        try {
+            $brandParam = $request->query('brand');
+            if ($brandParam) {
+                $selected = AppBrand::from($brandParam);
+            }
+        } catch (\Throwable $e) {
+            $selected = null;
+        }
+
+        if (! $selected) {
+            try {
+                $stored = $request->session()->get('admin_brand');
+                $cookieBrand = $request->cookie('admin_brand');
+
+                if ($stored) {
+                    $selected = AppBrand::from($stored);
+                } elseif ($cookieBrand) {
+                    $selected = AppBrand::from($cookieBrand);
+                }
+            } catch (\Throwable $e) {
+                $selected = null;
+            }
+        }
+
+        // Fallback to header-detection (DetectApp) if still nothing selected
+        if (! $selected) {
+            $selected = AppBrand::fromHeader($request->header('X-App'));
+        }
+
+        $brandValue = $selected instanceof AppBrand ? $selected->value : (string) ($selected ?? AppBrand::CARBEAT->value);
+        $brands = array_map(function (AppBrand $b) {
+            return [
+                'value' => $b->value,
+                'label' => strtoupper($b->value),
+            ];
+        }, AppBrand::cases());
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -47,6 +88,8 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'csrf_token' => csrf_token(),
+            'adminBrand' => $brandValue,
+            'brands' => $brands,
         ];
     }
 }

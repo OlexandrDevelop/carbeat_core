@@ -11,22 +11,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
+use Illuminate\Support\Carbon;
 
 class ImportFloxcity extends Command
 {
     protected $signature = 'import:floxcity
         {--dry-run : Do not write anything, only simulate}
-        {--batch-size=500 : Number of rows to process per chunk}
-        {--only= : Comma-separated list of entities to import (services,users,clients,masters,master_services,gallery,reviews)}
-        {--src-driver=mysql : Source DB driver}
-        {--src-host=127.0.0.1 : Source DB host}
-        {--src-port=3306 : Source DB port}
-        {--src-database= : Source DB name}
-        {--src-username= : Source DB user}
-        {--src-password= : Source DB password}
-        {--src-prefix= : Source DB table prefix}
-        {--src-storage-path= : Absolute base path where gallery files are stored (for local FS)}
-        {--src-base-url= : Base URL to fetch gallery files via HTTP if not using local path}
     ';
 
     protected $description = 'Import data for FLOXCITY brand from an external, identical database and migrate masters gallery files.';
@@ -49,14 +40,18 @@ class ImportFloxcity extends Command
     {
         $this->brand = AppBrand::FLOXCITY->value;
         $this->dryRun = (bool) $this->option('dry-run');
-        $this->batchSize = (int) $this->option('batch-size');
-        $this->only = $this->parseOnly((string) $this->option('only'));
+        // Hardcoded defaults as per one-time command requirements
+        $this->batchSize = 500;
+        $this->only = [];
 
         $this->setupLogging();
 
-        // Build source connection at runtime
+        // Move existing images and thumbnails into carbeat flavor folders
+        $this->moveExistingFilesToCarbeat();
+
+        // Build source connection at runtime (hardcoded config)
         if (! $this->configureSourceConnection()) {
-            $this->error('Failed to configure source DB connection. Provide all required --src-* options.');
+            $this->error('Failed to configure source DB connection.');
             return self::FAILURE;
         }
 
@@ -88,14 +83,6 @@ class ImportFloxcity extends Command
         return self::SUCCESS;
     }
 
-    private function parseOnly(string $only): array
-    {
-        if (trim($only) === '') {
-            return [];
-        }
-        return array_values(array_filter(array_map(fn($s) => trim(strtolower($s)), explode(',', $only))));
-    }
-
     private function setupLogging(): void
     {
         // Use default logging; important steps will also be printed to console
@@ -103,23 +90,17 @@ class ImportFloxcity extends Command
 
     private function configureSourceConnection(): bool
     {
-        $database = (string) $this->option('src-database');
-        $username = (string) $this->option('src-username');
-        $password = (string) $this->option('src-password');
-        if ($database === '' || $username === '') {
-            return false;
-        }
-
+        // Hardcoded source DB config for one-time import
         $config = [
-            'driver' => (string) $this->option('src-driver'),
-            'host' => (string) $this->option('src-host'),
-            'port' => (string) $this->option('src-port'),
-            'database' => $database,
-            'username' => $username,
-            'password' => $password,
+            'driver' => 'mysql',
+            'host' => '185.233.45.137',
+            'port' => 3398,
+            'database' => 'flox_city',
+            'username' => 'flox',
+            'password' => 'DatumSoft1C1!',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => (string) $this->option('src-prefix'),
+            'prefix' => '',
             'prefix_indexes' => true,
         ];
 
@@ -128,7 +109,7 @@ class ImportFloxcity extends Command
             DB::connection('floxcity_source')->getPdo();
             $this->info('Source DB connection established.');
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error('Cannot connect to source DB: '.$e->getMessage());
             Log::error('[floxcity-import] source connect failed', ['e' => $e]);
             return false;
@@ -144,7 +125,7 @@ class ImportFloxcity extends Command
     {
         try {
             return DB::connection('floxcity_source')->getSchemaBuilder()->hasTable($table);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return false;
         }
     }
@@ -159,7 +140,6 @@ class ImportFloxcity extends Command
             $source = DB::connection('floxcity_source');
             $count = 0; $inserted = 0; $skipped = 0;
             $source->table('services')->orderBy('id')->chunk($this->batchSize, function ($rows) use (&$count, &$inserted, &$skipped, $targetColumns) {
-                $payload = [];
                 foreach ($rows as $row) {
                     $count++;
                     $data = (array) $row;
@@ -336,9 +316,14 @@ class ImportFloxcity extends Command
                     $newMaster = $this->maps['masters'][$oldMaster] ?? null;
                     $newService = $this->maps['services'][$oldService] ?? null;
                     if (!$newMaster || !$newService) { $skipped++; continue; }
+                    // Preserve timestamps from source pivot if available, otherwise use now()
+                    $created = isset($row->created_at) && $row->created_at ? $row->created_at : Carbon::now();
+                    $updated = isset($row->updated_at) && $row->updated_at ? $row->updated_at : $created;
                     $batch[] = [
                         'master_id' => $newMaster,
                         'service_id' => $newService,
+                        'created_at' => $created,
+                        'updated_at' => $updated,
                     ];
                 }
                 if (! $this->dryRun && !empty($batch)) {
@@ -348,6 +333,7 @@ class ImportFloxcity extends Command
                 }
                 $inserted += count($batch);
                 $this->line("  processed: {$count}, inserted: {$inserted}, skipped: {$skipped}");
+                Log::info('[floxcity-import][master_services] chunk summary', ['processed' => $count, 'inserted' => $inserted, 'skipped' => $skipped]);
             });
             return true;
         });
@@ -397,75 +383,53 @@ class ImportFloxcity extends Command
         if (! $this->shouldRun('gallery') || ! $this->sourceHasTable('master_galleries')) {
             return;
         }
-        $this->task('Importing master galleries (files + DB)', function () {
+        $this->task('Importing master galleries (DB only, files must be copied manually)', function () {
             $source = DB::connection('floxcity_source');
             $targetColumns = Schema::getColumnListing('master_galleries');
-            $basePath = (string) $this->option('src-storage-path');
-            $baseUrl = (string) $this->option('src-base-url');
-            $useHttp = $baseUrl !== '';
 
-            $count = 0; $inserted = 0; $skipped = 0; $fileErrors = 0;
-            $affectedMasters = [];
+            $count = 0; $inserted = 0; $skipped = 0;
 
-            $source->table('master_galleries')->orderBy('id')->chunk($this->batchSize, function ($rows) use (&$count, &$inserted, &$skipped, &$fileErrors, &$affectedMasters, $targetColumns, $basePath, $baseUrl, $useHttp) {
+            $source->table('master_galleries')->orderBy('id')->chunk($this->batchSize, function ($rows) use (&$count, &$inserted, &$skipped, $targetColumns) {
                 foreach ($rows as $row) {
                     $count++;
+
                     $oldMaster = $row->master_id;
                     $newMaster = $this->maps['masters'][$oldMaster] ?? $this->resolveMasterIdFromSource((int) $oldMaster);
-                    if (! $newMaster) { $skipped++; continue; }
 
-                    $srcPath = (string) $row->photo; // relative path in source
-                    $contents = null;
-                    if ($this->dryRun) {
-                        $contents = 'skip';
-                    } else {
+                    // Only insert DB row if we resolved a master mapping
+                    if ($newMaster) {
+                        // NOTE: photo path must be set manually when files are copied
+                        // For now, we just track that this gallery record needs to be created
+                        $payload = Arr::only((array) $row, $targetColumns);
+                        $payload['master_id'] = $newMaster;
+                        // Keep original photo path as reference; you'll update it manually after copying files
+                        // Or set it to null/placeholder for now
+                        $payload['photo'] = $payload['photo'] ?? null; // Keep source path as placeholder
+
+                        $created = $payload['created_at'] ?? Carbon::now();
+                        $updated = $payload['updated_at'] ?? $created;
+                        $insertRow = [
+                            'master_id' => $newMaster,
+                            'photo' => $payload['photo'], // Will need manual update after file copy
+                            'created_at' => $created,
+                            'updated_at' => $updated,
+                        ];
                         try {
-                            if ($useHttp) {
-                                $url = rtrim($baseUrl, '/').'/'.ltrim($srcPath, '/');
-                                $contents = @file_get_contents($url);
-                            } else {
-                                $full = rtrim($basePath, '/').'/'.ltrim($srcPath, '/');
-                                $contents = @file_get_contents($full);
-                            }
-                        } catch (\Throwable $e) {
-                            $contents = false;
+                            DB::table('master_galleries')->insert($insertRow);
+                            $inserted++;
+                        } catch (Throwable $e) {
+                            $skipped++;
+                            Log::error('[floxcity-import] failed to insert gallery row', ['e' => $e->getMessage(), 'master_id' => $newMaster, 'source_photo' => $row->photo]);
+                            continue;
                         }
+                    } else {
+                        $skipped++;
+                        Log::info('[floxcity-import] skipped gallery (no master mapping)', ['old_master' => $oldMaster, 'source_photo' => $row->photo]);
                     }
-
-                    if ($contents === false || $contents === null) {
-                        $fileErrors++;
-                        Log::warning('[floxcity-import] gallery file not found', ['photo' => $row->photo]);
-                        continue;
-                    }
-
-                    // Save under public/images/imports/{hash or uniq}
-                    $ext = pathinfo($srcPath, PATHINFO_EXTENSION) ?: 'jpg';
-                    $newRel = 'images/imports/'.uniqid('mg_', true).'.'.$ext;
-                    if (! $this->dryRun) {
-                        Storage::disk('public')->put($newRel, $contents);
-                    }
-
-                    // Insert DB row
-                    $payload = Arr::only((array) $row, $targetColumns);
-                    $payload['master_id'] = $newMaster;
-                    $payload['photo'] = $newRel;
-                    if (! $this->dryRun) {
-                        DB::table('master_galleries')->insert(Arr::only($payload, ['master_id', 'photo']));
-                    }
-                    $affectedMasters[$newMaster] = true;
-                    $inserted++;
                 }
-                $this->line("  processed: {$count}, inserted: {$inserted}, skipped: {$skipped}, fileErrors: {$fileErrors}");
+                $this->line("  processed: {$count}, inserted: {$inserted}, skipped: {$skipped}");
+                Log::info('[floxcity-import][gallery] chunk summary', ['processed' => $count, 'inserted' => $inserted, 'skipped' => $skipped]);
             });
-
-            // Generate thumbnails for affected masters
-            if (! $this->dryRun && !empty($affectedMasters)) {
-                try {
-                    (new CreateMasterThumbnails(array_keys($affectedMasters)))->handle();
-                } catch (\Throwable $e) {
-                    Log::warning('[floxcity-import] thumbnail generation failed', ['e' => $e->getMessage()]);
-                }
-            }
 
             return true;
         });
@@ -487,7 +451,7 @@ class ImportFloxcity extends Command
                 ->select(['id', 'slug', 'contact_phone'])
                 ->where('id', $oldMasterId)
                 ->first();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $srcMaster = null;
         }
 
@@ -534,7 +498,7 @@ class ImportFloxcity extends Command
                 ->select(['id', 'name'])
                 ->where('id', $oldCityId)
                 ->first();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $srcCity = null;
         }
 
@@ -553,6 +517,9 @@ class ImportFloxcity extends Command
         return null;
     }
 
+    /**
+     * @throws Throwable
+     */
     private function task(string $title, \Closure $callback): void
     {
         $this->info($title.'...');
@@ -565,10 +532,83 @@ class ImportFloxcity extends Command
             } else {
                 DB::commit();
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             $this->error('  failed: '.$e->getMessage());
             Log::error('[floxcity-import] task failed', ['title' => $title, 'e' => $e]);
         }
+    }
+
+    /**
+     * Move existing master photos and thumbnails into carbeat-flavor folders.
+     * This ensures legacy files live under a flavor-specific path before we start importing.
+     */
+    private function moveExistingFilesToCarbeat(): void
+    {
+        $this->info('Rehoming existing master photos and thumbnails into carbeat flavor folders...');
+        $disk = Storage::disk('public');
+        $moved = 0; $thumbsMoved = 0; $errors = 0; $checked = 0;
+
+        // Process masters in batches to avoid memory spikes
+        DB::table('masters')->select(['id','photo','main_thumb_url','app'])->orderBy('id')->chunk(500, function ($rows) use (&$moved, &$thumbsMoved, &$errors, &$checked, $disk) {
+            foreach ($rows as $r) {
+                $checked++;
+                $id = $r->id;
+                $currentPhoto = $r->photo;
+                $currentThumb = $r->main_thumb_url;
+
+                // Move photo if present and not already under carbeat import path
+                if (!empty($currentPhoto) && $disk->exists($currentPhoto)) {
+                    // If path already contains /carbeat/ assume ok
+                    if (strpos($currentPhoto, '/carbeat/') === false && strpos($currentPhoto, 'images/imports/') !== 0) {
+                        try {
+                            $ext = pathinfo($currentPhoto, PATHINFO_EXTENSION) ?: 'jpg';
+                            $newRel = 'images/carbeat/' . uniqid('m_', true) . '.' . $ext;
+                            if ($this->dryRun) {
+                                $this->line("[dry-run] would move photo {$currentPhoto} -> {$newRel} for master {$id}");
+                            } else {
+                                $contents = $disk->get($currentPhoto);
+                                $ok = $disk->put($newRel, $contents);
+                                if ($ok) {
+                                    // delete old
+                                    try { $disk->delete($currentPhoto); } catch (\Throwable $_) {}
+                                    DB::table('masters')->where('id', $id)->update(['photo' => $newRel]);
+                                    $moved++;
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            $errors++;
+                            Log::warning('[floxcity-import] failed moving photo', ['master' => $id, 'from' => $currentPhoto, 'e' => $e->getMessage()]);
+                        }
+                    }
+                }
+
+                // Move thumbnail if present
+                if (!empty($currentThumb) && $disk->exists($currentThumb)) {
+                    if (strpos($currentThumb, '/carbeat/') === false && strpos($currentThumb, 'thumbnails/') === 0) {
+                        try {
+                            $ext = pathinfo($currentThumb, PATHINFO_EXTENSION) ?: 'png';
+                            $newThumb = rtrim((string) config('images.thumb.dir', 'thumbnails'), '/') . '/carbeat/' . $id . '.' . $ext;
+                            if ($this->dryRun) {
+                                $this->line("[dry-run] would move thumb {$currentThumb} -> {$newThumb} for master {$id}");
+                            } else {
+                                $contents = $disk->get($currentThumb);
+                                $ok = $disk->put($newThumb, $contents);
+                                if ($ok) {
+                                    try { $disk->delete($currentThumb); } catch (\Throwable $_) {}
+                                    DB::table('masters')->where('id', $id)->update(['main_thumb_url' => $newThumb, 'main_thumb_generated' => 1]);
+                                    $thumbsMoved++;
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            $errors++;
+                            Log::warning('[floxcity-import] failed moving thumb', ['master' => $id, 'from' => $currentThumb, 'e' => $e->getMessage()]);
+                        }
+                    }
+                }
+            }
+        });
+
+        $this->line("Rehomed files: photos={$moved}, thumbs={$thumbsMoved}, checked={$checked}, errors={$errors}");
     }
 }

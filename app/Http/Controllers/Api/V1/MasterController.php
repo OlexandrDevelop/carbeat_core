@@ -23,6 +23,7 @@ use App\Http\Services\Master\MasterAvailabilityService;
 use App\Http\Services\Master\MasterFetcher;
 use App\Http\Services\Master\MasterGalleryService;
 use App\Http\Services\Master\MasterService;
+use App\Http\Services\Realtime\RealtimePublisher;
 use App\Http\Services\SmsService;
 use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
@@ -62,7 +63,8 @@ class MasterController extends Controller
     /**
      * @throws Exception
      */
-    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService): JsonResponse
+    // Inject RealtimePublisher for publishing events
+    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService, RealtimePublisher $realtimePublisher): JsonResponse
     {
         $data = $request->validated();
 
@@ -78,16 +80,10 @@ class MasterController extends Controller
         $refreshModel = $tokenService->createRefreshToken($user);
         $expiresIn = 60 * config('auth.access_token_ttl', 15);
 
-        // Publish "master created" event to Redis for realtime map updates
-        try {
-            $available = $appointmentRedisService->isAvailableFlag($master->id);
-            $payload = new MasterResource($master, [$master->id => $available])->toArray($request);
-            $event = array_merge(['type' => 'master:created'], $payload);
-            Redis::publish('masters:events', json_encode($event));
-        } catch (Throwable $e) {
-            // Non-fatal: do not block registration on realtime error
-            logger()->error('Failed to publish master created event to Redis: '.$e->getMessage());
-        }
+        // Publish "master created" event to Redis for realtime map updates (delegated to RealtimePublisher)
+        $available = $appointmentRedisService->isAvailableFlag($master->id);
+        $payload = new MasterResource($master, [$master->id => $available])->toArray($request);
+        $realtimePublisher->publishMasterCreated($master, $payload);
 
         return response()->json([
             'master' => new MasterResource($master),

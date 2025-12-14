@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\CreateMasterThumbnails;
 use App\Models\Master;
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Command\Command as CommandAlias;
 
 class GenerateMasterThumbnails extends Command
 {
@@ -30,10 +31,10 @@ class GenerateMasterThumbnails extends Command
                 $q->where('main_thumb_generated', false)->orWhereNull('main_thumb_generated');
             });
 
-        $total = (int) $query->count();
+        $total = $query->count();
         if ($total === 0) {
             $this->info('Nothing to generate.');
-            return Command::SUCCESS;
+            return CommandAlias::SUCCESS;
         }
 
         $this->info('Generating thumbnails... Total: '.$total.'; Chunk: '.$chunk);
@@ -48,7 +49,7 @@ class GenerateMasterThumbnails extends Command
         $query->orderBy('id')->chunk($chunk, function ($masters) use (&$processed, &$doneTotal, $total, $bar, $start) {
             $ids = $masters->pluck('id')->all();
             // Run synchronously to get return value (count of generated thumbnails)
-            $done = (int) (new CreateMasterThumbnails($ids))->handle();
+            $done = new CreateMasterThumbnails($ids)->handle();
             $doneTotal += $done;
             $processed += count($ids);
             $bar->advance(count($ids));
@@ -63,7 +64,7 @@ class GenerateMasterThumbnails extends Command
         $this->newLine(2);
         $this->info('Processed: '.$processed.'; Generated: '.$doneTotal.';');
 
-        return Command::SUCCESS;
+        return CommandAlias::SUCCESS;
     }
 }
 
