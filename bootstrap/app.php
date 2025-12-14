@@ -65,6 +65,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('subscriptions:sync')
             ->twiceDaily(0, 12)
             ->runInBackground();
+        $schedule->command('telescope:prune --hours=48')
+            ->daily()
+            ->at('00:00');
     })
     ->withCommands(
         [
