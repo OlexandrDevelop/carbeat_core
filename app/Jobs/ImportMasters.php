@@ -23,16 +23,21 @@ class ImportMasters implements ShouldQueue
         private readonly string $jobId,
         private readonly int $serviceId,
         private readonly string $url,
-        private readonly ?int $pages
+        private readonly ?int $pages,
+        private readonly string $flavor = 'carbeat' // Default to carbeat if not provided
     ) {}
 
     public function handle(RatelistImportService $importService): void
     {
+        // Set the flavor in config so PhotoHelper and other services can use it
+        config(['app.client' => $this->flavor]);
+
         Log::info('Starting import job', [
             'job_id' => $this->jobId,
             'service_id' => $this->serviceId,
             'url' => $this->url,
-            'pages' => $this->pages
+            'pages' => $this->pages,
+            'flavor' => $this->flavor,
         ]);
 
         try {

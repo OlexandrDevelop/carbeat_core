@@ -25,6 +25,10 @@ class ImportController extends Controller
     {
         $validated = $request->validated();
 
+        // Determine the current brand/flavor from middleware context (admin.brand sets config['app.client'])
+        $currentBrand = config('app.client');
+        $flavor = $currentBrand instanceof \App\Enums\AppBrand ? $currentBrand->value : 'carbeat';
+
         $jobs = [];
         foreach ((array) $validated['urls'] as $url) {
             $jobId = Str::uuid()->toString();
@@ -48,6 +52,7 @@ class ImportController extends Controller
                 (int) $validated['service_id'],
                 (string) $url,
                 $validated['pages'] ?? null,
+                $flavor, // Pass flavor to job
             ));
 
             $jobs[] = [
