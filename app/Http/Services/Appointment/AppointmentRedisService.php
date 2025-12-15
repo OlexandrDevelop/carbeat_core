@@ -17,21 +17,38 @@ class AppointmentRedisService
     }
 
     // ---- Availability FLAG (free/busy) ----
-    // Determine flavor for a given master id. Preference order:
-    // 1) master.app column
-    // 2) runtime config('app.client') set by middleware (AppBrand enum)
-    // 3) default 'carbeat'
-    private function flavorForMaster(int $masterId): string
-    {
-        // Use cached flavor from runtime cache if available
-        static $flavorCache = [];
+    // Cache for flavor/app values to avoid repeated lookups
+    private static array $flavorCache = [];
 
-        if (isset($flavorCache[$masterId])) {
-            return $flavorCache[$masterId];
+    /**
+     * Get availability flag key for a master.
+     * Optionally accepts the master's app/flavor to avoid DB lookups.
+     *
+     * @param int $masterId The master ID
+     * @param string|null $flavor The master's app/flavor. If null, uses default config value.
+     * @return string The Redis key for this master's availability flag
+     */
+    public function getAvailabilityFlagKey(int $masterId, ?string $flavor = null): string
+    {
+        if ($flavor === null) {
+            // Fallback to config default if flavor not provided
+            $flavor = $this->getDefaultFlavor();
+        }
+
+        return "{$flavor}:master:{$masterId}:available";
+    }
+
+    /**
+     * Get the default flavor from config
+     */
+    private function getDefaultFlavor(): string
+    {
+        if (isset(self::$flavorCache['__default__'])) {
+            return self::$flavorCache['__default__'];
         }
 
         $cfg = config('app.client');
-        $flavor = 'carbeat'; // default
+        $flavor = 'carbeat'; // ultimate default
 
         if ($cfg instanceof AppBrand) {
             $flavor = $cfg->value;
@@ -39,25 +56,19 @@ class AppointmentRedisService
             $flavor = $cfg;
         }
 
-        // Cache the result to avoid repeated lookups
-        $flavorCache[$masterId] = $flavor;
+        self::$flavorCache['__default__'] = $flavor;
         return $flavor;
     }
 
-    public function getAvailabilityFlagKey(int $masterId): string
+    public function setAvailableFlag(int $masterId, ?int $ttlSeconds = null, ?int $expiresAtTimestamp = null, ?string $flavor = null): void
     {
-        $prefix = $this->flavorForMaster($masterId) . ':';
-        return "{$prefix}master:{$masterId}:available";
-    }
-
-    public function setAvailableFlag(int $masterId, ?int $ttlSeconds = null, ?int $expiresAtTimestamp = null): void
-    {
+        $flavor = $flavor ?? $this->getDefaultFlavor();
         $effectiveTtl = $ttlSeconds ?? (int) env('AVAILABILITY_TTL_SECONDS', 3600);
 
         if ($effectiveTtl > 0) {
-            Redis::set($this->getAvailabilityFlagKey($masterId), 1, 'EX', $effectiveTtl);
+            Redis::set($this->getAvailabilityFlagKey($masterId, $flavor), 1, 'EX', $effectiveTtl);
         } else {
-            Redis::set($this->getAvailabilityFlagKey($masterId), 1);
+            Redis::set($this->getAvailabilityFlagKey($masterId, $flavor), 1);
         }
 
         $finalExpiresAt = $expiresAtTimestamp;
@@ -65,23 +76,25 @@ class AppointmentRedisService
             $finalExpiresAt = now()->addSeconds($effectiveTtl)->timestamp;
         }
 
-        $this->publishAvailabilityEvent($masterId, true, $finalExpiresAt);
+        $this->publishAvailabilityEvent($masterId, true, $finalExpiresAt, $flavor);
     }
 
-    public function setUnavailableFlag(int $masterId): void
+    public function setUnavailableFlag(int $masterId, ?string $flavor = null): void
     {
-        Redis::del($this->getAvailabilityFlagKey($masterId));
-        $this->publishAvailabilityEvent($masterId, false, null);
+        $flavor = $flavor ?? $this->getDefaultFlavor();
+        Redis::del($this->getAvailabilityFlagKey($masterId, $flavor));
+        $this->publishAvailabilityEvent($masterId, false, null, $flavor);
     }
 
-    public function isAvailableFlag(int $masterId): bool
+    public function isAvailableFlag(int $masterId, ?string $flavor = null): bool
     {
-        return (bool) Redis::exists($this->getAvailabilityFlagKey($masterId));
+        $flavor = $flavor ?? $this->getDefaultFlavor();
+        return (bool) Redis::exists($this->getAvailabilityFlagKey($masterId, $flavor));
     }
 
-    private function publishAvailabilityEvent(int $masterId, bool $available, ?int $expiresAt): void
+    private function publishAvailabilityEvent(int $masterId, bool $available, ?int $expiresAt, ?string $flavor = null): void
     {
-        $flavor = $this->flavorForMaster($masterId);
+        $flavor = $flavor ?? $this->getDefaultFlavor();
         $payloadArr = [
             'id' => $masterId,
             'available' => $available,
@@ -98,13 +111,18 @@ class AppointmentRedisService
         }
     }
 
-    public function getAvailabilityFlagsForMany(array $masterIds): array
+    public function getAvailabilityFlagsForMany(array $masterIds, ?array $masterAppMap = null): array
     {
         $availability = [];
         /** @phpstan-ignore-next-line */
-        $results = Redis::pipeline(function ($pipe) use ($masterIds) {
+        $results = Redis::pipeline(function ($pipe) use ($masterIds, $masterAppMap) {
             foreach ($masterIds as $masterId) {
-                $pipe->exists($this->getAvailabilityFlagKey($masterId));
+                // Get flavor from masterAppMap if provided, otherwise use default
+                $flavor = null;
+                if ($masterAppMap !== null && isset($masterAppMap[$masterId])) {
+                    $flavor = $masterAppMap[$masterId];
+                }
+                $pipe->exists($this->getAvailabilityFlagKey($masterId, $flavor));
             }
         });
         foreach ($masterIds as $index => $masterId) {

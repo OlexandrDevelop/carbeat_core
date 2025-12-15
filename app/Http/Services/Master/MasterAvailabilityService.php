@@ -47,32 +47,44 @@ class MasterAvailabilityService
 
     /**
      * Set master as available.
+     *
+     * @param int $masterId The master ID
+     * @param int|null $durationMinutes Optional duration in minutes
+     * @param string|null $startTime Optional start time
+     * @param string|null $flavor Optional master's app/brand to avoid DB lookups
      */
-    public function setAvailable(int $masterId, ?int $durationMinutes = null, ?string $startTime = null): void
+    public function setAvailable(int $masterId, ?int $durationMinutes = null, ?string $startTime = null, ?string $flavor = null): void
     {
         $calculated = $this->calculateAvailabilityTtl($durationMinutes, $startTime);
-        
+
         $this->appointmentRedisService->setAvailableFlag(
             $masterId,
             $calculated['ttl'],
-            $calculated['expires_at']
+            $calculated['expires_at'],
+            $flavor
         );
     }
 
     /**
      * Set master as unavailable.
+     *
+     * @param int $masterId The master ID
+     * @param string|null $flavor Optional master's app/brand to avoid DB lookups
      */
-    public function setUnavailable(int $masterId): void
+    public function setUnavailable(int $masterId, ?string $flavor = null): void
     {
-        $this->appointmentRedisService->setUnavailableFlag($masterId);
+        $this->appointmentRedisService->setUnavailableFlag($masterId, $flavor);
     }
 
     /**
      * Get master availability status.
+     *
+     * @param int $masterId The master ID
+     * @param string|null $flavor Optional master's app/brand to avoid DB lookups
      */
-    public function getAvailability(int $masterId): bool
+    public function getAvailability(int $masterId, ?string $flavor = null): bool
     {
-        return $this->appointmentRedisService->isAvailableFlag($masterId);
+        return $this->appointmentRedisService->isAvailableFlag($masterId, $flavor);
     }
 }
 

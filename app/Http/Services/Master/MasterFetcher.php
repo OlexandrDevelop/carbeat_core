@@ -39,13 +39,20 @@ readonly class MasterFetcher
             $filters
         );
 
-        // Extract master IDs from the array data
-        $masterIds = array_map(fn ($m) => $m['id'] ?? null, $masters->getCollection()->all());
-        $masterIds = array_filter($masterIds);
+        // Extract master IDs and app values from the array data
+        $masterIds = [];
+        $masterAppMap = [];
+        foreach ($masters->getCollection()->all() as $m) {
+            $masterId = $m['id'] ?? null;
+            if ($masterId) {
+                $masterIds[] = $masterId;
+                $masterAppMap[$masterId] = $m['app'] ?? 'carbeat';
+            }
+        }
 
-        // Use simple availability flags map
+        // Use simple availability flags map, passing app values to avoid DB lookups
         $availabilityMap = $this->appointmentRedisService
-            ->getAvailabilityFlagsForMany($masterIds);
+            ->getAvailabilityFlagsForMany($masterIds, $masterAppMap);
 
         $masters = $this->applyAvailabilityFilter($masters, $filters['available'], $availabilityMap);
 

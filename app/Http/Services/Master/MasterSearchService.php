@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Master;
 
+use App\Enums\AppBrand;
 use App\Models\Master;
 use Illuminate\Support\Facades\DB;
 
@@ -86,9 +87,16 @@ class MasterSearchService
         $results = DB::select($query, $queryParams);
 
         // Convert raw results to array format for compatibility
-        // Avoid triggering Eloquent's global scopes and N+1 queries
+        // Ensure app field is present for each master to avoid N+1 queries in Redis service
         return array_map(function ($result) {
-            return (array) $result;
+            $arr = (array) $result;
+            // Ensure app field exists (should be selected in query, but add default as safety)
+            if (!isset($arr['app'])) {
+                $arr['app'] = config('app.client') instanceof AppBrand
+                    ? config('app.client')->value
+                    : (config('app.client') ?: 'carbeat');
+            }
+            return $arr;
         }, $results);
     }
 

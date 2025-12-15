@@ -81,7 +81,7 @@ class MasterController extends Controller
         $expiresIn = 60 * config('auth.access_token_ttl', 15);
 
         // Publish "master created" event to Redis for realtime map updates (delegated to RealtimePublisher)
-        $available = $appointmentRedisService->isAvailableFlag($master->id);
+        $available = $appointmentRedisService->isAvailableFlag($master->id, $master->app);
         $payload = new MasterResource($master, [$master->id => $available])->toArray($request);
         $realtimePublisher->publishMasterCreated($master, $payload);
 
@@ -113,8 +113,9 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
+        $master = Master::findOrFail($id);
 
-        $availabilityService->setUnavailable($id);
+        $availabilityService->setUnavailable($id, $master->app);
 
         return new AvailabilityResponse([
             'message' => 'Master is unavailable',
@@ -128,8 +129,9 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
+        $master = Master::findOrFail($id);
 
-        $availability = $availabilityService->getAvailability($id);
+        $availability = $availabilityService->getAvailability($id, $master->app);
 
         return response()->json(['availability' => $availability]);
     }
@@ -143,12 +145,14 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
+        $master = Master::findOrFail($id);
         $data = $request->validated();
 
         $availabilityService->setAvailable(
             $id,
             isset($data['duration']) ? (int) $data['duration'] : null,
-            $data['start_time'] ?? null
+            $data['start_time'] ?? null,
+            $master->app
         );
 
         return new AvailabilityResponse([
