@@ -22,7 +22,7 @@ class CreateMasterThumbnails implements ShouldQueue
 
     public function handle(): int
     {
-        $size = (int) config('images.thumb.size', 20);
+        $size = (int) config('images.thumb.size', 50);
         $dir = trim((string) config('images.thumb.dir', 'thumbnails'), '/');
         $done = 0;
 
