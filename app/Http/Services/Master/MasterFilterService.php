@@ -8,6 +8,12 @@ class MasterFilterService
     {
         $whereClauses = [];
 
+        // Filter by app/brand (CRITICAL for brand isolation)
+        if (! empty($filters['app'])) {
+            $whereClauses[] = 'masters.app = :app';
+            $queryParams['app'] = $filters['app'];
+        }
+
         if (! empty($filters['name'])) {
             $whereClauses[] = 'masters.name LIKE :name';
             $queryParams['name'] = '%'.$filters['name'].'%';

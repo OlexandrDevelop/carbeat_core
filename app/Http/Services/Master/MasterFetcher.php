@@ -18,12 +18,17 @@ readonly class MasterFetcher
     {
         $page = $validated['page'] ?? 1;
 
+        // Get app from config (set by DetectApp middleware from X-App header)
+        $brand = config('app.client');
+        $app = $brand instanceof \App\Enums\AppBrand ? $brand->value : ($brand ?: 'carbeat');
+
         $filters = [
             'name' => $validated['name'] ?? null,
             'distance' => $validated['distance'] ?? null,
             'service_id' => $validated['service_id'] ?? null,
             'rating' => $validated['rating'] ?? null,
             'available' => $validated['available'] ?? null,
+            'app' => $app, // CRITICAL: filter by brand
         ];
 
         //Kyiv coordinates by default
