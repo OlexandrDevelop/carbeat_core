@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AppBrand;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportStartRequest;
 use App\Http\Resources\Admin\ImportProgressResource;
 use App\Http\Resources\Admin\ImportStartResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Psr\SimpleCache\InvalidArgumentException;
 
 class ImportController extends Controller
 {
@@ -27,7 +28,7 @@ class ImportController extends Controller
 
         // Determine the current brand/flavor from middleware context (admin.brand sets config['app.client'])
         $currentBrand = config('app.client');
-        $flavor = $currentBrand instanceof \App\Enums\AppBrand ? $currentBrand->value : 'carbeat';
+        $flavor = $currentBrand instanceof AppBrand ? $currentBrand->value : 'carbeat';
 
         $jobs = [];
         foreach ((array) $validated['urls'] as $url) {
@@ -61,9 +62,12 @@ class ImportController extends Controller
             ];
         }
 
-        return (new ImportStartResponse(['jobs' => $jobs]))->response();
+        return new ImportStartResponse(['jobs' => $jobs])->response();
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function getProgress(string $jobId): JsonResponse
     {
         $progress = Cache::store('redis')->get("import_progress_{$jobId}");
@@ -72,7 +76,7 @@ class ImportController extends Controller
             return response()->json(['status' => 'not_found'], 404);
         }
 
-        return response()->json((new ImportProgressResource($progress))->toArray(request()));
+        return response()->json(new ImportProgressResource($progress)->toArray(request()));
     }
 
     public function stop(string $jobId): JsonResponse

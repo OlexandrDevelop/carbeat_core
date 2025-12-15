@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Master;
 
+use App\Models\Master;
 use Illuminate\Support\Facades\DB;
 
 class MasterSearchService
@@ -32,6 +33,9 @@ class MasterSearchService
         masters.premium_until,
         masters.is_claimed,
         masters.phone_verified_at,
+        masters.app,
+        masters.user_id,
+        masters.contact_phone,
         CASE WHEN masters.user_id IS NULL THEN 0 ELSE 1 END as approved,
         (
             6371 * acos(
@@ -79,7 +83,13 @@ class MasterSearchService
     ';
         $query .= " LIMIT {$perPage} OFFSET {$offset}";
 
-        return DB::select($query, $queryParams);
+        $results = DB::select($query, $queryParams);
+
+        // Convert raw results to array format for compatibility
+        // Avoid triggering Eloquent's global scopes and N+1 queries
+        return array_map(function ($result) {
+            return (array) $result;
+        }, $results);
     }
 
     private static function calculateSearchRadius(float $zoom): float

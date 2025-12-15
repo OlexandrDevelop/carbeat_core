@@ -39,9 +39,13 @@ readonly class MasterFetcher
             $filters
         );
 
+        // Extract master IDs from the array data
+        $masterIds = array_map(fn ($m) => $m['id'] ?? null, $masters->getCollection()->all());
+        $masterIds = array_filter($masterIds);
+
         // Use simple availability flags map
         $availabilityMap = $this->appointmentRedisService
-            ->getAvailabilityFlagsForMany($masters->pluck('id')->all());
+            ->getAvailabilityFlagsForMany($masterIds);
 
         $masters = $this->applyAvailabilityFilter($masters, $filters['available'], $availabilityMap);
 
@@ -62,7 +66,7 @@ readonly class MasterFetcher
             return $masters;
         }
 
-        $filtered = $masters->getCollection()->filter(fn ($m) => $availabilityMap[$m->id] ?? false);
+        $filtered = $masters->getCollection()->filter(fn ($m) => $availabilityMap[$m['id'] ?? null] ?? false);
 
         return new LengthAwarePaginator(
             $filtered->forPage($masters->currentPage(), $masters->perPage()),

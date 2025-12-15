@@ -23,18 +23,25 @@ class AppointmentRedisService
     // 3) default 'carbeat'
     private function flavorForMaster(int $masterId): string
     {
-        try {
-            $m = Master::find($masterId);
-            if ($m && ! empty($m->app)) return (string) $m->app;
-        } catch (\Throwable $_) {
-            // ignore DB lookup failures and fallback
+        // Use cached flavor from runtime cache if available
+        static $flavorCache = [];
+
+        if (isset($flavorCache[$masterId])) {
+            return $flavorCache[$masterId];
         }
 
         $cfg = config('app.client');
-        if ($cfg instanceof AppBrand) return $cfg->value;
-        if (is_string($cfg) && $cfg !== '') return $cfg;
+        $flavor = 'carbeat'; // default
 
-        return 'carbeat';
+        if ($cfg instanceof AppBrand) {
+            $flavor = $cfg->value;
+        } elseif (is_string($cfg) && $cfg !== '') {
+            $flavor = $cfg;
+        }
+
+        // Cache the result to avoid repeated lookups
+        $flavorCache[$masterId] = $flavor;
+        return $flavor;
     }
 
     public function getAvailabilityFlagKey(int $masterId): string

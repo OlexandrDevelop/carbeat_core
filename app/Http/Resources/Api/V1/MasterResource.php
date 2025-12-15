@@ -46,37 +46,61 @@ class MasterResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * This method is used to transform the `Master` model into an array that can be returned as a JSON response.
+     * This method is used to transform the `Master` model or array data into a JSON response.
      * It calculates the average rating of the master based on the reviews and returns an array containing the master's details.
+     * Optimized to handle both Eloquent models and raw array data without triggering N+1 queries.
      */
     public function toArray(Request $request): array
     {
+        // Safely access properties, handling both array and object resources
+        $id = $this->getResourceProperty('id');
+        $name = $this->getResourceProperty('name');
+        $latitude = $this->getResourceProperty('latitude');
+        $longitude = $this->getResourceProperty('longitude');
+        $description = $this->getResourceProperty('description');
+        $address = $this->getResourceProperty('address');
+        $age = $this->getResourceProperty('age');
+        $phone = $this->getResourceProperty('phone');
+        $reviewsCount = $this->getResourceProperty('reviews_count');
+        $rating = $this->getResourceProperty('rating');
+        $photo = $this->getResourceProperty('photo');
+        $mainThumbUrl = $this->getResourceProperty('main_thumb_url');
+        $distance = $this->getResourceProperty('distance');
+        $serviceId = $this->getResourceProperty('service_id');
+        $approved = $this->getResourceProperty('approved');
+        $isPremium = $this->getResourceProperty('is_premium');
+        $premiumUntil = $this->getResourceProperty('premium_until');
+        $isClaimed = $this->getResourceProperty('is_claimed');
+        $phoneVerifiedAt = $this->getResourceProperty('phone_verified_at');
+        $slug = $this->getResourceProperty('slug');
+        $userId = $this->getResourceProperty('user_id');
+
         return [
-            'id' => (int) $this->id,
-            'name' => (string) $this->name,
-            'latitude' => (float) $this->latitude,
-            'longitude' => (float) $this->longitude,
-            'description' => $this->description,
-            'address' => $this->getFormattedAddress($this->address),
-            'age' => (int) $this->age,
-            'phone' => $this->phone,
-            'reviews_count' => (int) $this->reviews_count,
-            'rating' => (float) round($this->rating, 1),
-            'main_photo' => (string) 'storage/'.$this->photo,
-            'main_thumb_url' => $this->main_thumb_url ? (string) ('storage/'.$this->main_thumb_url) : null,
-            'distance' => (float) round($this->distance, 3),
-            'main_service_id' => (int) $this->service_id,
-            'available' => array_key_exists($this->id, $this->availabilityMap)
-                ? (bool) $this->availabilityMap[$this->id]
+            'id' => (int) $id,
+            'name' => (string) $name,
+            'latitude' => (float) $latitude,
+            'longitude' => (float) $longitude,
+            'description' => $description,
+            'address' => $this->getFormattedAddress($address),
+            'age' => (int) $age,
+            'phone' => $phone,
+            'reviews_count' => (int) $reviewsCount,
+            'rating' => (float) round($rating, 1),
+            'main_photo' => (string) 'storage/'.$photo,
+            'main_thumb_url' => $mainThumbUrl ? (string) ('storage/'.$mainThumbUrl) : null,
+            'distance' => (float) round($distance, 3),
+            'main_service_id' => (int) $serviceId,
+            'available' => array_key_exists($id, $this->availabilityMap)
+                ? (bool) $this->availabilityMap[$id]
                 : false,
-            'approved' => isset($this->approved)
-                ? (bool) $this->approved
-                : (bool) ($this->user_id ?? 0),
-            'is_premium' => (bool) $this->is_premium,
-            'premium_until' => optional($this->premium_until)->toISOString(),
-            'is_claimed' => (bool) $this->is_claimed,
-            'phone_verified_at' => optional($this->phone_verified_at)->toISOString(),
-            'slug' => (string) $this->slug,
+            'approved' => $approved !== null
+                ? (bool) $approved
+                : (bool) ($userId ?? 0),
+            'is_premium' => (bool) $isPremium,
+            'premium_until' => $this->formatDateTime($premiumUntil),
+            'is_claimed' => (bool) $isClaimed,
+            'phone_verified_at' => $this->formatDateTime($phoneVerifiedAt),
+            'slug' => (string) $slug,
             // Include services only for single master endpoint (when Eloquent relation is loaded)
             'services' => $this->when(
                 ($this->resource instanceof \Illuminate\Database\Eloquent\Model)
@@ -125,6 +149,43 @@ class MasterResource extends JsonResource
                 }
             ),
         ];
+    }
+
+    /**
+     * Safely get a property from either array or object resource
+     */
+    private function getResourceProperty(string $property)
+    {
+        if (is_array($this->resource)) {
+            return $this->resource[$property] ?? null;
+        }
+
+        return $this->{$property} ?? null;
+    }
+
+    /**
+     * Format datetime string to ISO format
+     */
+    private function formatDateTime($value): ?string
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        if ($value instanceof \DateTime || $value instanceof \Illuminate\Support\Carbon) {
+            return $value->toISOString();
+        }
+
+        // If it's already a string timestamp, try to parse it
+        if (is_string($value)) {
+            try {
+                return \Carbon\Carbon::parse($value)->toISOString();
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private function getFormattedAddress($address)
