@@ -1,29 +1,40 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 class LandingController extends Controller
 {
-    public function __invoke(): InertiaResponse|Response
+    public function __invoke()
     {
-        // Keep the old behavior for logged-in users (go to admin UI)
-        if (Auth::check()) {
-            return Inertia::location(route('admin.masters.index'));
-        }
+        $structuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'SoftwareApplication',
+            'name' => 'Carbeat',
+            'operatingSystem' => 'ANDROID',
+            'applicationCategory' => 'BusinessApplication',
+            'aggregateRating' => [
+                '@type' => 'AggregateRating',
+                'ratingValue' => '4.5',
+                'ratingCount' => '123',
+            ],
+            'offers' => [
+                '@type' => 'Offer',
+                'price' => '0',
+                'priceCurrency' => 'UAH',
+            ],
+        ];
 
         return Inertia::render('Landing', [
             'appName' => config('app.name'),
-            'adminUrl' => url('/admin'),
+            'adminUrl' => route('login'),
             'termsUrl' => route('terms'),
             'privacyUrl' => route('privacy'),
             'dataDeletionUrl' => route('data_deletion'),
+            'playMarketUrl' => 'https://play.google.com/store/apps/details?id=online.carbeat.app',
+            'structuredData' => $structuredData,
         ]);
     }
 }
+
