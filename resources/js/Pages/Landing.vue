@@ -1,6 +1,44 @@
 <template>
     <div class="min-h-screen bg-white text-gray-900">
-        <Head :title="`${appName}`" />
+        <Head>
+            <title>Carbeat: Пошук автосервісів та майстрів</title>
+            <meta name="description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
+            <meta name="keywords" content="автосервіс, пошук майстрів, ремонт авто, запис на СТО, Carbeat" />
+
+            <!-- Open Graph / Facebook -->
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content="https://carbeat.online/" />
+            <meta property="og:title" content="Carbeat: Пошук автосервісів та майстрів" />
+            <meta property="og:description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
+            <meta property="og:image" content="https://carbeat.online/og-image.jpg" />
+
+            <!-- Twitter -->
+            <meta property="twitter:card" content="summary_large_image" />
+            <meta property="twitter:url" content="https://carbeat.online/" />
+            <meta property="twitter:title" content="Carbeat: Пошук автосервісів та майстрів" />
+            <meta property="twitter:description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
+            <meta property="twitter:image" content="https://carbeat.online/og-image.jpg" />
+
+            <script type="application/ld+json">
+                {
+                    "@context": "https://schema.org",
+                    "@type": "SoftwareApplication",
+                    "name": "Carbeat",
+                    "operatingSystem": "ANDROID",
+                    "applicationCategory": "BusinessApplication",
+                    "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": "4.5",
+                        "ratingCount": "123"
+                    },
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "UAH"
+                    }
+                }
+            </script>
+        </Head>
 
         <header class="border-b border-gray-100">
             <div
@@ -60,6 +98,7 @@
                         <a
                             :href="playMarketUrl"
                             target="_blank"
+                            rel="noopener noreferrer"
                             class="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-800"
                         >
                             <svg

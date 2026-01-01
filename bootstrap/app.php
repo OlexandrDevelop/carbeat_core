@@ -53,6 +53,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 app(TelegramService::class)->report($e);
             }
         });
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => $e->getMessage()], $e->getStatusCode());
+            }
+
+            return \Inertia\Inertia::render('Error', ['status' => $e->getStatusCode()])
+                ->toResponse($request)
+                ->setStatusCode($e->getStatusCode());
+        });
+
         Integration::handles($exceptions);
     })
     ->withSchedule(function (Schedule $schedule) {
