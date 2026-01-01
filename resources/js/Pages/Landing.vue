@@ -1,43 +1,39 @@
 <template>
     <div class="min-h-screen bg-white text-gray-900">
         <Head>
-            <title>Carbeat: Пошук автосервісів та майстрів</title>
-            <meta name="description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
-            <meta name="keywords" content="автосервіс, пошук майстрів, ремонт авто, запис на СТО, Carbeat" />
+            <title>Автосервіс та ремонт авто: Carbeat - пошук майстрів</title>
+            <meta name="description" content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів." />
+            <meta name="keywords" content="автосервіс, сто, ремонт авто, пошук майстрів, запис на сто, carbeat" />
 
             <!-- Open Graph / Facebook -->
             <meta property="og:type" content="website" />
             <meta property="og:url" content="https://carbeat.online/" />
-            <meta property="og:title" content="Carbeat: Пошук автосервісів та майстрів" />
-            <meta property="og:description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
-            <meta property="og:image" content="https://carbeat.online/og-image.jpg" />
+            <meta property="og:title" content="Автосервіс та ремонт авто: Carbeat - пошук майстрів" />
+            <meta
+                property="og:description"
+                content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів."
+            />
+            <meta
+                property="og:image"
+                content="https://carbeat.online/og-image.jpg"
+            />
+            <meta property="og:site_name" content="Carbeat" />
 
             <!-- Twitter -->
             <meta property="twitter:card" content="summary_large_image" />
             <meta property="twitter:url" content="https://carbeat.online/" />
-            <meta property="twitter:title" content="Carbeat: Пошук автосервісів та майстрів" />
-            <meta property="twitter:description" content="Carbeat - це платформа для швидкого пошуку автосервісів та майстрів. Керуйте записами, переглядайте відгуки та знаходьте найкращих спеціалістів для ремонту вашого авто." />
-            <meta property="twitter:image" content="https://carbeat.online/og-image.jpg" />
-
-            <script type="application/ld+json">
-                {
-                    "@context": "https://schema.org",
-                    "@type": "SoftwareApplication",
-                    "name": "Carbeat",
-                    "operatingSystem": "ANDROID",
-                    "applicationCategory": "BusinessApplication",
-                    "aggregateRating": {
-                        "@type": "AggregateRating",
-                        "ratingValue": "4.5",
-                        "ratingCount": "123"
-                    },
-                    "offers": {
-                        "@type": "Offer",
-                        "price": "0",
-                        "priceCurrency": "UAH"
-                    }
-                }
-            </script>
+            <meta
+                property="twitter:title"
+                content="Автосервіс та ремонт авто: Carbeat - пошук майстрів"
+            />
+            <meta
+                property="twitter:description"
+                content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів."
+            />
+            <meta
+                property="twitter:image"
+                content="https://carbeat.online/og-image.jpg"
+            />
         </Head>
 
         <header class="border-b border-gray-100">
@@ -51,7 +47,7 @@
                         CB
                     </div>
                     <div>
-                        <div class="text-lg font-semibold leading-tight">
+                        <div class="text-4xl font-semibold leading-tight">
                             {{ appName }}
                         </div>
                         <div class="text-xs text-gray-500">
@@ -65,12 +61,11 @@
         <main class="mx-auto max-w-6xl px-6 py-10">
             <section class="grid gap-10 lg:grid-cols-2 lg:items-center">
                 <div>
-                    <h1 class="text-4xl font-bold tracking-tight md:text-5xl">
-                        Carbeat — швидкий пошук майстрів та керування записами
+                    <h1 class="text-4xl font-bold tracking-tight md:text-4xl">
+                        Carbeat: автосервіс, ремонт авто та швидкий пошук майстрів
                     </h1>
                     <p class="mt-4 text-lg text-gray-600">
-                        Зручний сервіс для клієнтів і майстрів: профіль,
-                        послуги, відгуки, робочі години та керування заявками.
+                        Зручний сервіс для клієнтів та СТО: профіль, послуги з ремонту авто, відгуки, робочі години та керування записами на автосервіс.
                     </p>
 
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -141,13 +136,13 @@
                 <div
                     class="rounded-3xl border border-gray-200 bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white"
                 >
-                    <h2 class="text-xl font-semibold">Що є в додатку</h2>
+                    <h2 class="text-xl font-semibold">Що є в додатку Carbeat для СТО та клієнтів</h2>
                     <ul class="mt-4 space-y-3 text-sm text-slate-200">
                         <li class="flex gap-3">
                             <span
                                 class="mt-1 inline-block h-2 w-2 rounded-full bg-sky-400"
                             ></span>
-                            Публічні профілі майстрів із послугами та контактами
+                            Публічні профілі майстрів із послугами та контактами для ремонту авто
                         </li>
                         <li class="flex gap-3">
                             <span
@@ -163,7 +158,7 @@
                         <div class="text-sm font-semibold">Для майстрів</div>
                         <div class="mt-1 text-sm text-slate-200">
                             Створіть та наповніть профіль, додавайте фото,
-                            працюйте з відгуками та керуйте доступністю.
+                            працюйте з відгуками та керуйте доступністю для запису на СТО.
                         </div>
                     </div>
 
@@ -172,8 +167,8 @@
                     >
                         <div class="text-sm font-semibold">Для клієнтів</div>
                         <div class="mt-1 text-sm text-slate-200">
-                            Знаходьте перевірених майстрів, переглядайте послуги
-                            й контакти та обирайте зручний час.
+                            Знаходьте перевірених майстрів для ремонту авто, переглядайте послуги
+                            й контакти та обирайте зручний час для запису на автосервіс.
                         </div>
                     </div>
                 </div>
@@ -182,8 +177,9 @@
             <footer
                 class="mt-16 flex flex-col gap-3 border-t border-gray-100 pt-8 text-sm text-gray-500 md:flex-row md:items-center md:justify-between"
             >
-                <div>© {{ new Date().getFullYear() }} {{ appName }}</div>
+                <div>© 2026 {{ appName }}</div>
                 <div class="flex gap-4">
+                    <a :href="route('landing')" class="hover:text-gray-700">Головна</a>
                     <a :href="termsUrl" class="hover:text-gray-700">Умови</a>
                     <a :href="privacyUrl" class="hover:text-gray-700"
                         >Конфіденційність</a
@@ -207,5 +203,6 @@ defineProps<{
     privacyUrl: string;
     dataDeletionUrl: string;
     playMarketUrl: string;
+    structuredData: object;
 }>();
 </script>

@@ -16,6 +16,12 @@
             gtag('config', 'GA_MEASUREMENT_ID');
         </script>
 
+        @if (isset($page['props']['structuredData']))
+            <script type="application/ld+json">
+                {!! json_encode($page['props']['structuredData']) !!}
+            </script>
+        @endif
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
