@@ -18,7 +18,7 @@ createInertiaApp({
             `./Pages/${name}.vue`,
             import.meta.glob<DefineComponent>('./Pages/**/*.vue'),
         ).then((page) => {
-            if (name.startsWith('Admin/')) {
+            if (name.startsWith('Admin/') && page.default.layout === undefined) {
                 page.default.layout = AdminLayout;
             }
 
