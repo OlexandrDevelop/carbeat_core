@@ -2,22 +2,25 @@
 
 namespace App\Http\Services;
 
+use App\Enums\AppBrand;
 use App\Helpers\PhoneHelper;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Master;
 use App\Models\User;
 use Carbon\Carbon;
 use Daaner\TurboSMS\Facades\TurboSMS;
-use Illuminate\Http\JsonResponse;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
+use Throwable;
 
 class ClaimService
 {
-    private const REDIS_TTL_SECONDS = 5 * 60; // 5 minutes
-    private const CODE_LENGTH = 6;
+    private const int|float REDIS_TTL_SECONDS = 5 * 60; // 5 minutes
+    private const int CODE_LENGTH = 6;
 
     public function __construct(
         private readonly PhoneHelper $phoneHelper,
@@ -42,15 +45,15 @@ class ClaimService
     /**
      * Send SMS code for claim verification.
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
-     * @throws \Exception
+     * @throws ModelNotFoundException
+     * @throws Exception
      */
     public function sendSms(int $masterId, string $phone): array
     {
         $master = Master::findOrFail($masterId);
 
         if ($master->is_claimed) {
-            throw new \Exception('Master profile already claimed', 409);
+            throw new Exception('Master profile already claimed', 409);
         }
 
         // Generate claim token if not exists
@@ -61,7 +64,7 @@ class ClaimService
 
         $normalizedPhone = $this->phoneHelper->normalize($phone);
         $code = $this->generateCode();
-        
+
         $this->storeCodeInRedis($master->id, $normalizedPhone, $code);
         $this->sendClaimMessage($normalizedPhone, $master, $code);
 
@@ -71,7 +74,8 @@ class ClaimService
     /**
      * Verify claim code and complete master claim process.
      *
-     * @throws \Exception
+     * @throws Exception
+     * @throws Throwable
      */
     public function verify(int $masterId, string $phone, string $code): array
     {
@@ -79,9 +83,9 @@ class ClaimService
         $normalizedPhone = $this->phoneHelper->normalize($phone);
 
         $cachedData = $this->getCachedCode($master->id);
-        
+
         if (!$cachedData) {
-            throw new \Exception('code_expired', 410);
+            throw new Exception('code_expired', 410);
         }
 
         $this->validateCode($cachedData, $code, $normalizedPhone);
@@ -103,6 +107,18 @@ class ClaimService
                 'expires_in' => $expiresIn,
             ];
         });
+    }
+
+    /**
+     * Build deep link URL for claim process.
+     */
+    public function buildDeepLink(string $token, ?int $masterId): string
+    {
+        $scheme = config('app.deep_links.scheme', AppBrand::CARBEAT);
+        $host = config('app.deep_links.host', 'claim');
+        $query = $masterId ? '?master_id='.$masterId : '';
+
+        return "$scheme://$host/$token$query";
     }
 
     /**
@@ -154,16 +170,16 @@ class ClaimService
     /**
      * Validate verification code and phone.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     private function validateCode(?array $cachedData, string $code, string $phone): void
     {
         if (!$cachedData || !isset($cachedData['code']) || $cachedData['code'] !== $code) {
-            throw new \Exception('invalid_code', 422);
+            throw new Exception('invalid_code', 422);
         }
 
         if (!isset($cachedData['phone']) || $cachedData['phone'] !== $phone) {
-            throw new \Exception('phone_mismatch', 422);
+            throw new Exception('phone_mismatch', 422);
         }
     }
 
@@ -213,7 +229,7 @@ class ClaimService
     /**
      * Send claim SMS message.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     private function sendClaimMessage(string $phone, Master $master, string $code): void
     {
@@ -231,7 +247,7 @@ class ClaimService
 
         try {
             TurboSMS::sendMessages($phone, $message);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Failed to send claim SMS', [
                 'master_id' => $master->id,
                 'phone' => $phone,

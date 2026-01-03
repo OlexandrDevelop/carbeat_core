@@ -28,7 +28,7 @@ class GenerateSitemap extends Command
         Master::select(['slug', 'updated_at'])->chunk(100, function ($masters) use ($sitemap) {
             foreach ($masters as $master) {
                 $sitemap->add(
-                    Url::create("/masters/{$master->slug}")
+                    Url::create("/m/{$master->slug}")
                         ->setLastModificationDate($master->updated_at)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
                         ->setPriority(0.8)
