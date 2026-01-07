@@ -260,7 +260,7 @@ class MasterAdminService
 
             $normalizedPhone = $this->phoneHelper->normalize($phone);
 
-            if (empty($normalizedPhone)) {
+            if (empty($normalizedPhone) || !$this->phoneHelper->isMobile($normalizedPhone)) {
                 $skipped[] = [
                     'master_id' => $master->id,
                     'reason' => 'invalid_phone',

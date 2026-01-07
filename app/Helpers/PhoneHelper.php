@@ -44,11 +44,12 @@ class PhoneHelper
         }
 
         // Перелік мобільних кодів в Україні
-        $mobileOperators = [
-            '39','50','63','66','67','68', // Vodafone / Kyivstar / Lifecell groups
-            '73','91','92','93','94','95','96','97','98','99',
+        $mobileCodes = [
+            '50','63','66','67','68',
+            '73','91','92','93','94',
+            '95','96','97','98','99',
         ];
 
-        return in_array($operator, $mobileOperators, true);
+        return in_array($operator, $mobileCodes, true);
     }
 }
