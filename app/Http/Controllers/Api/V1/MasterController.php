@@ -238,6 +238,6 @@ class MasterController extends Controller
 
         $galleryService->deletePhoto($master, $photoId);
 
-        return response()->json(['message' => 'deleted']);
+        return response()->json(['message' => 'deleted', 'status' => 'ok']);
     }
 }
