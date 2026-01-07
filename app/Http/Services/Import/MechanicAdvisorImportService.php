@@ -1,36 +1,43 @@
 <?php
 
-namespace App\Http\Services\Ratelist;
+namespace App\Http\Services\Import;
 
-use App\Helpers\AutomotiveServiceClassifier;
 use App\Helpers\PhoneHelper;
 use App\Helpers\PhotoHelper;
 use App\Http\Services\ClientService;
 use App\Http\Services\Master\MasterService;
 use App\Models\MasterGallery;
 use App\Models\Service;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\DomCrawler\Crawler;
 
-class RatelistImportService
+class MechanicAdvisorImportService implements ImportServiceInterface
 {
+    private const XPATH_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    private const XPATH_LOWER = 'abcdefghijklmnopqrstuvwxyz';
+
+    private const URL = 'mechanicadvisor';
+
     public function __construct(
         private readonly MasterService $masterService,
         private readonly ClientService $clientService,
         private readonly PhotoHelper $photoHelper,
     ) {}
 
-    /**
-     * Public wrapper to get detail links for progress estimation.
-     * @return array<int,string>
-     */
+    public function canHandle(string $url): bool
+    {
+        return str_contains($url, 'mechanicadvisor.com');
+    }
+
     public function getDetailLinks(string $listUrl, ?int $maxPages = null): array
     {
         return $this->extractDetailLinks($listUrl, $maxPages);
     }
+
 
     /**
      * Import masters from a RateList rating page.
@@ -77,7 +84,7 @@ class RatelistImportService
                 // Coordinates are required by DB schema; skip if missing
                 if (empty($dto['lat']) || empty($dto['lng'])) {
                     $skipped++;
-                    Log::warning('Ratelist import: missing coordinates', ['url' => $detailUrl]);
+                    Log::warning('Mechanicadvisor import: missing coordinates', ['url' => $detailUrl]);
                     if ($onProgress) {
                         $onProgress([
                             'imported' => $imported,
@@ -91,7 +98,7 @@ class RatelistImportService
                 // Require main photo from specific blocks; skip if missing
                 if (empty($dto['main_photo'])) {
                     $skipped++;
-                    Log::info('Ratelist import: missing required main photo from business image block', ['url' => $detailUrl]);
+                    Log::info('Mechanicadvisor import: missing required main photo from business image block', ['url' => $detailUrl]);
                     if ($onProgress) {
                         $onProgress([
                             'imported' => $imported,
@@ -109,7 +116,7 @@ class RatelistImportService
                 $seenNormalized = [];
                 if (! empty($dto['services'])) {
                     foreach ($dto['services'] as $serviceName) {
-                        $normalized = $this->normalizeServiceName($serviceName);
+                        $normalized = $serviceName;
                         if ($normalized === '') { continue; }
                         if (isset($seenNormalized[$normalized])) { continue; }
                         $seenNormalized[$normalized] = true;
@@ -131,7 +138,7 @@ class RatelistImportService
                     ],
                     'main_photo' => $dto['main_photo'] ?? null,
                     'reviews' => $dto['reviews'] ?? [],
-					'working_hours' => $dto['working_hours'] ?? null,
+                    'working_hours' => $dto['working_hours'] ?? null,
                     'place_id' => $dto['place_id'] ?? null,
                     'rating_google' => null,
                 ];
@@ -270,7 +277,7 @@ class RatelistImportService
                     $href = $a->attr('href') ?? '';
                     if (! $href) { return; }
                     $abs = $this->absoluteUrl($href, $pageUrl);
-                    if (preg_match('#^https?://ratelist\.top/\d{4,}$#', $abs)) { $urls[] = $abs; }
+                    if (preg_match('#^https?://'.self::URL.'\.com/\d{4,}$#', $abs)) { $urls[] = $abs; }
                 });
             }
 
@@ -314,7 +321,7 @@ class RatelistImportService
         $path = $parts['path'] ?? '';
         $query = [];
         if (! empty($parts['query'])) { parse_str($parts['query'], $query); }
-        $query['page'] = $page;
+        $query['p'] = $page;
         $qs = http_build_query($query);
         return $scheme . '://' . $host . $path . '?' . $qs;
     }
@@ -322,6 +329,7 @@ class RatelistImportService
     /**
      * Scrape a business detail page into a DTO.
      * @return array<string,mixed>
+     * @throws ConnectionException
      */
     private function scrapeDetail(string $detailUrl): array
     {
@@ -329,186 +337,31 @@ class RatelistImportService
         $html = $resp->body();
         $crawler = new Crawler($html, $detailUrl);
 
-        $name = $this->firstText($crawler, 'h1, h2') ?: $this->firstText($crawler, 'title') ?: 'No name';
-
-        // Prefer JSON-LD LocalBusiness block
-        $ld = $this->parseJsonLd($crawler);
-        $phone = $ld['telephone'] ?? null;
-        if (! $phone) {
-            $phone = $this->firstAttr($crawler, 'a[href^="tel:"]', 'href');
-            if ($phone && str_starts_with($phone, 'tel:')) { $phone = substr($phone, 4); }
-            if (! $phone && preg_match('/\+?\d[\d\s\-\(\)]{8,}/u', $html, $m)) {
-                $phone = $m[0];
-            }
-        }
-
-        // Address
-        $address = null;
-        if (! empty($ld['address'])) {
-            $addr = $ld['address'];
-            $address = trim(($addr['addressLocality'] ?? '') . ' ' . ($addr['streetAddress'] ?? ''));
-        }
-        if (! $address) {
-            $address = $this->firstText($crawler, 'address, .address, [itemprop="address"]');
-        }
-
-        // Coordinates
-        $lat = $ld['geo']['latitude'] ?? null;
-        $lng = $ld['geo']['longitude'] ?? null;
-        if (empty($lat) || empty($lng)) {
-            [$lat, $lng] = $this->extractLatLng($html, $crawler);
-        }
-
-        // Description
-        $description = $this->firstText($crawler, '.description, [itemprop="description"], .about, .content p');
-        if (! $description) {
-            $description = $this->firstAttr($crawler, 'meta[name="description"]', 'content');
-            $description = preg_replace('/👉.*🔥/u', '', $description);
-        }
-
-        // Services (best-effort)
-        $services = [];
-        // New RateList markup
-        $crawler->filter('ul.company_page_cat_links li a')->each(function (Crawler $node) use (&$services) {
-            $t = trim($node->text(''));
-            if ($t !== '') { $services[] = $t; }
-        });
-
-		// Photos: prefer business image block; fallback to right slider block
-		$imageUrls = [];
-		// Primary block
-		$crawler->filter('.bussiness_page_image_link_img img.img_flow')->each(function (Crawler $img) use (&$imageUrls, $detailUrl) {
-			$src = $img->attr('src') ?? '';
-			if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
-		});
-		// Fallback block: right slider (data-src on <a>, and <img> within)
-		if (empty($imageUrls)) {
-			$crawler->filter('#bussiness_page_right a[data-src]')->each(function (Crawler $a) use (&$imageUrls, $detailUrl) {
-				$src = $a->attr('data-src') ?? '';
-				if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
-			});
-			$crawler->filter('#bussiness_page_right img.bussiness_page_one_slide')->each(function (Crawler $img) use (&$imageUrls, $detailUrl) {
-				$src = $img->attr('src') ?? '';
-				if ($src) { $imageUrls[] = $this->absoluteUrl($src, $detailUrl); }
-			});
-		}
-		$imageUrls = array_values(array_unique($imageUrls));
-
-		$mainPhoto = $imageUrls[0] ?? null;
-		$gallery = array_slice($imageUrls, 1, 12);
-
-		// Reviews
-        $reviews = [];
-        if (! empty($ld['review']) && is_array($ld['review'])) {
-            foreach ($ld['review'] as $rev) {
-                $author = $rev['author']['name'] ?? ($rev['author'] ?? 'Anonymous');
-                $ratingValue = $rev['reviewRating']['ratingValue'] ?? ($rev['ratingValue'] ?? null);
-                $text = $rev['description'] ?? '';
-                if ($text !== '') {
-                    $reviews[] = [
-                        'author' => (string) $author,
-                        'text' => (string) $text,
-                        'rating' => (string) ($ratingValue ?? ''),
-                    ];
-                }
-            }
-        }
-        if (empty($reviews)) {
-            $crawler->filter('.reviews .review, .review-item, [itemprop="review"]')->each(function (Crawler $node) use (&$reviews) {
-                $author = trim($this->firstText($node, '.author, .name, [itemprop="author"]')) ?: 'Anonymous';
-                $text = trim($this->firstText($node, '.text, .content, [itemprop="reviewBody"]'));
-                $ratingText = trim($this->firstText($node, '.rating, [itemprop="ratingValue"]'));
-                if ($text !== '') {
-                    $reviews[] = [
-                        'author' => $author,
-                        'text' => $text,
-                        'rating' => $ratingText,
-                    ];
-                }
-            });
-        }
-
-		// Working hours block
-		$workingHours = $this->extractWorkingHours($crawler);
-
-		$placeId = 'ratelist:' . md5($detailUrl);
-
+        $name = $this->getName($crawler);
+        $phone = $this->getPhone($crawler);
+        $address = $this->getAddress($crawler);
+        $description = $this->getDescription($crawler);
+        $services = $this->getServices($crawler);
+        $imageUrls = $this->getImageUrls($crawler);
+        $mainPhoto = $this->getMainPhoto($imageUrls);
+        $reviews = $this->getReviews($crawler);
+        $workingHours = $this->getWorkingHours($crawler);
+        $placeId = 'mechadvisor:' . md5($detailUrl);
+        $gallery = array_slice($imageUrls, 1, 12);
         return [
             'name' => $name,
             'phone' => $phone,
             'address' => $address,
             'description' => $description,
-            'lat' => $lat,
-            'lng' => $lng,
+            'lat' => 0,
+            'lng' => 0,
             'main_photo' => $mainPhoto,
             'gallery' => $gallery,
             'reviews' => $reviews,
             'services' => $services,
-			'place_id' => $placeId,
-			'working_hours' => $workingHours,
+            'place_id' => $placeId,
+            'working_hours' => $workingHours,
         ];
-    }
-
-	private function extractWorkingHours(Crawler $crawler): array
-	{
-		$hours = [];
-		$dayMap = [
-			'Понеділок' => 'monday',
-			'Вівторок' => 'tuesday',
-			'Середа' => 'wednesday',
-			'Четвер' => 'thursday',
-			"П'ятниця" => 'friday',
-			'Субота' => 'saturday',
-			'Неділя' => 'sunday',
-		];
-
-		// Initialize all days to empty (closed)
-		foreach ($dayMap as $key) {
-			$hours[$key] = [];
-		}
-
-		$crawler->filter('.company_info_working_hours table tr')->each(function (Crawler $tr) use (&$hours, $dayMap) {
-			$tds = $tr->filter('td');
-			if ($tds->count() < 2) { return; }
-			$dayUa = trim(preg_replace('/\s+/u', ' ', $tds->eq(0)->text('')));
-			$timeText = trim(preg_replace('/\s+/u', ' ', $tds->eq(1)->text('')));
-			if ($dayUa === '' || ! isset($dayMap[$dayUa])) { return; }
-			$key = $dayMap[$dayUa];
-			if (mb_stripos($timeText, 'Закрито') !== false) {
-				$hours[$key] = [];
-				return;
-			}
-			if (preg_match('/(\d{1,2}:\d{2})\s*[–\-]\s*(\d{1,2}:\d{2})/u', $timeText, $m)) {
-				$open = $m[1];
-				$close = $m[2];
-				$hours[$key] = [[
-					'open' => $open,
-					'close' => $close,
-				]];
-			}
-		});
-
-		return $hours;
-	}
-
-    private function extractLatLng(string $html, Crawler $crawler): array
-    {
-        // Try common patterns in links (Google Maps, etc.)
-        if (preg_match('#@([\d\.\-]+),([\d\.\-]+)#', $html, $m)) {
-            return [(float) $m[1], (float) $m[2]];
-        }
-        if (preg_match('#[?&](?:lat|latitude)=([\d\.\-]+)&(?:lon|lng|longitude)=([\d\.\-]+)#', $html, $m)) {
-            return [(float) $m[1], (float) $m[2]];
-        }
-        // data attributes
-        $node = $crawler->filter('[data-lat][data-lng]')->first();
-        if ($node->count()) {
-            return [
-                (float) ($node->attr('data-lat') ?? 0),
-                (float) ($node->attr('data-lng') ?? 0),
-            ];
-        }
-        return [null, null];
     }
 
     private function firstText(Crawler $crawler, string $selector): ?string
@@ -546,77 +399,158 @@ class RatelistImportService
         ];
     }
 
-    private function parseJsonLd(Crawler $crawler): array
+    private function getName(Crawler $crawler): ?string
     {
-        $data = [];
-        $crawler->filter('script[type="application/ld+json"]')->each(function (Crawler $s) use (&$data) {
-            $json = trim($s->text(''));
-            if ($json === '') { return; }
-            try {
-                $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-            } catch (\Throwable $e) {
-                return;
-            }
-            // Some pages wrap in @graph
-            $items = [];
-            if (isset($decoded['@type'])) { $items = [$decoded]; }
-            elseif (isset($decoded['@graph']) && is_array($decoded['@graph'])) { $items = $decoded['@graph']; }
-            elseif (is_array($decoded)) { $items = $decoded; }
-
-            foreach ($items as $item) {
-                if (! is_array($item)) { continue; }
-                $type = $item['@type'] ?? '';
-                if (is_array($type)) { $type = implode(',', $type); }
-                if (str_contains(strtolower((string)$type), 'localbusiness')) {
-                    $data = $item;
-                    return; // take first local business block
-                }
-            }
-        });
-        return $data;
+        $text = $this->firstText($crawler, 'h1');
+        if (! $text) {
+            $text = $this->firstAttr($crawler, 'meta[property="og:title"]', 'content')
+                ?? $this->firstAttr($crawler, 'meta[name="twitter:title"]', 'content')
+                ?? $this->firstAttr($crawler, 'meta[name="title"]', 'content');
+        }
+        return $this->normalizeWhitespace($text);
     }
 
-    /**
-     * Remove Ukrainian city names occurrences from service name and normalize spaces.
-     */
-    private function normalizeServiceName(string $raw): string
+    private function getPhone(Crawler $crawler): ?string
     {
-        $name = trim($raw);
-        if ($name === '') { return ''; }
-
-        $cities = [
-            'Київ','Киев','Києві','Киеве',
-            'Львів','Львове',
-            'Одеса','Одесі','Одесса','Одессе',
-            'Дніпро','Дніпрі','Днепр','Днепре',
-            'Харків','Харкові','Харьков','Харькове',
-            'Вінниця','Вінниці','Винница','Виннице',
-            'Житомир','Житомирі',
-            'Запоріжжя','Запоріжжі','Запорожье','Запорожье',
-            'Івано-Франківськ','Івано-Франківську','Ивано-Франковск','Ивано-Франковске',
-            'Кропивницький','Кропивницькому','Кропивницкий','Кропивницком',
-            'Луцьк','Луцьку',
-            'Полтава','Полтаві',
-            'Тернопіль','Тернополі',
-            'Ужгород','Ужгороді',
-            'Чернівці','Чернівцях','Черновцы','Черновцах',
-            'Черкаси','Черкасах',
-            'Чернігів','Чернігові','Чернигов','Чернигове',
-            'Хмельницький','Хмельницькому','Хмельницкий','Хмельницком',
-            'Суми','Сумах',
-            'Рівне','Рівному','Ровно','Ровном',
-        ];
-
-        // Remove city tokens case-insensitively
-        foreach ($cities as $city) {
-            $name = preg_replace('/\b' . preg_quote($city, '/') . '\b/ui', '', $name);
+        $tel = $this->firstAttr($crawler, 'a[href^="tel:"]', 'href');
+        if ($tel && str_starts_with($tel, 'tel:')) {
+            $tel = substr($tel, 4);
         }
+        if (! $tel) {
+            $candidate = $this->firstText($crawler, '.text-neutral-900.font-medium');
+            if ($candidate && preg_match('/\+?[\d\s\-\(\)]{8,}/', $candidate, $match)) {
+                $tel = $match[0];
+            }
+        }
+        if (! $tel) {
+            $textBlob = $crawler->count() ? $crawler->text('') : '';
+            if ($textBlob && preg_match('/\+?[\d\s\-\(\)]{8,}/', $textBlob, $match)) {
+                $tel = $match[0];
+            }
+        }
+        return $this->normalizeWhitespace($tel);
+    }
 
-        // Remove extra delimiters and prepositions around removed cities
-        $name = preg_replace('/\s{2,}/u', ' ', $name);
-        $name = preg_replace('/\s*,\s*/u', ', ', $name);
-        $name = trim($name, " \t\n\r\0\x0B-,");
+    private function getAddress(Crawler $crawler): ?string
+    {
+        $node = $crawler->filterXPath('//span[contains(@class,"text-neutral-900") and contains(@class,"font-semibold") and contains(normalize-space(.), ",")]')->first();
+        $address = $node->count() ? $node->text('') : null;
+        if (! $address) {
+            $meta = $this->firstAttr($crawler, 'meta[property="og:description"]', 'content')
+                ?? $this->firstAttr($crawler, 'meta[name="description"]', 'content');
+            if ($meta && preg_match('/\d{2,}[^\n]+/', $meta, $match)) {
+                $address = $match[0];
+            }
+        }
+        return $this->normalizeWhitespace($address);
+    }
 
-        return trim($name);
+    private function getDescription(Crawler $crawler): ?string
+    {
+        $condition = $this->xpathContainsCaseInsensitive('normalize-space(.)', 'about');
+        $node = $crawler->filterXPath(sprintf('//h2[%s]/following-sibling::p[1]', $condition))->first();
+        $desc = $node->count() ? $node->text('') : null;
+        if (! $desc) {
+            $desc = $this->firstAttr($crawler, 'meta[name="description"]', 'content');
+        }
+        return $this->normalizeWhitespace($desc);
+    }
+
+    private function getServices(Crawler $crawler): array
+    {
+        $services = [];
+        $condition = $this->xpathContainsCaseInsensitive('normalize-space(.)', 'services offered');
+        $crawler->filterXPath(sprintf('//h3[%s]/following-sibling::*[(self::div or self::section) and contains(@class,"flex") and contains(@class,"flex-wrap")][1]//p', $condition))
+            ->each(function (Crawler $node) use (&$services) {
+                $text = $this->normalizeWhitespace(str_replace(',', '', $node->text('')));
+                if ($text) {
+                    $services[] = $text;
+                }
+            });
+        return array_values(array_unique($services));
+    }
+
+    private function getImageUrls(Crawler $crawler): array
+    {
+        $urls = [];
+        $condition = $this->xpathContainsCaseInsensitive('normalize-space(.)', 'photos');
+        $base = $crawler->getUri() ?? '';
+        $crawler->filterXPath(sprintf('//h2[%s]/following-sibling::*[(self::div or self::section)][1]//img', $condition))
+            ->each(function (Crawler $img) use (&$urls, $base) {
+                $src = $img->attr('src') ?? '';
+                if ($src === '') { return; }
+                $urls[] = $base ? $this->absoluteUrl($src, $base) : trim($src);
+            });
+        $urls = array_values(array_filter(array_unique($urls)));
+        return $urls;
+    }
+
+    private function getMainPhoto(array $imageUrls): ?string
+    {
+        foreach ($imageUrls as $url) {
+            $clean = $this->normalizeWhitespace($url);
+            if ($clean) {
+                return $clean;
+            }
+        }
+        return null;
+    }
+
+    private function getReviews(Crawler $crawler): array
+    {
+        $reviews = [];
+        $condition = $this->xpathContainsCaseInsensitive('normalize-space(.)', 'reviews for');
+        $crawler->filterXPath(sprintf('//div[div/h2[%s]]/div[contains(@class,"flex") and contains(@class,"flex-col") and contains(@class,"gap-4")]//div[contains(@class,"md:flex-row")]', $condition))
+            ->each(function (Crawler $reviewNode) use (&$reviews) {
+                $author = $this->normalizeWhitespace($this->firstText($reviewNode, 'h3') ?? $this->firstText($reviewNode, '.text-neutral-900.font-medium'));
+                $title = $this->normalizeWhitespace($this->firstText($reviewNode, 'h4'));
+                $body = $this->normalizeWhitespace($this->firstText($reviewNode, 'p'));
+                $date = $this->normalizeWhitespace($this->firstText($reviewNode, '.text-sm.text-gray-500'));
+                if (! $author && ! $body) { return; }
+                $reviews[] = array_filter([
+                    'author_name' => $author,
+                    'author_text' => $body,
+                    'title' => $title,
+                    'relative_time_description' => $date,
+                ]);
+            });
+        return $reviews;
+    }
+
+    private function getWorkingHours(Crawler $crawler): ?array
+    {
+        $hours = [];
+        $condition = $this->xpathContainsCaseInsensitive('normalize-space(.)', 'business hours');
+        $crawler->filterXPath(sprintf('//h3[%s]/following-sibling::div[contains(@class,"flex") and contains(@class,"justify-between")]', $condition))
+            ->each(function (Crawler $line) use (&$hours) {
+                $dayNode = $line->filter('p');
+                if ($dayNode->count() < 2) { return; }
+                $day = $this->normalizeWhitespace($dayNode->eq(0)->text(''));
+                $time = $this->normalizeWhitespace($dayNode->eq(1)->text(''));
+                if ($day && $time) {
+                    $hours[] = ['day' => $day, 'time' => $time];
+                }
+            });
+        return $hours ?: null;
+    }
+
+    private function normalizeWhitespace(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+        return $value === '' ? null : $value;
+    }
+
+    private function xpathContainsCaseInsensitive(string $expression, string $needle): string
+    {
+        return sprintf(
+            'contains(translate(%s, "%s", "%s"), "%s")',
+            $expression,
+            self::XPATH_UPPER,
+            self::XPATH_LOWER,
+            strtolower($needle)
+        );
     }
 }

@@ -63,7 +63,15 @@ return [
         'ios_bundle' => env('IOS_BUNDLE_IDENTIFIER', 'com.example.garagePlantMobile'),
         'ios_store_url' => env('IOS_STORE_URL', 'https://apps.apple.com/'),
     ],
-    'master_invite_template' => env('MASTER_INVITE_TEMPLATE', 'Carbeat: ваш профіль вже створено. Керуйте ним тут: :link'),
+    'master_invite_template' => env(
+        'MASTER_INVITE_TEMPLATE',
+        'Carbeat 🔧
+Запрошуємо до сервісу для СТО
+
+✔ Карта автосервісів
+✔ Профіль вже створено
+👉 :link'
+    ),
 
     /*
     |--------------------------------------------------------------------------

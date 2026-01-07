@@ -9,15 +9,13 @@ use Illuminate\Http\Request;
 
 class ClaimLinkController extends Controller
 {
-    public function __invoke(Request $request, string $token, ClaimService $claimService)
+    public function __invoke(Request $request, string $masterId, ClaimService $claimService)
     {
-        $master = Master::where('claim_token', $token)->first();
-        $masterId = $request->integer('master_id', $master?->id);
+        $master = Master::where('id', $masterId)->first();
 
-        $deepLink = $claimService->buildDeepLink($token, $masterId);
+        $deepLink = $claimService->buildDeepLink($master->id);
 
         return response()->view('claim-link', [
-            'token' => $token,
             'master' => $master,
             'masterId' => $masterId,
             'deepLink' => $deepLink,

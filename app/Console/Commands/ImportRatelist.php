@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Services\Ratelist\RatelistImportService;
+use App\Http\Services\Import\ImportServiceFactory;
 use Illuminate\Console\Command;
 
 class ImportRatelist extends Command
@@ -12,27 +12,34 @@ class ImportRatelist extends Command
      *
      * @var string
      */
-    protected $signature = 'masters:import-ratelist {service_id : Service ID (0 for auto-detect)} {url : RateList rating URL} {--pages= : Optional limit of pages to parse}';
+    protected $signature = 'masters:import-ratelist {service_id : Service ID (0 for auto-detect)} {url : Source URL} {--pages= : Optional limit of pages to parse}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Import masters from RateList rating page (e.g., https://ratelist.top/l/kyiv/rating-435). Shows progress.';
+    protected $description = 'Import masters from a supported source URL (e.g., https://ratelist.top/l/kyiv/rating-435). Shows progress.';
 
     /**
      * Execute the console command.
      */
-    public function handle(RatelistImportService $importService): int
+    public function handle(ImportServiceFactory $importFactory): int
     {
         $serviceId = (int) $this->argument('service_id');
         $url = (string) $this->argument('url');
         $pagesOpt = $this->option('pages');
         $pages = is_null($pagesOpt) || $pagesOpt === '' ? null : (int) $pagesOpt;
 
-        $this->info('Starting import from RateList...');
+        $this->info('Starting import...');
         $this->line('Service ID: ' . $serviceId . '; URL: ' . $url . '; Pages: ' . ($pages ?? 'all'));
+
+        try {
+            $importService = $importFactory->getImporter($url);
+        } catch (\InvalidArgumentException $e) {
+            $this->error($e->getMessage());
+            return Command::FAILURE;
+        }
 
         $processed = 0;
         $detailUrls = $importService->getDetailLinks($url, $pages);

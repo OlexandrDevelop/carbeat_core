@@ -3,6 +3,7 @@
 namespace App\Http\Services\Admin;
 
 use App\Helpers\PhoneHelper;
+use App\Http\Services\TelegramService;
 use App\Models\City;
 use App\Models\Master;
 use App\Models\Review;
@@ -285,7 +286,13 @@ class MasterAdminService
             }
 
             try {
-                TurboSMS::sendMessages($normalizedPhone, $message);
+                $testMode = config('turbosms.test_mode', true);
+                if ($testMode){
+                    $telegramService = new TelegramService();
+                    $telegramService->send($message);
+                }else {
+                    TurboSMS::sendMessages($normalizedPhone, $message);
+                }
                 $sent++;
             } catch (\Throwable $e) {
                 Log::warning('Failed to send invite SMS', [
@@ -323,6 +330,6 @@ class MasterAdminService
 
         $base = rtrim(config('app.claim_base_url'), '/');
 
-        return "{$base}/{$master->claim_token}?master_id={$master->id}";
+        return "{$base}/{$master->id}";
     }
 }

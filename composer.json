@@ -11,8 +11,10 @@
     "require": {
         "php": "^8.4",
         "ext-curl": "*",
+        "ext-fileinfo": "*",
         "cocur/slugify": "^4.6",
         "daaner/turbosms": "^1.40",
+        "imangazaliev/didom": "^2.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel-notification-channels/telegram": "^6.0",
         "laravel/framework": "^12.22",
@@ -27,8 +29,7 @@
         "symfony/css-selector": "^7.3",
         "symfony/dom-crawler": "^7.3",
         "tightenco/ziggy": "^2.5",
-        "tymon/jwt-auth": "^2.2",
-        "ext-fileinfo": "*"
+        "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",

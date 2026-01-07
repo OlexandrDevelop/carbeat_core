@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Http\Services\Ratelist\RatelistImportService;
+use App\Http\Services\Import\ImportServiceFactory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,7 +27,7 @@ class ImportMasters implements ShouldQueue
         private readonly string $flavor = 'carbeat' // Default to carbeat if not provided
     ) {}
 
-    public function handle(RatelistImportService $importService): void
+    public function handle(ImportServiceFactory $importFactory): void
     {
         // Set the flavor in config so PhotoHelper and other services can use it
         config(['app.client' => $this->flavor]);
@@ -41,6 +41,7 @@ class ImportMasters implements ShouldQueue
         ]);
 
         try {
+            $importService = $importFactory->getImporter($this->url);
             // Expose job id for stop checks inside the service
             $GLOBALS['current_job_id'] = $this->jobId;
             $detailUrls = $importService->getDetailLinks($this->url, $this->pages);

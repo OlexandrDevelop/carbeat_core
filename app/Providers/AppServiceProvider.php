@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\Services\Import\ImportServiceFactory;
+use App\Http\Services\Import\MechanicAdvisorImportService;
+use App\Http\Services\Import\RatelistImportService;
 use App\Models\Master;
 use App\Observers\MasterObserver;
 use Illuminate\Support\Facades\File;
@@ -19,7 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ImportServiceFactory::class, function ($app) {
+            return new ImportServiceFactory(
+                $app->make(RatelistImportService::class),
+                $app->make(MechanicAdvisorImportService::class)
+            );
+        });
     }
 
     /**

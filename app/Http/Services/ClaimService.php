@@ -112,13 +112,13 @@ class ClaimService
     /**
      * Build deep link URL for claim process.
      */
-    public function buildDeepLink(string $token, ?int $masterId): string
+    public function buildDeepLink(?int $masterId): string
     {
         $scheme = config('app.deep_links.scheme', AppBrand::CARBEAT);
         $host = config('app.deep_links.host', 'claim');
         $query = $masterId ? '?master_id='.$masterId : '';
 
-        return "$scheme://$host/$token$query";
+        return "$scheme://$host/$query";
     }
 
     /**
