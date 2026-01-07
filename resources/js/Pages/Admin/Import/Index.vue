@@ -2,37 +2,54 @@
     <div class="min-h-screen bg-gray-100">
         <header class="bg-white shadow">
             <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Import Masters</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">
+                    Import Masters
+                </h1>
             </div>
         </header>
 
         <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            <div class="bg-white rounded-xl shadow-sm p-6 space-y-6">
+            <div class="space-y-6 rounded-xl bg-white p-6 shadow-sm">
                 <!-- Import Form -->
                 <form @submit.prevent="startImport" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Service</label>
-                        <select v-model="form.service_id" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700"
+                            >Service</label
+                        >
+                        <select
+                            v-model="form.service_id"
+                            class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        >
                             <option :value="0">Auto-detect</option>
-                            <option v-for="service in services" :key="service.id" :value="service.id">
+                            <option
+                                v-for="service in services"
+                                :key="service.id"
+                                :value="service.id"
+                            >
                                 {{ service.name }}
                             </option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">RateList URLs</label>
+                        <label class="block text-sm font-medium text-gray-700"
+                            >RateList URLs</label
+                        >
                         <textarea
                             v-model="form.urls_text"
                             rows="4"
                             placeholder="One URL per line"
                             class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         ></textarea>
-                        <p class="mt-1 text-xs text-gray-500">You can paste multiple links, each on a new line.</p>
+                        <p class="mt-1 text-xs text-gray-500">
+                            You can paste multiple links, each on a new line.
+                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Pages limit (optional)</label>
+                        <label class="block text-sm font-medium text-gray-700"
+                            >Pages limit (optional)</label
+                        >
                         <input
                             v-model.number="form.pages"
                             type="number"
@@ -42,7 +59,7 @@
                         />
                     </div>
 
-                    <div class="flex justify-between items-center">
+                    <div class="flex items-center justify-between">
                         <div></div>
                         <button
                             type="submit"
@@ -63,13 +80,28 @@
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <div class="text-sm font-medium text-gray-700">{{ job.url }}</div>
-                                <div v-if="job.progress && job.progress.eta_seconds != null" class="text-xs text-gray-500 mt-1">
-                                    ETA: {{ formatSeconds(job.progress.eta_seconds) }}
+                                <div class="text-sm font-medium text-gray-700">
+                                    {{ job.url }}
+                                </div>
+                                <div
+                                    v-if="
+                                        job.progress &&
+                                        job.progress.eta_seconds != null
+                                    "
+                                    class="mt-1 text-xs text-gray-500"
+                                >
+                                    ETA:
+                                    {{
+                                        formatSeconds(job.progress.eta_seconds)
+                                    }}
                                 </div>
                             </div>
                             <button
-                                v-if="['running','queued'].includes(job.progress?.status)"
+                                v-if="
+                                    ['running', 'queued'].includes(
+                                        job.progress?.status,
+                                    )
+                                "
                                 type="button"
                                 @click.prevent="stopJob(job)"
                                 class="rounded-xl bg-red-600 px-3 py-1.5 text-xs text-white shadow-sm hover:bg-red-700"
@@ -83,25 +115,48 @@
                                 <div
                                     class="h-3 rounded-full transition-all duration-500"
                                     :class="{
-                                        'bg-blue-600': job.progress?.status === 'running' || job.progress?.status === 'queued',
-                                        'bg-green-600': job.progress?.status === 'completed',
-                                        'bg-red-600': job.progress?.status === 'error'
+                                        'bg-blue-600':
+                                            job.progress?.status ===
+                                                'running' ||
+                                            job.progress?.status === 'queued',
+                                        'bg-green-600':
+                                            job.progress?.status ===
+                                            'completed',
+                                        'bg-red-600':
+                                            job.progress?.status === 'error',
                                     }"
                                     :style="{ width: jobProgressWidth(job) }"
                                 ></div>
                             </div>
-                            <div v-if="job.progress && job.progress.status !== 'error'" class="mt-1 text-xs text-gray-600">
-                                {{ job.progress.processed || 0 }} / {{ job.progress.total_urls || 0 }}
-                                ({{ job.progress.imported || 0 }} imported, {{ job.progress.skipped || 0 }} skipped)
+                            <div
+                                v-if="
+                                    job.progress &&
+                                    job.progress.status !== 'error'
+                                "
+                                class="mt-1 text-xs text-gray-600"
+                            >
+                                {{ job.progress.processed || 0 }} /
+                                {{ job.progress.total_urls || 0 }} ({{
+                                    job.progress.imported || 0
+                                }}
+                                imported,
+                                {{ job.progress.skipped || 0 }} skipped)
                             </div>
                         </div>
 
-                        <div v-if="job.progress?.error" class="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                        <div
+                            v-if="job.progress?.error"
+                            class="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700"
+                        >
                             {{ job.progress.error }}
                         </div>
 
-                        <div v-if="job.progress?.status === 'completed'" class="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
-                            Completed: {{ job.progress.imported || 0 }} imported ({{ job.progress.skipped || 0 }} skipped)
+                        <div
+                            v-if="job.progress?.status === 'completed'"
+                            class="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700"
+                        >
+                            Completed: {{ job.progress.imported || 0 }} imported
+                            ({{ job.progress.skipped || 0 }} skipped)
                         </div>
                     </div>
                 </div>
@@ -111,8 +166,8 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue';
 import axios from 'axios';
+import { onUnmounted, ref } from 'vue';
 
 const services = ref([]);
 const importing = ref(false);
@@ -122,7 +177,7 @@ let progressInterval = null;
 const form = ref({
     service_id: 0,
     urls_text: '',
-    pages: null
+    pages: null,
 });
 
 function jobProgressWidth(job) {
@@ -158,8 +213,19 @@ async function startImport() {
             urls_text: form.value.urls_text,
         };
         const response = await axios.post('/admin-api/import/start', payload);
-        const startedJobs = response.data?.data?.jobs || response.data?.jobs || [];
-        jobs.value = startedJobs.map((j) => ({ job_id: j.job_id, url: j.url, progress: { status: 'queued', imported: 0, skipped: 0, processed: 0, total_urls: 0 } }));
+        const startedJobs =
+            response.data?.data?.jobs || response.data?.jobs || [];
+        jobs.value = startedJobs.map((j) => ({
+            job_id: j.job_id,
+            url: j.url,
+            progress: {
+                status: 'queued',
+                imported: 0,
+                skipped: 0,
+                processed: 0,
+                total_urls: 0,
+            },
+        }));
         startProgressPolling();
     } catch (error) {
         console.error('Failed to start import:', error);
@@ -197,19 +263,32 @@ function startProgressPolling() {
             await Promise.all(
                 jobs.value.map(async (job) => {
                     try {
-                        const resp = await axios.get(`/admin-api/import/progress/${job.job_id}`);
+                        const resp = await axios.get(
+                            `/admin-api/import/progress/${job.job_id}`,
+                        );
                         job.progress = resp.data?.data || resp.data;
-                        if (!['completed', 'error', 'stopped'].includes(job.progress?.status)) {
+                        if (
+                            !['completed', 'error', 'stopped'].includes(
+                                job.progress?.status,
+                            )
+                        ) {
                             allDone = false;
                         }
                     } catch (err) {
                         if (err.response?.status === 404) {
-                            job.progress = { status: 'error', error: 'Job not found' };
+                            job.progress = {
+                                status: 'error',
+                                error: 'Job not found',
+                            };
                         } else {
-                            console.error('Progress error for job', job.job_id, err);
+                            console.error(
+                                'Progress error for job',
+                                job.job_id,
+                                err,
+                            );
                         }
                     }
-                })
+                }),
             );
 
             if (allDone) {

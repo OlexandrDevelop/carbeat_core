@@ -21,7 +21,7 @@ class MasterAdminService
     {
     }
 
-    public function listMasters(array $params): LengthAwarePaginator
+    public function listMasters(array $params): \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection
     {
         $query = Master::query()
             ->with(['services', 'user', 'city'])
@@ -30,6 +30,10 @@ class MasterAdminService
 
         $this->applyFilters($query, $params);
         $this->applySorting($query, $params['sort_by'] ?? 'created_at', $params['sort_dir'] ?? 'desc');
+
+        if (!empty($params['no_pagination'])) {
+            return $query->get();
+        }
 
         $perPage = min(max((int) ($params['per_page'] ?? 20), 1), 100);
         return $query->paginate($perPage);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import QrcodeVue from 'qrcode.vue';
+import { computed, onMounted, ref } from 'vue';
 
 type Service = {
     id: number;
@@ -14,7 +14,10 @@ type GalleryItem = {
     url: string;
 };
 
-type WorkingHours = Record<string, { from: string; to: string } | string | null | undefined>;
+type WorkingHours = Record<
+    string,
+    { from: string; to: string } | string | null | undefined
+>;
 
 interface MasterPayload {
     id: number;
@@ -48,7 +51,9 @@ onMounted(() => {
     if (typeof window !== 'undefined') {
         currentUrl.value = window.location.href;
     }
-    canUseShare.value = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+    canUseShare.value =
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function';
 });
 
 const telLink = computed(() => {
@@ -60,8 +65,12 @@ const telLink = computed(() => {
 
 const mapsLink = computed(() => {
     // не вбиваємо координати 0, тільки null/undefined
-    if (props.master.latitude !== null && props.master.latitude !== undefined &&
-        props.master.longitude !== null && props.master.longitude !== undefined) {
+    if (
+        props.master.latitude !== null &&
+        props.master.latitude !== undefined &&
+        props.master.longitude !== null &&
+        props.master.longitude !== undefined
+    ) {
         return `https://www.google.com/maps/search/?api=1&query=${props.master.latitude},${props.master.longitude}`;
     }
 
@@ -74,20 +83,28 @@ const mapsLink = computed(() => {
 
 const services = computed(() => props.master.services ?? []);
 const mainService = computed(() => services.value.find((s) => s.is_primary));
-const secondaryServices = computed(() => services.value.filter((s) => !s.is_primary));
+const secondaryServices = computed(() =>
+    services.value.filter((s) => !s.is_primary),
+);
 const gallery = computed(() => props.master.gallery ?? []);
-const workingSchedule = computed(() => formatWorkingHours(props.master.working_hours));
-const canClaim = computed(() => !props.master.is_claimed && !!props.master.claim_link);
+const workingSchedule = computed(() =>
+    formatWorkingHours(props.master.working_hours),
+);
+const canClaim = computed(
+    () => !props.master.is_claimed && !!props.master.claim_link,
+);
 
 const hasRating = computed(
-    () => props.master.rating !== null && props.master.rating !== undefined
+    () => props.master.rating !== null && props.master.rating !== undefined,
 );
 const ratingLabel = computed(() =>
-    hasRating.value ? props.master.rating!.toFixed(1) : null
+    hasRating.value ? props.master.rating!.toFixed(1) : null,
 );
 
 const hasExperience = computed(
-    () => props.master.experience !== null && props.master.experience !== undefined
+    () =>
+        props.master.experience !== null &&
+        props.master.experience !== undefined,
 );
 
 const locationLine = computed(() => {
@@ -110,7 +127,9 @@ const masterInitials = computed(() => {
     return initials || 'CB';
 });
 
-function formatWorkingHours(hours: WorkingHours | null): Array<{ day: string; value: string }> {
+function formatWorkingHours(
+    hours: WorkingHours | null,
+): Array<{ day: string; value: string }> {
     if (!hours || typeof hours !== 'object') {
         return [];
     }
@@ -162,7 +181,11 @@ async function shareProfile() {
         url: fallbackUrl,
     };
 
-    if (canUseShare.value && typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    if (
+        canUseShare.value &&
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function'
+    ) {
         try {
             await navigator.share(shareData);
             return;
@@ -171,7 +194,11 @@ async function shareProfile() {
         }
     }
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+    ) {
         try {
             await navigator.clipboard.writeText(shareData.url);
             copyFeedback.value = 'Посилання скопійовано';
@@ -204,7 +231,9 @@ function claimProfile() {
             <div class="mx-auto max-w-lg">
                 <!-- Top bar -->
                 <div class="mb-8 flex items-center justify-between">
-                    <span class="text-lg font-bold tracking-tight text-white">Carbeat</span>
+                    <span class="text-lg font-bold tracking-tight text-white"
+                        >Carbeat</span
+                    >
                     <span
                         v-if="master.is_claimed"
                         class="inline-flex items-center gap-1.5 rounded-full bg-[#1C1F22] px-3 py-1.5 text-xs font-medium text-[#4CD964]"
@@ -238,8 +267,13 @@ function claimProfile() {
                         </div>
                     </div>
 
-                    <h1 class="mb-2 text-2xl font-bold text-white">{{ master.name }}</h1>
-                    <p v-if="mainService" class="mb-1 text-[15px] font-medium text-[#8E8E93]">
+                    <h1 class="mb-2 text-2xl font-bold text-white">
+                        {{ master.name }}
+                    </h1>
+                    <p
+                        v-if="mainService"
+                        class="mb-1 text-[15px] font-medium text-[#8E8E93]"
+                    >
                         {{ mainService.name }}
                     </p>
                     <p v-if="locationLine" class="text-sm text-[#636366]">
@@ -275,7 +309,9 @@ function claimProfile() {
         </header>
 
         <!-- CONTENT -->
-        <main class="relative z-10 -mt-4 rounded-t-[32px] bg-[#1C1F22] px-4 pb-12 pt-8 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <main
+            class="relative z-10 -mt-4 rounded-t-[32px] bg-[#1C1F22] px-4 pb-12 pt-8 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+        >
             <div class="mx-auto max-w-lg space-y-8">
                 <!-- Actions Grid -->
                 <div class="grid grid-cols-2 gap-3">
@@ -286,25 +322,58 @@ function claimProfile() {
                         rel="noopener noreferrer"
                         class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
                     >
-                        <div class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <div
+                            class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                />
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white">Маршрут</span>
+                        <span class="text-sm font-medium text-white"
+                            >Маршрут</span
+                        >
                     </a>
 
                     <button
                         @click="shareProfile"
                         class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
                     >
-                        <div class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        <div
+                            class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                                />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white">Поділитися</span>
+                        <span class="text-sm font-medium text-white"
+                            >Поділитися</span
+                        >
                     </button>
                 </div>
 
@@ -313,14 +382,37 @@ function claimProfile() {
                     v-if="master.claim_link"
                     class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#0A84FF] to-[#0055D4] p-5 shadow-lg"
                 >
-                    <a :href="master.claim_link" class="flex items-center justify-between">
+                    <a
+                        :href="master.claim_link"
+                        class="flex items-center justify-between"
+                    >
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-white/70">Власник?</p>
-                            <p class="mt-1 text-[15px] font-semibold text-white">Відкрити у додатку</p>
+                            <p
+                                class="text-xs font-bold uppercase tracking-wider text-white/70"
+                            >
+                                Власник?
+                            </p>
+                            <p
+                                class="mt-1 text-[15px] font-semibold text-white"
+                            >
+                                Відкрити у додатку
+                            </p>
                         </div>
-                        <div class="grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        <div
+                            class="grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white"
+                        >
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2.5"
+                                    d="M9 5l7 7-7 7"
+                                />
                             </svg>
                         </div>
                     </a>
@@ -328,63 +420,113 @@ function claimProfile() {
 
                 <!-- About -->
                 <section v-if="master.description">
-                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Про майстра</h3>
-                    <p class="whitespace-pre-line text-[15px] leading-relaxed text-[#E1E3E5]">
+                    <h3
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                    >
+                        Про майстра
+                    </h3>
+                    <p
+                        class="whitespace-pre-line text-[15px] leading-relaxed text-[#E1E3E5]"
+                    >
                         {{ master.description }}
                     </p>
                 </section>
 
                 <!-- Info Grid -->
                 <section>
-                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Деталі</h3>
-                    <div class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]">
-                        <div v-if="master.experience" class="flex items-center justify-between bg-[#232629] p-4">
-                            <span class="text-[15px] text-[#8E8E93]">Досвід</span>
-                            <span class="text-[15px] font-medium text-white">{{ master.experience }} років</span>
+                    <h3
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                    >
+                        Деталі
+                    </h3>
+                    <div
+                        class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
+                    >
+                        <div
+                            v-if="master.experience"
+                            class="flex items-center justify-between bg-[#232629] p-4"
+                        >
+                            <span class="text-[15px] text-[#8E8E93]"
+                                >Досвід</span
+                            >
+                            <span class="text-[15px] font-medium text-white"
+                                >{{ master.experience }} років</span
+                            >
                         </div>
-                        <div class="flex items-center justify-between bg-[#232629] p-4">
-                            <span class="text-[15px] text-[#8E8E93]">Послуги</span>
-                            <span class="text-[15px] font-medium text-white">{{ services.length }}</span>
+                        <div
+                            class="flex items-center justify-between bg-[#232629] p-4"
+                        >
+                            <span class="text-[15px] text-[#8E8E93]"
+                                >Послуги</span
+                            >
+                            <span class="text-[15px] font-medium text-white">{{
+                                services.length
+                            }}</span>
                         </div>
-                        <div v-if="master.city" class="flex items-center justify-between bg-[#232629] p-4">
-                            <span class="text-[15px] text-[#8E8E93]">Місто</span>
-                            <span class="text-[15px] font-medium text-white">{{ master.city }}</span>
+                        <div
+                            v-if="master.city"
+                            class="flex items-center justify-between bg-[#232629] p-4"
+                        >
+                            <span class="text-[15px] text-[#8E8E93]"
+                                >Місто</span
+                            >
+                            <span class="text-[15px] font-medium text-white">{{
+                                master.city
+                            }}</span>
                         </div>
                     </div>
                 </section>
 
                 <!-- Schedule -->
                 <section v-if="workingSchedule.length">
-                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Графік роботи</h3>
-                    <div class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]">
+                    <h3
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                    >
+                        Графік роботи
+                    </h3>
+                    <div
+                        class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
+                    >
                         <div
                             v-for="item in workingSchedule"
                             :key="item.day"
                             class="flex items-center justify-between bg-[#232629] p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]">{{ item.day }}</span>
-                            <span class="text-[15px] font-medium text-white">{{ item.value }}</span>
+                            <span class="text-[15px] text-[#8E8E93]">{{
+                                item.day
+                            }}</span>
+                            <span class="text-[15px] font-medium text-white">{{
+                                item.value
+                            }}</span>
                         </div>
                     </div>
                 </section>
 
                 <!-- Gallery -->
                 <section v-if="gallery.length">
-                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Портфоліо</h3>
+                    <h3
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                    >
+                        Портфоліо
+                    </h3>
                     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         <img
                             v-for="photo in gallery"
                             :key="photo.id"
                             :src="photo.url"
                             :alt="`Робота #${photo.id}`"
-                            class="aspect-square w-full rounded-xl object-cover bg-[#2C2F33]"
+                            class="aspect-square w-full rounded-xl bg-[#2C2F33] object-cover"
                         />
                     </div>
                 </section>
 
                 <!-- Services Tags -->
                 <section v-if="secondaryServices.length">
-                    <h3 class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]">Всі послуги</h3>
+                    <h3
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                    >
+                        Всі послуги
+                    </h3>
                     <div class="flex flex-wrap gap-2">
                         <span
                             v-for="service in secondaryServices"

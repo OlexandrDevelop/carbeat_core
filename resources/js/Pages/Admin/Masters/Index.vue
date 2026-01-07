@@ -1,39 +1,91 @@
 <template>
     <div class="min-h-screen bg-gray-50">
-        <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
-            <div class="mx-auto max-w-8xl px-6 py-4 flex items-center justify-between">
+        <header
+            class="sticky top-0 z-10 border-b border-gray-200 bg-white/70 backdrop-blur"
+        >
+            <div
+                class="max-w-8xl mx-auto flex items-center justify-between px-6 py-4"
+            >
                 <h1 class="text-2xl font-semibold text-gray-900">Masters</h1>
                 <div class="flex gap-2">
-                    <input v-model="filters.search" @input="debouncedFetch" type="search" placeholder="Search"
-                           class="rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <select v-model="filters.available" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm">
+                    <input
+                        v-model="filters.search"
+                        @input="debouncedFetch"
+                        type="search"
+                        placeholder="Search"
+                        class="rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                        v-model="filters.available"
+                        @change="fetchData"
+                        class="rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
                         <option value="">Availability</option>
                         <option value="true">Available</option>
                         <option value="false">Unavailable</option>
                     </select>
-                    <select v-model="filters.service_id" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm min-w-[180px]">
+                    <select
+                        v-model="filters.service_id"
+                        @change="fetchData"
+                        class="min-w-[180px] rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
                         <option value="">All services</option>
-                        <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
+                        <option v-for="s in services" :key="s.id" :value="s.id">
+                            {{ s.name }}
+                        </option>
                     </select>
-                    <select v-model="filters.city_id" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm min-w-[160px]">
+                    <select
+                        v-model="filters.city_id"
+                        @change="fetchData"
+                        class="min-w-[160px] rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
                         <option value="">All cities</option>
-                        <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        <option v-for="c in cities" :key="c.id" :value="c.id">
+                            {{ c.name }}
+                        </option>
                     </select>
-                    <select v-model="filters.uses_system" @change="fetchData" class="rounded-xl bg-gray-100 px-3 py-2 text-sm min-w-[160px]">
+                    <select
+                        v-model="filters.uses_system"
+                        @change="fetchData"
+                        class="min-w-[160px] rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
                         <option value="">All users</option>
                         <option value="true">Uses system</option>
                         <option value="false">Does not use</option>
                     </select>
 
-                    <button @click="confirmDeleteAll" class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700">Delete all</button>
+                    <label class="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            v-model="no_pagination"
+                            @change="fetchData"
+                            class="rounded"
+                        />
+                        <span class="text-sm">Show all</span>
+                    </label>
+
+                    <button
+                        @click="confirmDeleteAll"
+                        class="rounded-xl bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+                    >
+                        Delete all
+                    </button>
                 </div>
             </div>
         </header>
 
-        <main class="mx-auto max-w-8xl px-6 py-6">
-            <div v-if="inviteFeedback" class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <main class="max-w-8xl mx-auto px-6 py-6">
+            <div
+                v-if="inviteFeedback"
+                class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+            >
                 <span>{{ inviteFeedback }}</span>
-                <button class="text-emerald-700 underline" @click="inviteFeedback = null">Закрити</button>
+                <button
+                    class="text-emerald-700 underline"
+                    @click="inviteFeedback = null"
+                >
+                    Закрити
+                </button>
             </div>
 
             <div
@@ -48,11 +100,18 @@
                     >
                         Надіслати інвайт
                     </button>
-                    <button @click="clearSelection" class="text-blue-700 underline">Очистити</button>
+                    <button
+                        @click="clearSelection"
+                        class="text-blue-700 underline"
+                    >
+                        Очистити
+                    </button>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            >
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -64,40 +123,88 @@
                                     class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                             </th>
-                            <th @click="setSort('id')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('id')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>ID</span>
-                                <span v-if="filters.sort_by === 'id'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'id'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th @click="setSort('photo')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('photo')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Photo</span>
-                                <span v-if="filters.sort_by === 'photo'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'photo'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th @click="setSort('name')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('name')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Name</span>
-                                <span v-if="filters.sort_by === 'name'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'name'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th @click="setSort('city')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('city')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>City</span>
-                                <span v-if="filters.sort_by === 'city'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'city'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th @click="setSort('rating')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('rating')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Rating</span>
-                                <span v-if="filters.sort_by === 'rating'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'rating'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            <th
+                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 Subscription
                             </th>
-                            <th @click="setSort('photos_count')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('photos_count')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Photos</span>
-                                <span v-if="filters.sort_by === 'photos_count'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span
+                                    v-if="filters.sort_by === 'photos_count'"
+                                    >{{
+                                        filters.sort_dir === 'asc' ? '▲' : '▼'
+                                    }}</span
+                                >
                             </th>
-                            <th @click="setSort('available')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('available')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Available</span>
-                                <span v-if="filters.sort_by === 'available'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span v-if="filters.sort_by === 'available'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
-                            <th @click="setSort('last_login_at')" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 cursor-pointer select-none">
+                            <th
+                                @click="setSort('last_login_at')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <span>Last login</span>
-                                <span v-if="filters.sort_by === 'last_login_at'">{{ filters.sort_dir === 'asc' ? '▲' : '▼' }}</span>
+                                <span
+                                    v-if="filters.sort_by === 'last_login_at'"
+                                    >{{
+                                        filters.sort_dir === 'asc' ? '▲' : '▼'
+                                    }}</span
+                                >
                             </th>
                             <th class="px-6 py-3"></th>
                         </tr>
@@ -107,7 +214,12 @@
                             v-for="m in masters"
                             :key="m.id"
                             class="hover:bg-gray-50"
-                            :class="[m.user_id !== 1 ? 'bg-yellow-50/50' : '', selectedIds.includes(m.id) ? 'bg-blue-50/80' : '']"
+                            :class="[
+                                m.user_id !== 1 ? 'bg-yellow-50/50' : '',
+                                selectedIds.includes(m.id)
+                                    ? 'bg-blue-50/80'
+                                    : '',
+                            ]"
                         >
                             <td class="px-4 py-3">
                                 <input
@@ -117,9 +229,18 @@
                                     class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                             </td>
-                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.id }}</td>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{ m.id }}
+                            </td>
                             <td class="px-6 py-3">
-                                <div class="h-10 w-10 overflow-hidden rounded bg-gray-100 ring-2" :class="m.user_id !== 1 ? 'ring-yellow-300' : 'ring-transparent'">
+                                <div
+                                    class="h-10 w-10 overflow-hidden rounded bg-gray-100 ring-2"
+                                    :class="
+                                        m.user_id !== 1
+                                            ? 'ring-yellow-300'
+                                            : 'ring-transparent'
+                                    "
+                                >
                                     <img
                                         v-if="m.main_thumb_url || m.main_photo"
                                         :src="m.main_thumb_url || m.main_photo"
@@ -128,67 +249,201 @@
                                     />
                                 </div>
                             </td>
-                            <td class="px-6 py-3 text-sm font-medium text-gray-900 truncate max-w-[240px]">
-                                <span class="mr-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" :class="m.uses_system ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
-                                    <span class="h-1.5 w-1.5 rounded-full" :class="m.uses_system ? 'bg-emerald-600' : 'bg-gray-500'" />
-                                    {{ m.uses_system ? 'Uses system' : 'Guest' }}
+                            <td
+                                class="max-w-[240px] truncate px-6 py-3 text-sm font-medium text-gray-900"
+                            >
+                                <span
+                                    class="mr-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                    :class="
+                                        m.uses_system
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-600'
+                                    "
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :class="
+                                            m.uses_system
+                                                ? 'bg-emerald-600'
+                                                : 'bg-gray-500'
+                                        "
+                                    />
+                                    {{
+                                        m.uses_system ? 'Uses system' : 'Guest'
+                                    }}
                                 </span>
                                 {{ m.name }}
                             </td>
-                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.city?.name ?? '—' }}</td>
-                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.reviews_avg_rating != null ? Number(m.reviews_avg_rating).toFixed(1) : '0.0' }}</td>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{ m.city?.name ?? '—' }}
+                            </td>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{
+                                    m.reviews_avg_rating != null
+                                        ? Number(m.reviews_avg_rating).toFixed(
+                                              1,
+                                          )
+                                        : '0.0'
+                                }}
+                            </td>
                             <td class="px-6 py-3 text-sm">
                                 <div class="flex flex-col">
-                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                                          :class="m.is_premium ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'">
-                                        <span class="h-1.5 w-1.5 rounded-full"
-                                              :class="m.is_premium ? 'bg-purple-600' : 'bg-gray-500'" />
+                                    <span
+                                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                        :class="
+                                            m.is_premium
+                                                ? 'bg-purple-100 text-purple-700'
+                                                : 'bg-gray-100 text-gray-600'
+                                        "
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="
+                                                m.is_premium
+                                                    ? 'bg-purple-600'
+                                                    : 'bg-gray-500'
+                                            "
+                                        />
                                         {{ m.is_premium ? 'Premium' : 'Free' }}
                                     </span>
-                                    <span class="text-xs text-gray-500 mt-1">
-                                        {{ m.premium_until ? new Date(m.premium_until).toLocaleDateString() : '—' }}
+                                    <span class="mt-1 text-xs text-gray-500">
+                                        {{
+                                            m.premium_until
+                                                ? new Date(
+                                                      m.premium_until,
+                                                  ).toLocaleDateString()
+                                                : '—'
+                                        }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.photos_count ?? 0 }}</td>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{ m.photos_count ?? 0 }}
+                            </td>
                             <td class="px-6 py-3 text-sm">
-                                <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" :class="m.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
-                                    <span class="h-1.5 w-1.5 rounded-full" :class="m.available ? 'bg-green-600' : 'bg-gray-500'" />
-                                    {{ m.available ? 'Available' : 'Unavailable' }}
+                                <span
+                                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                    :class="
+                                        m.available
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-gray-100 text-gray-600'
+                                    "
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :class="
+                                            m.available
+                                                ? 'bg-green-600'
+                                                : 'bg-gray-500'
+                                        "
+                                    />
+                                    {{
+                                        m.available
+                                            ? 'Available'
+                                            : 'Unavailable'
+                                    }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3 text-sm text-gray-600">{{ m.last_login_at ? new Date(m.last_login_at).toLocaleString() : '—' }}</td>
-                            <td class="px-6 py-3 text-right space-x-3">
-                                <Link :href="route('admin.masters.edit', { id: m.id })" class="text-blue-600 hover:text-blue-800">Edit</Link>
-                                <button @click="confirmDelete(m)" class="text-red-600 hover:text-red-800">Delete</button>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{
+                                    m.last_login_at
+                                        ? new Date(
+                                              m.last_login_at,
+                                          ).toLocaleString()
+                                        : '—'
+                                }}
+                            </td>
+                            <td class="space-x-3 px-6 py-3 text-right">
+                                <Link
+                                    :href="
+                                        route('admin.masters.edit', {
+                                            id: m.id,
+                                        })
+                                    "
+                                    class="text-blue-600 hover:text-blue-800"
+                                    >Edit</Link
+                                >
+                                <button
+                                    @click="confirmDelete(m)"
+                                    class="text-red-600 hover:text-red-800"
+                                >
+                                    Delete
+                                </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
 
-                <div class="flex items-center justify-between px-6 py-4">
-                    <div class="text-sm text-gray-600">Page {{ meta.current_page }} of {{ meta.last_page }} ({{ meta.total }} total)</div>
+                <div
+                    v-if="!no_pagination"
+                    class="flex items-center justify-between px-6 py-4"
+                >
+                    <div class="text-sm text-gray-600">
+                        Page {{ meta.current_page }} of {{ meta.last_page }} ({{
+                            meta.total
+                        }}
+                        total)
+                    </div>
                     <div class="flex items-center gap-2">
-                        <button :disabled="meta.current_page <= 1" @click="goto(meta.current_page - 1)" class="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50">Prev</button>
-                        <select v-model.number="perPage" @change="fetchData" class="rounded-lg border px-2 py-1.5 text-sm">
+                        <button
+                            :disabled="meta.current_page <= 1"
+                            @click="goto(meta.current_page - 1)"
+                            class="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50"
+                        >
+                            Prev
+                        </button>
+                        <select
+                            v-model.number="perPage"
+                            @change="fetchData"
+                            class="rounded-lg border px-2 py-1.5 text-sm"
+                        >
                             <option :value="10">10</option>
                             <option :value="20">20</option>
                             <option :value="50">50</option>
                         </select>
-                        <button :disabled="meta.current_page >= meta.last_page" @click="goto(meta.current_page + 1)" class="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50">Next</button>
-                        <input v-model.number="jumpPage" @keyup.enter="goDirect" type="number" min="1" :max="meta.last_page" placeholder="Page" class="w-20 rounded-lg border px-2 py-1.5 text-sm" />
-                        <button @click="goDirect" class="rounded-lg border px-3 py-1.5 text-sm">Go</button>
+                        <button
+                            :disabled="meta.current_page >= meta.last_page"
+                            @click="goto(meta.current_page + 1)"
+                            class="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                        <input
+                            v-model.number="jumpPage"
+                            @keyup.enter="goDirect"
+                            type="number"
+                            min="1"
+                            :max="meta.last_page"
+                            placeholder="Page"
+                            class="w-20 rounded-lg border px-2 py-1.5 text-sm"
+                        />
+                        <button
+                            @click="goDirect"
+                            class="rounded-lg border px-3 py-1.5 text-sm"
+                        >
+                            Go
+                        </button>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <div v-if="inviteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
+    <div
+        v-if="inviteModalOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4"
+    >
         <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-xl font-semibold text-slate-900">Надіслати інвайт</h3>
-                <button class="text-slate-500 hover:text-slate-700" @click="closeInviteModal">✕</button>
+                <h3 class="text-xl font-semibold text-slate-900">
+                    Надіслати інвайт
+                </h3>
+                <button
+                    class="text-slate-500 hover:text-slate-700"
+                    @click="closeInviteModal"
+                >
+                    ✕
+                </button>
             </div>
             <p class="text-sm text-slate-600">
                 Текст повідомлення. Використайте плейсхолдер
@@ -200,9 +455,14 @@
                 rows="5"
                 class="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
             ></textarea>
-            <p v-if="inviteError" class="mt-3 text-sm text-red-600">{{ inviteError }}</p>
+            <p v-if="inviteError" class="mt-3 text-sm text-red-600">
+                {{ inviteError }}
+            </p>
             <div class="mt-6 flex justify-end gap-3">
-                <button @click="closeInviteModal" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <button
+                    @click="closeInviteModal"
+                    class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
                     Скасувати
                 </button>
                 <button
@@ -229,7 +489,16 @@ const services = ref<Array<{ id: number; name: string }>>([]);
 const cities = ref<Array<{ id: number; name: string }>>([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const perPage = ref(20);
-const filters = ref<{ search: string; available: string; service_id: string | number; city_id: string | number; uses_system: string; sort_by: string; sort_dir: string }>({
+const no_pagination = ref(false);
+const filters = ref<{
+    search: string;
+    available: string;
+    service_id: string | number;
+    city_id: string | number;
+    uses_system: string;
+    sort_by: string;
+    sort_dir: string;
+}>({
     search: '',
     available: '',
     service_id: '',
@@ -251,7 +520,9 @@ const sendingInvite = ref(false);
 
 const visibleMasterIds = computed(() => masters.value.map((m) => m.id));
 const allVisibleSelected = computed(
-    () => visibleMasterIds.value.length > 0 && visibleMasterIds.value.every((id) => selectedIds.value.includes(id)),
+    () =>
+        visibleMasterIds.value.length > 0 &&
+        visibleMasterIds.value.every((id) => selectedIds.value.includes(id)),
 );
 const selectedCount = computed(() => selectedIds.value.length);
 
@@ -260,12 +531,17 @@ async function fetchData() {
     params.set('page', String(page.value));
     params.set('per_page', String(perPage.value));
     if (filters.value.search) params.set('search', filters.value.search);
-    if (filters.value.available !== '') params.set('available', filters.value.available);
-    if (filters.value.service_id !== '') params.set('service_id', String(filters.value.service_id));
-    if (filters.value.city_id !== '') params.set('city_id', String(filters.value.city_id));
-    if (filters.value.uses_system !== '') params.set('uses_system', String(filters.value.uses_system));
+    if (filters.value.available !== '')
+        params.set('available', filters.value.available);
+    if (filters.value.service_id !== '')
+        params.set('service_id', String(filters.value.service_id));
+    if (filters.value.city_id !== '')
+        params.set('city_id', String(filters.value.city_id));
+    if (filters.value.uses_system !== '')
+        params.set('uses_system', String(filters.value.uses_system));
     if (filters.value.sort_by) params.set('sort_by', filters.value.sort_by);
     if (filters.value.sort_dir) params.set('sort_dir', filters.value.sort_dir);
+    if (no_pagination.value) params.set('no_pagination', 'true');
 
     const { data } = await axios.get(`/admin-api/masters?${params.toString()}`);
     masters.value = data.data;
@@ -303,7 +579,8 @@ function debouncedFetch() {
 
 function setSort(field: string) {
     if (filters.value.sort_by === field) {
-        filters.value.sort_dir = filters.value.sort_dir === 'asc' ? 'desc' : 'asc';
+        filters.value.sort_dir =
+            filters.value.sort_dir === 'asc' ? 'desc' : 'asc';
     } else {
         filters.value.sort_by = field;
         filters.value.sort_dir = field === 'name' ? 'asc' : 'desc';
@@ -313,7 +590,7 @@ function setSort(field: string) {
 }
 
 async function confirmDelete(m: any) {
-    if (! confirm(`Delete master #${m.id} (${m.name})?`)) return;
+    if (!confirm(`Delete master #${m.id} (${m.name})?`)) return;
     await axios.delete(`/admin-api/masters/${m.id}`);
     if (masters.value.length === 1 && page.value > 1) {
         page.value -= 1;
@@ -322,7 +599,12 @@ async function confirmDelete(m: any) {
 }
 
 async function confirmDeleteAll() {
-    if (! confirm('Are you sure you want to delete ALL masters? This action cannot be undone.')) return;
+    if (
+        !confirm(
+            'Are you sure you want to delete ALL masters? This action cannot be undone.',
+        )
+    )
+        return;
     await axios.delete('/admin-api/masters');
     page.value = 1;
     await fetchData();
@@ -338,9 +620,13 @@ function toggleSelection(id: number) {
 
 function toggleSelectAllVisible() {
     if (allVisibleSelected.value) {
-        selectedIds.value = selectedIds.value.filter((id) => !visibleMasterIds.value.includes(id));
+        selectedIds.value = selectedIds.value.filter(
+            (id) => !visibleMasterIds.value.includes(id),
+        );
     } else {
-        const newIds = visibleMasterIds.value.filter((id) => !selectedIds.value.includes(id));
+        const newIds = visibleMasterIds.value.filter(
+            (id) => !selectedIds.value.includes(id),
+        );
         selectedIds.value = [...selectedIds.value, ...newIds];
     }
 }
@@ -350,7 +636,10 @@ function clearSelection() {
 }
 
 function openInviteModal() {
-    inviteMessage.value = inviteMessage.value || props.defaultInviteMessage || 'Carbeat: керуйте своїм профілем → :link';
+    inviteMessage.value =
+        inviteMessage.value ||
+        props.defaultInviteMessage ||
+        'Carbeat: керуйте своїм профілем → :link';
     inviteModalOpen.value = true;
     inviteError.value = null;
 }
@@ -360,7 +649,7 @@ function closeInviteModal() {
 }
 
 async function sendInvites() {
-    if (! selectedIds.value.length) {
+    if (!selectedIds.value.length) {
         return;
     }
 
@@ -376,7 +665,8 @@ async function sendInvites() {
         inviteModalOpen.value = false;
         selectedIds.value = [];
     } catch (error: any) {
-        inviteError.value = error?.response?.data?.message || 'Не вдалося надіслати інвайти';
+        inviteError.value =
+            error?.response?.data?.message || 'Не вдалося надіслати інвайти';
     } finally {
         sendingInvite.value = false;
     }

@@ -7,14 +7,22 @@
             </p>
 
             <!-- Interactive account deletion form -->
-            <section class="mb-10 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 class="mb-4 text-xl font-semibold">Видалити акаунт за номером телефону</h2>
+            <section
+                class="mb-10 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+            >
+                <h2 class="mb-4 text-xl font-semibold">
+                    Видалити акаунт за номером телефону
+                </h2>
                 <p class="mb-6 text-sm text-gray-600">
-                    Введіть свій номер телефону, отримайте OTP-код та підтвердіть видалення акаунта. Процес незворотній.
+                    Введіть свій номер телефону, отримайте OTP-код та
+                    підтвердіть видалення акаунта. Процес незворотній.
                 </p>
                 <div class="space-y-4">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Номер телефону</label>
+                        <label
+                            class="mb-1 block text-sm font-medium text-gray-700"
+                            >Номер телефону</label
+                        >
                         <input
                             v-model="phone"
                             type="tel"
@@ -31,18 +39,26 @@
                         >
                             <span v-if="!loading">Отримати OTP</span>
                             <span v-else class="inline-flex items-center gap-2">
-                                <i class="fa fa-spinner animate-spin"></i> Надсилаємо...
+                                <i class="fa fa-spinner animate-spin"></i>
+                                Надсилаємо...
                             </span>
                         </button>
                         <div v-if="cooldown > 0" class="text-xs text-gray-500">
                             Повторний запит через {{ cooldown }} c
                         </div>
                     </div>
-                    <div v-if="otpSent" class="rounded-md bg-green-50 p-3 text-sm text-green-700">
-                        Код відправлено. Перевірте SMS. Якщо не отримали — спробуйте ще раз через 60 секунд.
+                    <div
+                        v-if="otpSent"
+                        class="rounded-md bg-green-50 p-3 text-sm text-green-700"
+                    >
+                        Код відправлено. Перевірте SMS. Якщо не отримали —
+                        спробуйте ще раз через 60 секунд.
                     </div>
                     <div v-if="otpSent" class="pt-2">
-                        <label class="mb-1 block text-sm font-medium text-gray-700">OTP-код</label>
+                        <label
+                            class="mb-1 block text-sm font-medium text-gray-700"
+                            >OTP-код</label
+                        >
                         <input
                             v-model="smsCode"
                             type="text"
@@ -54,24 +70,37 @@
                     <div class="pt-2">
                         <button
                             @click="confirmDelete"
-                            :disabled="loading || deleted || !otpSent || smsCode.trim().length === 0"
+                            :disabled="
+                                loading ||
+                                deleted ||
+                                !otpSent ||
+                                smsCode.trim().length === 0
+                            "
                             class="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <span v-if="!loading">Підтвердити видалення</span>
                             <span v-else class="inline-flex items-center gap-2">
-                                <i class="fa fa-spinner animate-spin"></i> Обробка...
+                                <i class="fa fa-spinner animate-spin"></i>
+                                Обробка...
                             </span>
                         </button>
                     </div>
-                    <div v-if="error" class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                    <div
+                        v-if="error"
+                        class="rounded-md bg-red-50 p-3 text-sm text-red-700"
+                    >
                         {{ error }}
                     </div>
-                    <div v-if="deleted" class="rounded-md bg-green-50 p-3 text-sm text-green-700">
+                    <div
+                        v-if="deleted"
+                        class="rounded-md bg-green-50 p-3 text-sm text-green-700"
+                    >
                         Акаунт успішно видалено. Дякуємо!
                     </div>
                 </div>
                 <p class="mt-4 text-xs text-gray-500">
-                    Примітка: для підтвердження можна використати універсальний код, якщо його надано службою підтримки.
+                    Примітка: для підтвердження можна використати універсальний
+                    код, якщо його надано службою підтримки.
                 </p>
             </section>
 
@@ -139,8 +168,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue';
 import axios from 'axios';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
 const lastUpdated = ref(new Date().toISOString().slice(0, 10));
 
@@ -155,7 +184,11 @@ const cooldown = ref(0);
 let timer: any = null;
 
 const canSendOtp = computed(() => {
-    return cooldown.value === 0 && phone.value.trim().length >= 10 && !deleted.value;
+    return (
+        cooldown.value === 0 &&
+        phone.value.trim().length >= 10 &&
+        !deleted.value
+    );
 });
 
 function startCooldown(seconds = 60) {
@@ -172,11 +205,15 @@ async function requestOtp() {
     if (!canSendOtp.value) return;
     loading.value = true;
     try {
-        await axios.post('/api/v1/auth/request-otp', { phone: phone.value.trim() });
+        await axios.post('/api/v1/auth/request-otp', {
+            phone: phone.value.trim(),
+        });
         otpSent.value = true;
         startCooldown(60);
     } catch (e: any) {
-        error.value = e?.response?.data?.message || 'Не вдалося надіслати код. Спробуйте пізніше.';
+        error.value =
+            e?.response?.data?.message ||
+            'Не вдалося надіслати код. Спробуйте пізніше.';
     } finally {
         loading.value = false;
     }
@@ -195,7 +232,10 @@ async function confirmDelete() {
         otpSent.value = false;
     } catch (e: any) {
         const msg = e?.response?.data?.error || e?.response?.data?.message;
-        error.value = msg === 'invalid_code' ? 'Невірний код. Перевірте SMS і спробуйте ще раз.' : (msg || 'Помилка видалення. Спробуйте пізніше.');
+        error.value =
+            msg === 'invalid_code'
+                ? 'Невірний код. Перевірте SMS і спробуйте ще раз.'
+                : msg || 'Помилка видалення. Спробуйте пізніше.';
     } finally {
         loading.value = false;
     }
@@ -205,5 +245,3 @@ onBeforeUnmount(() => {
     clearInterval(timer);
 });
 </script>
-
-

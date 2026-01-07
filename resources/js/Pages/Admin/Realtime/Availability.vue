@@ -1,60 +1,144 @@
 <template>
     <div class="min-h-screen bg-gray-50">
-        <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
-            <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-                <h1 class="text-2xl font-semibold text-gray-900">Realtime Availability</h1>
+        <header
+            class="sticky top-0 z-10 border-b border-gray-200 bg-white/70 backdrop-blur"
+        >
+            <div
+                class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
+            >
+                <h1 class="text-2xl font-semibold text-gray-900">
+                    Realtime Availability
+                </h1>
                 <div class="flex items-center gap-3 text-sm text-gray-600">
                     <span class="inline-flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full" :class="connected ? 'bg-emerald-500' : 'bg-red-500'"></span>
-                        <span>{{ connected ? 'Connected' : 'Disconnected' }}</span>
+                        <span
+                            class="h-2.5 w-2.5 rounded-full"
+                            :class="connected ? 'bg-emerald-500' : 'bg-red-500'"
+                        ></span>
+                        <span>{{
+                            connected ? 'Connected' : 'Disconnected'
+                        }}</span>
                     </span>
-                    <span class="hidden sm:inline text-gray-300">|</span>
-                    <span class="hidden sm:inline">Last minute: <span class="font-medium">{{ stats.lastMinute }}</span></span>
-                    <span class="hidden sm:inline">5 min: <span class="font-medium">{{ stats.last5min }}</span></span>
-                    <span class="hidden sm:inline">15 min: <span class="font-medium">{{ stats.last15min }}</span></span>
+                    <span class="hidden text-gray-300 sm:inline">|</span>
+                    <span class="hidden sm:inline"
+                        >Last minute:
+                        <span class="font-medium">{{
+                            stats.lastMinute
+                        }}</span></span
+                    >
+                    <span class="hidden sm:inline"
+                        >5 min:
+                        <span class="font-medium">{{
+                            stats.last5min
+                        }}</span></span
+                    >
+                    <span class="hidden sm:inline"
+                        >15 min:
+                        <span class="font-medium">{{
+                            stats.last15min
+                        }}</span></span
+                    >
                 </div>
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-6 py-6 space-y-6">
-            <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="px-6 py-4 flex items-center justify-between">
+        <main class="mx-auto max-w-7xl space-y-6 px-6 py-6">
+            <section
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            >
+                <div class="flex items-center justify-between px-6 py-4">
                     <div class="flex items-center gap-3">
-                        <h2 class="text-lg font-semibold text-gray-900">Events (last {{ maxRows }})</h2>
-                        <button @click="clearAll" class="text-sm rounded-lg border px-3 py-1.5 hover:bg-gray-50">Clear</button>
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            Events (last {{ maxRows }})
+                        </h2>
+                        <button
+                            @click="clearAll"
+                            class="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+                        >
+                            Clear
+                        </button>
                     </div>
-                    <div class="text-sm text-gray-500">Total: {{ events.length }}</div>
+                    <div class="text-sm text-gray-500">
+                        Total: {{ events.length }}
+                    </div>
                 </div>
                 <div class="px-6 pb-4">
-                    <svg :width="chartWidth" :height="chartHeight" viewBox="0 0 600 120" class="w-full h-28">
+                    <svg
+                        :width="chartWidth"
+                        :height="chartHeight"
+                        viewBox="0 0 600 120"
+                        class="h-28 w-full"
+                    >
                         <polyline
                             :points="chartPoints"
                             fill="none"
                             stroke="#2563eb"
                             stroke-width="2"
                         />
-                        <line x1="0" y1="100" x2="600" y2="100" stroke="#e5e7eb" />
+                        <line
+                            x1="0"
+                            y1="100"
+                            x2="600"
+                            y2="100"
+                            stroke="#e5e7eb"
+                        />
                     </svg>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Time</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Master</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Expires At</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                >
+                                    Time
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                >
+                                    Master
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                >
+                                    Status
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                >
+                                    Expires At
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="e in events" :key="e._k" class="hover:bg-gray-50">
-                                <td class="px-6 py-3 text-sm text-gray-600">{{ formatTs(e.ts) }}</td>
-                                <td class="px-6 py-3 text-sm font-medium text-gray-900">#{{ e.id }}</td>
-                                <td class="px-6 py-3">
-                                    <span v-if="e.available" class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">available</span>
-                                    <span v-else class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">unavailable</span>
+                            <tr
+                                v-for="e in events"
+                                :key="e._k"
+                                class="hover:bg-gray-50"
+                            >
+                                <td class="px-6 py-3 text-sm text-gray-600">
+                                    {{ formatTs(e.ts) }}
                                 </td>
-                                <td class="px-6 py-3 text-sm text-gray-600">{{ formatTs(e.expiresAt) }}</td>
+                                <td
+                                    class="px-6 py-3 text-sm font-medium text-gray-900"
+                                >
+                                    #{{ e.id }}
+                                </td>
+                                <td class="px-6 py-3">
+                                    <span
+                                        v-if="e.available"
+                                        class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+                                        >available</span
+                                    >
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20"
+                                        >unavailable</span
+                                    >
+                                </td>
+                                <td class="px-6 py-3 text-sm text-gray-600">
+                                    {{ formatTs(e.expiresAt) }}
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -65,20 +149,35 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, computed } from 'vue';
 import { io } from 'socket.io-client';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 // UI state
 const connected = ref(false);
 const maxRows = 500;
-const events = reactive<Array<{ _k: string; id: number; available: boolean; expiresAt?: number | null; ts: number }>>([]);
+const events = reactive<
+    Array<{
+        _k: string;
+        id: number;
+        available: boolean;
+        expiresAt?: number | null;
+        ts: number;
+    }>
+>([]);
 
 // Chart: counts per minute for last 15 minutes
 const windowMinutes = 15;
-const buckets = reactive<number[]>(Array.from({ length: windowMinutes }, () => 0));
+const buckets = reactive<number[]>(
+    Array.from({ length: windowMinutes }, () => 0),
+);
 let bucketBaseTs = Math.floor(Date.now() / 1000 / 60); // minutes
 
-function pushEvent(e: { id?: number; available?: boolean; expiresAt?: number | null; ts?: number }) {
+function pushEvent(e: {
+    id?: number;
+    available?: boolean;
+    expiresAt?: number | null;
+    ts?: number;
+}) {
     const id = typeof e.id === 'number' ? e.id : NaN;
     const available = typeof e.available === 'boolean' ? e.available : false;
     const ts = typeof e.ts === 'number' ? e.ts : Math.floor(Date.now() / 1000);
@@ -86,7 +185,13 @@ function pushEvent(e: { id?: number; available?: boolean; expiresAt?: number | n
     if (!Number.isFinite(id)) return;
 
     // prepend newest
-    events.unshift({ _k: `${id}-${ts}-${Math.random().toString(36).slice(2)}`, id, available, expiresAt, ts });
+    events.unshift({
+        _k: `${id}-${ts}-${Math.random().toString(36).slice(2)}`,
+        id,
+        available,
+        expiresAt,
+        ts,
+    });
     if (events.length > maxRows) events.splice(maxRows);
 
     // update chart buckets
@@ -146,11 +251,20 @@ onMounted(() => {
         const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
         const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
         socket = io(socketUrl, { path: socketPath });
-        socket.on('connect', () => { connected.value = true; });
-        socket.on('disconnect', () => { connected.value = false; });
+        socket.on('connect', () => {
+            connected.value = true;
+        });
+        socket.on('disconnect', () => {
+            connected.value = false;
+        });
         socket.on('availability:update', (m: any) => {
             if (m && typeof m === 'object') {
-                pushEvent({ id: m.id, available: !!m.available, expiresAt: m.expiresAt ?? null, ts: m.ts ?? Math.floor(Date.now()/1000) });
+                pushEvent({
+                    id: m.id,
+                    available: !!m.available,
+                    expiresAt: m.expiresAt ?? null,
+                    ts: m.ts ?? Math.floor(Date.now() / 1000),
+                });
             }
         });
     } catch (e) {
@@ -159,11 +273,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    try { socket?.disconnect?.(); } catch (_) {}
+    try {
+        socket?.disconnect?.();
+    } catch (_) {}
 });
 </script>
 
-<style scoped>
-</style>
-
-
+<style scoped></style>

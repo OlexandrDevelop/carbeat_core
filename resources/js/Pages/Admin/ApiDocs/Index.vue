@@ -9,18 +9,76 @@
                         API Документація для мобільного додатку
                     </h1>
 
-                    <nav class="mb-6 rounded border border-gray-200 bg-gray-50 p-4">
-                        <h2 class="mb-2 text-sm font-semibold text-gray-600">Навігація по розділам</h2>
+                    <nav
+                        class="mb-6 rounded border border-gray-200 bg-gray-50 p-4"
+                    >
+                        <h2 class="mb-2 text-sm font-semibold text-gray-600">
+                            Навігація по розділам
+                        </h2>
                         <ul class="flex flex-wrap gap-4 text-sm">
-                            <li><a href="#auth" class="text-blue-600 hover:underline">Авторизація</a></li>
-                            <li><a href="#subscriptions" class="text-blue-600 hover:underline">Підписки</a></li>
-                            <li><a href="#availability" class="text-blue-600 hover:underline">Доступність майстра</a></li>
-                            <li><a href="#schedule" class="text-blue-600 hover:underline">Графік/Слоти</a></li>
-                            <li><a href="#booking" class="text-blue-600 hover:underline">Бронювання</a></li>
-                            <li><a href="#tokens" class="text-blue-600 hover:underline">Токени</a></li>
-                            <li><a href="#guide" class="text-blue-600 hover:underline">Інструкція</a></li>
-                            <li><a href="#errors" class="text-blue-600 hover:underline">Помилки</a></li>
-                            <li><a href="#base-url" class="text-blue-600 hover:underline">Базовий URL</a></li>
+                            <li>
+                                <a
+                                    href="#auth"
+                                    class="text-blue-600 hover:underline"
+                                    >Авторизація</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#subscriptions"
+                                    class="text-blue-600 hover:underline"
+                                    >Підписки</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#availability"
+                                    class="text-blue-600 hover:underline"
+                                    >Доступність майстра</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#schedule"
+                                    class="text-blue-600 hover:underline"
+                                    >Графік/Слоти</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#booking"
+                                    class="text-blue-600 hover:underline"
+                                    >Бронювання</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#tokens"
+                                    class="text-blue-600 hover:underline"
+                                    >Токени</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#guide"
+                                    class="text-blue-600 hover:underline"
+                                    >Інструкція</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#errors"
+                                    class="text-blue-600 hover:underline"
+                                    >Помилки</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    href="#base-url"
+                                    class="text-blue-600 hover:underline"
+                                    >Базовий URL</a
+                                >
+                            </li>
                         </ul>
                     </nav>
 
@@ -491,18 +549,34 @@
                                     <h3 class="font-semibold text-green-600">
                                         1. Перевірка/реєстрація підписки
                                     </h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/subscription/check</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
-                                        <div class="text-gray-300">Content-Type: application/json</div>
-                                        <div class="mt-2">{<br/>
-                                            &nbsp;&nbsp;"platform": "apple" | "google",<br/>
-                                            &nbsp;&nbsp;"receipt_token": "...",<br/>
-                                            &nbsp;&nbsp;"product_id": "com.app.premium.monthly"<br/>
-                                        }</div>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST /api/v1/subscription/check
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Content-Type: application/json
+                                        </div>
+                                        <div class="mt-2">
+                                            {<br />
+                                            &nbsp;&nbsp;"platform": "apple" |
+                                            "google",<br />
+                                            &nbsp;&nbsp;"receipt_token":
+                                            "...",<br />
+                                            &nbsp;&nbsp;"product_id":
+                                            "com.app.premium.monthly"<br />
+                                            }
+                                        </div>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-600">
-                                        <strong>Відповідь:</strong> { "active": true, "platform": "apple", "expires_at": "2025-11-02T12:00:00Z", "product_id": "..." }
+                                        <strong>Відповідь:</strong> { "active":
+                                        true, "platform": "apple", "expires_at":
+                                        "2025-11-02T12:00:00Z", "product_id":
+                                        "..." }
                                     </div>
                                 </div>
 
@@ -510,101 +584,223 @@
                                     <h3 class="font-semibold text-green-600">
                                         2. Отримати статус підписки
                                     </h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>GET /api/v1/subscription/status</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            GET /api/v1/subscription/status
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-600">
-                                        <strong>Відповідь:</strong> { "active": true, "expires_at": "..." }
+                                        <strong>Відповідь:</strong> { "active":
+                                        true, "expires_at": "..." }
                                     </div>
                                 </div>
 
-                                <div class="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
-                                    <strong>Нотатка:</strong> на деві сервер приймає будь-який токен та ставить строк дії +1 місяць. У продакшні будуть використовуватись реальні дані Apple/Google.
+                                <div
+                                    class="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800"
+                                >
+                                    <strong>Нотатка:</strong> на деві сервер
+                                    приймає будь-який токен та ставить строк дії
+                                    +1 місяць. У продакшні будуть
+                                    використовуватись реальні дані Apple/Google.
                                 </div>
                             </div>
                         </section>
 
                         <!-- Availability Flag Section -->
                         <section id="availability">
-                            <h2 class="mb-4 text-xl font-semibold text-blue-600">🟢 Доступність майстра (прапорець)</h2>
+                            <h2
+                                class="mb-4 text-xl font-semibold text-blue-600"
+                            >
+                                🟢 Доступність майстра (прапорець)
+                            </h2>
                             <div class="space-y-4 rounded-lg bg-gray-50 p-4">
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Поставити статус "вільний"</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/masters/{id}/availability</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Поставити статус "вільний"
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST
+                                            /api/v1/masters/{id}/availability
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Зняти статус "вільний"</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>DELETE /api/v1/masters/{id}/availability</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Зняти статус "вільний"
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            DELETE
+                                            /api/v1/masters/{id}/availability
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Перевірити доступність</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>GET /api/v1/masters/{id}/availability</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Перевірити доступність
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            GET
+                                            /api/v1/masters/{id}/availability
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-                                    Прапорець впливає лише на відображення майстра як доступного "зараз" у списках/мапі та не визначає, чи можна записатись на конкретний час.
+                                <div
+                                    class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800"
+                                >
+                                    Прапорець впливає лише на відображення
+                                    майстра як доступного "зараз" у списках/мапі
+                                    та не визначає, чи можна записатись на
+                                    конкретний час.
                                 </div>
                             </div>
                         </section>
 
                         <!-- Schedule/Slots Section -->
                         <section id="schedule">
-                            <h2 class="mb-4 text-xl font-semibold text-blue-600">🗓️ Графік роботи / Слоти</h2>
+                            <h2
+                                class="mb-4 text-xl font-semibold text-blue-600"
+                            >
+                                🗓️ Графік роботи / Слоти
+                            </h2>
                             <div class="space-y-4 rounded-lg bg-gray-50 p-4">
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Додати правило (тижневий графік)</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/masters/{id}/slots/rules</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
-                                        <div class="text-gray-300">Content-Type: application/json</div>
-                                        <div class="mt-2">{ "day_of_week": 1, "start_time": "09:00", "end_time": "18:00", "active": true }</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Додати правило (тижневий графік)
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST
+                                            /api/v1/masters/{id}/slots/rules
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Content-Type: application/json
+                                        </div>
+                                        <div class="mt-2">
+                                            { "day_of_week": 1, "start_time":
+                                            "09:00", "end_time": "18:00",
+                                            "active": true }
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Видалити правило</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>DELETE /api/v1/masters/{id}/slots/rules/{ruleId}</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Видалити правило
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            DELETE
+                                            /api/v1/masters/{id}/slots/rules/{ruleId}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Додати вихідний/перерву (виняток)</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/masters/{id}/slots/time-off</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
-                                        <div class="text-gray-300">Content-Type: application/json</div>
-                                        <div class="mt-2">{ "start_time": "2025-10-03T09:00:00Z", "end_time": "2025-10-03T13:00:00Z", "reason": "..." }</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Додати вихідний/перерву (виняток)
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST
+                                            /api/v1/masters/{id}/slots/time-off
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Content-Type: application/json
+                                        </div>
+                                        <div class="mt-2">
+                                            { "start_time":
+                                            "2025-10-03T09:00:00Z", "end_time":
+                                            "2025-10-03T13:00:00Z", "reason":
+                                            "..." }
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Видалити вихідний/перерву</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>DELETE /api/v1/masters/{id}/slots/time-off/{offId}</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Видалити вихідний/перерву
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            DELETE
+                                            /api/v1/masters/{id}/slots/time-off/{offId}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Переглянути інтервали на день (обчислено з правил − винятки)</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>GET /api/v1/masters/{id}/slots/day?date=YYYY-MM-DD</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Переглянути інтервали на день (обчислено
+                                        з правил − винятки)
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            GET
+                                            /api/v1/masters/{id}/slots/day?date=YYYY-MM-DD
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-green-600">Синхронізувати інтервали дня в Redis</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/masters/{id}/slots/sync-day?date=YYYY-MM-DD</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        Синхронізувати інтервали дня в Redis
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST
+                                            /api/v1/masters/{id}/slots/sync-day?date=YYYY-MM-DD
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
-                                    <div class="mt-2 text-sm text-gray-600">Після зміни графіку викликайте sync-day для швидкого застосування при бронюванні.</div>
+                                    <div class="mt-2 text-sm text-gray-600">
+                                        Після зміни графіку викликайте sync-day
+                                        для швидкого застосування при
+                                        бронюванні.
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -619,53 +815,109 @@
 
                             <div class="space-y-4 rounded-lg bg-gray-50 p-4">
                                 <div>
-                                    <h3 class="font-semibold text-green-600">1. Доступні слоти майстра</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>GET /api/v1/booking/masters/{masterId}/slots?date=YYYY-MM-DD&amp;duration_minutes=30</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        1. Доступні слоти майстра
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            GET
+                                            /api/v1/booking/masters/{masterId}/slots?date=YYYY-MM-DD&amp;duration_minutes=30
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-green-600">2. Створити бронювання (клієнт)</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>POST /api/v1/booking/masters/{masterId}</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
-                                        <div class="text-gray-300">Content-Type: application/json</div>
-                                        <div class="mt-2">{<br/>
-                                            &nbsp;&nbsp;"start_time": "2025-10-02T12:00:00Z",<br/>
-                                            &nbsp;&nbsp;"end_time": "2025-10-02T12:30:00Z",<br/>
-                                            &nbsp;&nbsp;"note": "Поміняти масло"<br/>
-                                        }</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        2. Створити бронювання (клієнт)
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            POST
+                                            /api/v1/booking/masters/{masterId}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Content-Type: application/json
+                                        </div>
+                                        <div class="mt-2">
+                                            {<br />
+                                            &nbsp;&nbsp;"start_time":
+                                            "2025-10-02T12:00:00Z",<br />
+                                            &nbsp;&nbsp;"end_time":
+                                            "2025-10-02T12:30:00Z",<br />
+                                            &nbsp;&nbsp;"note": "Поміняти
+                                            масло"<br />
+                                            }
+                                        </div>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-600">
-                                        <strong>Відповідь:</strong> { "id": 123, "status": "pending", ... }<br/>
-                                        <strong>Помилки:</strong> 409 (Slot already booked), 422 (Not available)
+                                        <strong>Відповідь:</strong> { "id": 123,
+                                        "status": "pending", ... }<br />
+                                        <strong>Помилки:</strong> 409 (Slot
+                                        already booked), 422 (Not available)
                                     </div>
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-green-600">3. Список бронювань майстра</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>GET /api/v1/booking/master?date=YYYY-MM-DD</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        3. Список бронювань майстра
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            GET
+                                            /api/v1/booking/master?date=YYYY-MM-DD
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-600">
-                                        Потребує активної підписки і фічі тарифу <code>"booking_management"</code>. Помилки: 402 (Subscription required), 403 (Feature not allowed)
+                                        Потребує активної підписки і фічі тарифу
+                                        <code>"booking_management"</code>.
+                                        Помилки: 402 (Subscription required),
+                                        403 (Feature not allowed)
                                     </div>
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-green-600">4. Змінити статус бронювання</h3>
-                                    <div class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400">
-                                        <div>PUT /api/v1/booking/{bookingId}/status</div>
-                                        <div class="text-gray-300">Authorization: Bearer {access_token}</div>
-                                        <div class="text-gray-300">Content-Type: application/json</div>
-                                        <div class="mt-2">{ "status": "confirmed" | "cancelled" }</div>
+                                    <h3 class="font-semibold text-green-600">
+                                        4. Змінити статус бронювання
+                                    </h3>
+                                    <div
+                                        class="mt-2 rounded bg-black p-3 font-mono text-sm text-green-400"
+                                    >
+                                        <div>
+                                            PUT
+                                            /api/v1/booking/{bookingId}/status
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Authorization: Bearer {access_token}
+                                        </div>
+                                        <div class="text-gray-300">
+                                            Content-Type: application/json
+                                        </div>
+                                        <div class="mt-2">
+                                            { "status": "confirmed" |
+                                            "cancelled" }
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-                                    <strong>Коментарі для Flutter:</strong> слоти будуються на Redis-інтервалах доступності майстра; дублювання бронювань блокується перевіркою перетинів у БД.
+                                <div
+                                    class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800"
+                                >
+                                    <strong>Коментарі для Flutter:</strong>
+                                    слоти будуються на Redis-інтервалах
+                                    доступності майстра; дублювання бронювань
+                                    блокується перевіркою перетинів у БД.
                                 </div>
                             </div>
                         </section>

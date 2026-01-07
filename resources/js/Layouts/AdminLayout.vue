@@ -97,9 +97,15 @@
                                                 </li>
                                                 <li>
                                                     <Link
-                                                        :href="route('admin.app_config.index')"
+                                                        :href="
+                                                            route(
+                                                                'admin.app_config.index',
+                                                            )
+                                                        "
                                                         :class="[
-                                                            route().current('admin.app_config.*')
+                                                            route().current(
+                                                                'admin.app_config.*',
+                                                            )
                                                                 ? 'bg-gray-50 text-blue-600'
                                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -108,7 +114,9 @@
                                                         <i
                                                             class="fa fa-sliders text-lg"
                                                             :class="[
-                                                                route().current('admin.app_config.*')
+                                                                route().current(
+                                                                    'admin.app_config.*',
+                                                                )
                                                                     ? 'text-blue-600'
                                                                     : 'text-gray-400 group-hover:text-blue-600',
                                                             ]"
@@ -148,9 +156,15 @@
                                                 <!-- Subscriptions (mobile) -->
                                                 <li>
                                                     <Link
-                                                        :href="route('admin.subscriptions.index')"
+                                                        :href="
+                                                            route(
+                                                                'admin.subscriptions.index',
+                                                            )
+                                                        "
                                                         :class="[
-                                                            route().current('admin.subscriptions.*')
+                                                            route().current(
+                                                                'admin.subscriptions.*',
+                                                            )
                                                                 ? 'bg-gray-50 text-blue-600'
                                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -159,7 +173,9 @@
                                                         <i
                                                             class="fa fa-credit-card text-lg"
                                                             :class="[
-                                                                route().current('admin.subscriptions.*')
+                                                                route().current(
+                                                                    'admin.subscriptions.*',
+                                                                )
                                                                     ? 'text-blue-600'
                                                                     : 'text-gray-400 group-hover:text-blue-600',
                                                             ]"
@@ -169,9 +185,15 @@
                                                 </li>
                                                 <li>
                                                     <Link
-                                                        :href="route('admin.payments.index')"
+                                                        :href="
+                                                            route(
+                                                                'admin.payments.index',
+                                                            )
+                                                        "
                                                         :class="[
-                                                            route().current('admin.payments.*')
+                                                            route().current(
+                                                                'admin.payments.*',
+                                                            )
                                                                 ? 'bg-gray-50 text-blue-600'
                                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -180,7 +202,9 @@
                                                         <i
                                                             class="fa fa-cog text-lg"
                                                             :class="[
-                                                                route().current('admin.payments.*')
+                                                                route().current(
+                                                                    'admin.payments.*',
+                                                                )
                                                                     ? 'text-blue-600'
                                                                     : 'text-gray-400 group-hover:text-blue-600',
                                                             ]"
@@ -249,9 +273,15 @@
 
                                                 <li>
                                                     <Link
-                                                        :href="route('admin.maintenance.index')"
+                                                        :href="
+                                                            route(
+                                                                'admin.maintenance.index',
+                                                            )
+                                                        "
                                                         :class="[
-                                                            route().current('admin.maintenance.*')
+                                                            route().current(
+                                                                'admin.maintenance.*',
+                                                            )
                                                                 ? 'bg-gray-50 text-blue-600'
                                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -260,7 +290,9 @@
                                                         <i
                                                             class="fa fa-tools text-lg"
                                                             :class="[
-                                                                route().current('admin.maintenance.*')
+                                                                route().current(
+                                                                    'admin.maintenance.*',
+                                                                )
                                                                     ? 'text-blue-600'
                                                                     : 'text-gray-400 group-hover:text-blue-600',
                                                             ]"
@@ -270,9 +302,15 @@
                                                 </li>
                                                 <li>
                                                     <Link
-                                                        :href="route('admin.realtime.availability')"
+                                                        :href="
+                                                            route(
+                                                                'admin.realtime.availability',
+                                                            )
+                                                        "
                                                         :class="[
-                                                            route().current('admin.realtime.*')
+                                                            route().current(
+                                                                'admin.realtime.*',
+                                                            )
                                                                 ? 'bg-gray-50 text-blue-600'
                                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -281,7 +319,9 @@
                                                         <i
                                                             class="fa fa-bolt text-lg"
                                                             :class="[
-                                                                route().current('admin.realtime.*')
+                                                                route().current(
+                                                                    'admin.realtime.*',
+                                                                )
                                                                     ? 'text-blue-600'
                                                                     : 'text-gray-400 group-hover:text-blue-600',
                                                             ]"
@@ -331,7 +371,9 @@
                                     <Link
                                         :href="route('admin.app_config.index')"
                                         :class="[
-                                            route().current('admin.app_config.*')
+                                            route().current(
+                                                'admin.app_config.*',
+                                            )
                                                 ? 'bg-gray-50 text-blue-600'
                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -340,7 +382,9 @@
                                         <i
                                             class="fa fa-sliders text-lg"
                                             :class="[
-                                                route().current('admin.app_config.*')
+                                                route().current(
+                                                    'admin.app_config.*',
+                                                )
                                                     ? 'text-blue-600'
                                                     : 'text-gray-400 group-hover:text-blue-600',
                                             ]"
@@ -397,9 +441,13 @@
                                 <!-- Subscriptions (desktop) -->
                                 <li>
                                     <Link
-                                        :href="route('admin.subscriptions.index')"
+                                        :href="
+                                            route('admin.subscriptions.index')
+                                        "
                                         :class="[
-                                            route().current('admin.subscriptions.*')
+                                            route().current(
+                                                'admin.subscriptions.*',
+                                            )
                                                 ? 'bg-gray-50 text-blue-600'
                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -408,7 +456,9 @@
                                         <i
                                             class="fa fa-credit-card text-lg"
                                             :class="[
-                                                route().current('admin.subscriptions.*')
+                                                route().current(
+                                                    'admin.subscriptions.*',
+                                                )
                                                     ? 'text-blue-600'
                                                     : 'text-gray-400 group-hover:text-blue-600',
                                             ]"
@@ -429,7 +479,9 @@
                                         <i
                                             class="fa fa-cog text-lg"
                                             :class="[
-                                                route().current('admin.payments.*')
+                                                route().current(
+                                                    'admin.payments.*',
+                                                )
                                                     ? 'text-blue-600'
                                                     : 'text-gray-400 group-hover:text-blue-600',
                                             ]"
@@ -488,7 +540,9 @@
                                     <Link
                                         :href="route('admin.maintenance.index')"
                                         :class="[
-                                            route().current('admin.maintenance.*')
+                                            route().current(
+                                                'admin.maintenance.*',
+                                            )
                                                 ? 'bg-gray-50 text-blue-600'
                                                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
                                             'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
@@ -497,7 +551,9 @@
                                         <i
                                             class="fa fa-tools text-lg"
                                             :class="[
-                                                route().current('admin.maintenance.*')
+                                                route().current(
+                                                    'admin.maintenance.*',
+                                                )
                                                     ? 'text-blue-600'
                                                     : 'text-gray-400 group-hover:text-blue-600',
                                             ]"
@@ -507,7 +563,9 @@
                                 </li>
                                 <li>
                                     <Link
-                                        :href="route('admin.realtime.availability')"
+                                        :href="
+                                            route('admin.realtime.availability')
+                                        "
                                         :class="[
                                             route().current('admin.realtime.*')
                                                 ? 'bg-gray-50 text-blue-600'
@@ -518,7 +576,9 @@
                                         <i
                                             class="fa fa-bolt text-lg"
                                             :class="[
-                                                route().current('admin.realtime.*')
+                                                route().current(
+                                                    'admin.realtime.*',
+                                                )
                                                     ? 'text-blue-600'
                                                     : 'text-gray-400 group-hover:text-blue-600',
                                             ]"
@@ -570,7 +630,9 @@
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
                         <!-- Global project/brand switcher -->
                         <div class="relative">
-                            <label for="brandSwitcher" class="sr-only">Project</label>
+                            <label for="brandSwitcher" class="sr-only"
+                                >Project</label
+                            >
                             <select
                                 id="brandSwitcher"
                                 class="block w-44 rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6"
@@ -617,9 +679,9 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Link, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const sidebarOpen = ref(false);
 
@@ -630,9 +692,12 @@ const brands = computed(() => page.props.brands || []);
 // Local selected value to bind with v-model to avoid flicker when Inertia updates
 const selectedBrand = ref(page.props.adminBrand || '');
 // Keep local selectedBrand in sync when Inertia replaces page props
-watch(() => page.props.adminBrand, (v) => {
-    selectedBrand.value = v || '';
-});
+watch(
+    () => page.props.adminBrand,
+    (v) => {
+        selectedBrand.value = v || '';
+    },
+);
 
 function onBrandChange(e) {
     const value = e.target ? e.target.value : selectedBrand.value;
@@ -641,6 +706,10 @@ function onBrandChange(e) {
     // Use Inertia to navigate with the brand query param so shared props update
     const url = new URL(window.location.href);
     const pathname = url.pathname;
-    Inertia.get(pathname, { ...Object.fromEntries(url.searchParams.entries()), brand: value }, { preserveState: false, preserveScroll: true });
+    Inertia.get(
+        pathname,
+        { ...Object.fromEntries(url.searchParams.entries()), brand: value },
+        { preserveState: false, preserveScroll: true },
+    );
 }
 </script>

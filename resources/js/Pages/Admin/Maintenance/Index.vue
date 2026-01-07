@@ -34,7 +34,8 @@
         <div class="mt-6 max-w-2xl rounded border bg-white p-4 shadow-sm">
             <h2 class="mb-2 text-lg font-semibold">Database reset</h2>
             <p class="mb-3 text-sm text-gray-600">
-                Truncate domain tables (clients, cities, masters, services, reviews, master services, master galleries). Use with caution.
+                Truncate domain tables (clients, cities, masters, services,
+                reviews, master services, master galleries). Use with caution.
             </p>
             <button
                 @click="truncate"
@@ -46,7 +47,10 @@
             <div v-if="truncateResult" class="mt-3 text-sm text-gray-800">
                 <div class="font-semibold">Truncated tables:</div>
                 <ul class="ml-5 list-disc">
-                    <li v-for="(count, table) in truncateResult.tables" :key="table">
+                    <li
+                        v-for="(count, table) in truncateResult.tables"
+                        :key="table"
+                    >
                         {{ table }} (removed: {{ count }})
                     </li>
                 </ul>
@@ -56,11 +60,13 @@
         <div class="mt-6 max-w-2xl rounded border bg-white p-4 shadow-sm">
             <h2 class="mb-2 text-lg font-semibold">Regenerate thumbnails</h2>
             <p class="mb-3 text-sm text-gray-600">
-                Queue jobs to regenerate thumbnail images for masters with photos.
+                Queue jobs to regenerate thumbnail images for masters with
+                photos.
             </p>
             <div class="flex items-center gap-3">
                 <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" v-model="resetFlags" /> Reset thumbnail flags first
+                    <input type="checkbox" v-model="resetFlags" /> Reset
+                    thumbnail flags first
                 </label>
                 <button
                     @click="regenerate"
@@ -71,9 +77,16 @@
                 </button>
             </div>
             <div v-if="regenResult" class="mt-3 text-sm text-gray-800">
-                <div><strong>Total to process:</strong> {{ regenResult.total }}</div>
-                <div><strong>Queued chunks:</strong> {{ regenResult.queued_chunks }}</div>
-                <div><strong>Chunk size:</strong> {{ regenResult.chunk_size }}</div>
+                <div>
+                    <strong>Total to process:</strong> {{ regenResult.total }}
+                </div>
+                <div>
+                    <strong>Queued chunks:</strong>
+                    {{ regenResult.queued_chunks }}
+                </div>
+                <div>
+                    <strong>Chunk size:</strong> {{ regenResult.chunk_size }}
+                </div>
             </div>
         </div>
     </div>
@@ -121,7 +134,10 @@ const regenerate = async () => {
     regenLoading.value = true;
     regenResult.value = null;
     try {
-        const { data } = await axios.post('/admin-api/maintenance/regenerate-thumbs', { reset: resetFlags.value });
+        const { data } = await axios.post(
+            '/admin-api/maintenance/regenerate-thumbs',
+            { reset: resetFlags.value },
+        );
         regenResult.value = data;
     } finally {
         regenLoading.value = false;

@@ -41,17 +41,22 @@ class MasterController extends Controller
     // Admin API
     public function list(Request $request): JsonResponse
     {
-        /** @var LengthAwarePaginator $paginator */
-        $paginator = $this->service->listMasters($request->all());
+        $masters = $this->service->listMasters($request->all());
+
+        if ($masters instanceof LengthAwarePaginator) {
+            return response()->json([
+                'data' => AdminMasterResource::collection($masters->items()),
+                'meta' => [
+                    'current_page' => $masters->currentPage(),
+                    'last_page' => $masters->lastPage(),
+                    'per_page' => $masters->perPage(),
+                    'total' => $masters->total(),
+                ],
+            ]);
+        }
 
         return response()->json([
-            'data' => AdminMasterResource::collection($paginator->items()),
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-            ],
+            'data' => AdminMasterResource::collection($masters),
         ]);
     }
 

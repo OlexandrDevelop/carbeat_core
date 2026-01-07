@@ -1,10 +1,17 @@
 <template>
-    <div class="min-h-screen bg-white text-gray-900 flex items-center justify-center">
+    <div
+        class="flex min-h-screen items-center justify-center bg-white text-gray-900"
+    >
         <div class="text-center">
             <h1 class="text-9xl font-bold text-sky-500">{{ status }}</h1>
-            <p class="text-2xl md:text-3xl font-light text-gray-800 mt-4">{{ title }}</p>
-            <p class="text-md text-gray-600 mt-2">{{ description }}</p>
-            <a :href="route('landing')" class="mt-8 inline-block rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-800">
+            <p class="mt-4 text-2xl font-light text-gray-800 md:text-3xl">
+                {{ title }}
+            </p>
+            <p class="text-md mt-2 text-gray-600">{{ description }}</p>
+            <a
+                :href="route('landing')"
+                class="mt-8 inline-block rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-800"
+            >
                 Повернутись на головну
             </a>
         </div>
@@ -36,4 +43,3 @@ const description = computed(() => {
     }[props.status];
 });
 </script>
-

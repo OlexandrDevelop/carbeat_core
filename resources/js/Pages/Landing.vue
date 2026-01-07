@@ -2,13 +2,22 @@
     <div class="min-h-screen bg-white text-gray-900">
         <Head>
             <title>Автосервіс та ремонт авто: Carbeat - пошук майстрів</title>
-            <meta name="description" content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів." />
-            <meta name="keywords" content="автосервіс, сто, ремонт авто, пошук майстрів, запис на сто, carbeat" />
+            <meta
+                name="description"
+                content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів."
+            />
+            <meta
+                name="keywords"
+                content="автосервіс, сто, ремонт авто, пошук майстрів, запис на сто, carbeat"
+            />
 
             <!-- Open Graph / Facebook -->
             <meta property="og:type" content="website" />
             <meta property="og:url" content="https://carbeat.online/" />
-            <meta property="og:title" content="Автосервіс та ремонт авто: Carbeat - пошук майстрів" />
+            <meta
+                property="og:title"
+                content="Автосервіс та ремонт авто: Carbeat - пошук майстрів"
+            />
             <meta
                 property="og:description"
                 content="Швидкий пошук автосервісів (СТО) та майстрів для ремонту авто. Carbeat - це зручна платформа для керування записами, перегляду відгуків та вибору найкращих спеціалістів."
@@ -62,10 +71,13 @@
             <section class="grid gap-10 lg:grid-cols-2 lg:items-center">
                 <div>
                     <h1 class="text-4xl font-bold tracking-tight md:text-4xl">
-                        Carbeat: автосервіс, ремонт авто та швидкий пошук майстрів
+                        Carbeat: автосервіс, ремонт авто та швидкий пошук
+                        майстрів
                     </h1>
                     <p class="mt-4 text-lg text-gray-600">
-                        Зручний сервіс для клієнтів та СТО: профіль, послуги з ремонту авто, відгуки, робочі години та керування записами на автосервіс.
+                        Зручний сервіс для клієнтів та СТО: профіль, послуги з
+                        ремонту авто, відгуки, робочі години та керування
+                        записами на автосервіс.
                     </p>
 
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -136,13 +148,16 @@
                 <div
                     class="rounded-3xl border border-gray-200 bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white"
                 >
-                    <h2 class="text-xl font-semibold">Що є в додатку Carbeat для СТО та клієнтів</h2>
+                    <h2 class="text-xl font-semibold">
+                        Що є в додатку Carbeat для СТО та клієнтів
+                    </h2>
                     <ul class="mt-4 space-y-3 text-sm text-slate-200">
                         <li class="flex gap-3">
                             <span
                                 class="mt-1 inline-block h-2 w-2 rounded-full bg-sky-400"
                             ></span>
-                            Публічні профілі майстрів із послугами та контактами для ремонту авто
+                            Публічні профілі майстрів із послугами та контактами
+                            для ремонту авто
                         </li>
                         <li class="flex gap-3">
                             <span
@@ -158,7 +173,8 @@
                         <div class="text-sm font-semibold">Для майстрів</div>
                         <div class="mt-1 text-sm text-slate-200">
                             Створіть та наповніть профіль, додавайте фото,
-                            працюйте з відгуками та керуйте доступністю для запису на СТО.
+                            працюйте з відгуками та керуйте доступністю для
+                            запису на СТО.
                         </div>
                     </div>
 
@@ -167,8 +183,9 @@
                     >
                         <div class="text-sm font-semibold">Для клієнтів</div>
                         <div class="mt-1 text-sm text-slate-200">
-                            Знаходьте перевірених майстрів для ремонту авто, переглядайте послуги
-                            й контакти та обирайте зручний час для запису на автосервіс.
+                            Знаходьте перевірених майстрів для ремонту авто,
+                            переглядайте послуги й контакти та обирайте зручний
+                            час для запису на автосервіс.
                         </div>
                     </div>
                 </div>
@@ -179,7 +196,9 @@
             >
                 <div>© 2026 {{ appName }}</div>
                 <div class="flex gap-4">
-                    <a :href="route('landing')" class="hover:text-gray-700">Головна</a>
+                    <a :href="route('landing')" class="hover:text-gray-700"
+                        >Головна</a
+                    >
                     <a :href="termsUrl" class="hover:text-gray-700">Умови</a>
                     <a :href="privacyUrl" class="hover:text-gray-700"
                         >Конфіденційність</a
