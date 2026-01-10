@@ -38,6 +38,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.brand']], fun
         return Inertia::render('Admin/Realtime/Availability');
     })->name('admin.realtime.availability');
 
+    // Mobile activity monitoring
+    Route::get('/mobile-activity', [\App\Http\Controllers\Admin\MobileActivityController::class, 'index'])->name('admin.mobile_activity.index');
+
     // App config UI
     Route::get('/app-config', [AppConfigController::class, 'index'])->name('admin.app_config.index');
     // Subscriptions dashboard UI
@@ -97,6 +100,10 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api', 'admin.br
     // Subscriptions dashboard data
     Route::get('/subscriptions-dashboard/list', [SubscriptionsAdminController::class, 'list'])->name('admin.api.subscriptions_dashboard.list');
     Route::get('/subscriptions-dashboard/stats', [SubscriptionsAdminController::class, 'stats'])->name('admin.api.subscriptions_dashboard.stats');
+
+    // Mobile activity monitoring API
+    Route::get('/mobile-activity/data', [\App\Http\Controllers\Admin\MobileActivityController::class, 'getData'])->name('admin.api.mobile_activity.data');
+    Route::post('/mobile-activity/clear', [\App\Http\Controllers\Admin\MobileActivityController::class, 'clear'])->name('admin.api.mobile_activity.clear');
 
     // Tariffs API removed
 
