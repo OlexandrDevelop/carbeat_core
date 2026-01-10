@@ -2,6 +2,7 @@
 
 namespace App\Http\Services;
 
+use App\Helpers\CountryHelper;
 use App\Models\Master;
 use App\Models\Service;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,8 +13,10 @@ class ServiceService
 {
     public function getServices(Request $request): Collection|array|LengthAwarePaginator
     {
+        $country = CountryHelper::currentCountry();
         $query = Service::query()
             ->select(['id', 'name'])
+            ->where('country_id', $country->id)
             ->withCount('masters');
 
         $page = $request->input('page');

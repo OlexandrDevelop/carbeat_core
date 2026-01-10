@@ -113,7 +113,8 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
-        $master = Master::findOrFail($id);
+
+        $master = Master::where('id', $id)->firstOrFail();
 
         $availabilityService->setUnavailable($id, $master->app);
 
@@ -129,7 +130,8 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
-        $master = Master::findOrFail($id);
+
+        $master = Master::where('id', $id)->firstOrFail();
 
         $availability = $availabilityService->getAvailability($id, $master->app);
 
@@ -145,7 +147,8 @@ class MasterController extends Controller
         MasterAvailabilityService $availabilityService
     ): JsonResponse {
         $id = (int) $id;
-        $master = Master::findOrFail($id);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $id)->where('country_id', $countryId)->firstOrFail();
         $data = $request->validated();
 
         $availabilityService->setAvailable(
@@ -171,7 +174,8 @@ class MasterController extends Controller
 
     public function updateProfile(UpdateMasterRequest $request, int $id, MasterService $masterService): JsonResponse
     {
-        $master = Master::findOrFail($id);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $id)->where('country_id', $countryId)->firstOrFail();
         $this->authorize('update', $master); // ensure policy exists or skip
 
         $data = $request->validated();
@@ -205,7 +209,8 @@ class MasterController extends Controller
         int $id,
         MasterService $masterService
     ): JsonResponse {
-        $master = Master::findOrFail($id);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $id)->where('country_id', $countryId)->firstOrFail();
         $this->authorize('update', $master);
 
         $serviceIds = $request->validated()['service_ids'] ?? [];
@@ -219,7 +224,8 @@ class MasterController extends Controller
         int $id,
         MasterGalleryService $galleryService
     ): JsonResponse {
-        $master = Master::findOrFail($id);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $id)->where('country_id', $countryId)->firstOrFail();
         $this->authorize('update', $master);
 
         $galleryService->addPhotos($master, $request->photos);
@@ -233,7 +239,8 @@ class MasterController extends Controller
         int $photoId,
         MasterGalleryService $galleryService
     ): JsonResponse {
-        $master = Master::findOrFail($id);
+
+        $master = Master::where('id', $id)->firstOrFail();
         $this->authorize('update', $master);
 
         $galleryService->deletePhoto($master, $photoId);

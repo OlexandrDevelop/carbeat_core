@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\AppScoped;
+use App\Models\Traits\BelongsToCountry;
 
 /**
  * @property int $id
@@ -32,13 +33,14 @@ use App\Models\Traits\AppScoped;
  */
 class Client extends Model
 {
-    use HasFactory, AppScoped;
+    use HasFactory, AppScoped, BelongsToCountry;
 
     protected $fillable = [
         'phone',
         'name',
         'verified_at',
         'user_id',
+        'country_id',
     ];
 
     protected $casts = [

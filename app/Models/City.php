@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Traits\BelongsToCountry;
 
 /**
  * @property int $id
@@ -28,12 +29,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class City extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToCountry;
 
     protected $fillable = [
         'name',
         'latitude',
         'longitude',
+        'country_id',
     ];
 
     public function masters(): HasMany
@@ -41,5 +43,3 @@ class City extends Model
         return $this->hasMany(Master::class);
     }
 }
-
-

@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use App\Models\Traits\AppScoped;
+use App\Models\Traits\BelongsToCountry;
 
 /**
  * @property int $id
@@ -50,7 +51,7 @@ use App\Models\Traits\AppScoped;
  */
 class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable, AppScoped;
+    use HasApiTokens, HasFactory, Notifiable, AppScoped, BelongsToCountry;
 
     protected $fillable = [
         'name',
@@ -59,6 +60,7 @@ class User extends Authenticatable implements JWTSubject
         'phone',
         'phone_verified_at',
         'last_login_at',
+        'country_id',
     ];
 
     protected $hidden = [

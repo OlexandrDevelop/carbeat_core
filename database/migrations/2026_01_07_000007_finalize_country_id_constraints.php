@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        //запуск сідерів перед цим міграцією обов'язковий, виконуємо сідери
+        $this->callSeeders();
+
         $tables = ['cities','services','masters','clients','users'];
 
         foreach ($tables as $table) {
@@ -29,6 +32,20 @@ return new class extends Migration
                 $t->unsignedBigInteger('country_id')->nullable()->change();
             });
         }
+    }
+
+    protected function callSeeders(): void
+    {
+        // Виклик сідерів для заповнення таблиці країн
+        \Artisan::call('db:seed', [
+            '--class' => 'CountriesTableSeeder',
+            '--force' => true,
+        ]);
+
+        \Artisan::call('db:seed', [
+            '--class' => 'BackfillCountryForExistingDataSeeder',
+            '--force' => true,
+        ]);
     }
 };
 

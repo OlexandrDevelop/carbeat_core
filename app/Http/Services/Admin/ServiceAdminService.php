@@ -44,7 +44,7 @@ class ServiceAdminService
 
     public function get(int $serviceId): array
     {
-        $service = Service::findOrFail($serviceId);
+        $service = Service::where('id', $serviceId)->firstOrFail();
 
         // Providers with marker if this service is main for them
         $providers = DB::table('masters')
@@ -67,7 +67,7 @@ class ServiceAdminService
                 'is_main' => (int) $m->main_service_id === (int) $serviceId,
             ])->values();
 
-        // All masters (for adding)
+        // All masters (for adding) limited to country
         $allMasters = Master::orderBy('name')->get(['id', 'name']);
 
         return [
@@ -80,7 +80,7 @@ class ServiceAdminService
 
     public function update(int $serviceId, array $data): array
     {
-        $service = Service::findOrFail($serviceId);
+        $service = Service::where('id', $serviceId)->firstOrFail();
         $service->fill(['name' => $data['name'] ?? $service->name]);
         $service->save();
         return $this->get($serviceId);
@@ -88,14 +88,14 @@ class ServiceAdminService
 
     public function updateProviders(int $serviceId, array $data): array
     {
-        $service = Service::findOrFail($serviceId);
+        $service = Service::where('id', $serviceId)->firstOrFail();
         $masterIds = array_values(array_unique(array_map('intval', $data['master_ids'] ?? [])));
 
-        // Protect main service constraint: a master whose main service equals $serviceId must remain attached
+        // Protect main service constraint: a master whose main service equals $serviceId must remain attached (within same country)
         $protectedMasterIds = Master::where('service_id', $serviceId)->pluck('id')->all();
         $finalMasterIds = array_values(array_unique(array_merge($masterIds, $protectedMasterIds)));
 
-        // Sync on pivot table master_services
+        // Sync on pivot table master_services but restrict to masters in this country
         DB::table('master_services')->where('service_id', $serviceId)->delete();
         if (! empty($finalMasterIds)) {
             $rows = array_map(fn ($mid) => ['master_id' => $mid, 'service_id' => $serviceId], $finalMasterIds);
@@ -107,7 +107,7 @@ class ServiceAdminService
 
     public function getDeletePreview(int $serviceId): array
     {
-        $service = Service::findOrFail($serviceId);
+        $service = Service::where('id', $serviceId)->firstOrFail();
         $masters = DB::table('master_services')
             ->join('masters', 'masters.id', '=', 'master_services.master_id')
             ->where('master_services.service_id', $serviceId)
@@ -151,7 +151,7 @@ class ServiceAdminService
         $services = Service::whereIn('id', $serviceIds)->get(['id', 'name'])
             ->map(fn ($s) => ['id' => (int) $s->id, 'name' => (string) $s->name])->values();
 
-        // Distinct masters that have any of these services
+        // Distinct masters that have any of these services within the country
         $affectedMasters = DB::table('master_services')
             ->whereIn('service_id', $serviceIds)
             ->distinct()
@@ -165,7 +165,7 @@ class ServiceAdminService
             ];
         }
 
-        // Total service count per affected master
+        // Total service count per affected master (restrict later by country)
         $totalCounts = DB::table('master_services')
             ->select('master_id', DB::raw('COUNT(*) as total'))
             ->whereIn('master_id', $affectedMasters)

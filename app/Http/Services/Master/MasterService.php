@@ -160,6 +160,7 @@ class MasterService
             'place_id' => $data['place_id'] ?? null,
             'rating_google' => $data['rating_google'] ?? null,
             'working_hours' => $data['working_hours'] ?? null,
+            'country_id' => (int) $data['country_id'] ?? 1,
         ];
         $master = $this->createOrUpdate($masterData);
         if (! empty($data['reviews'])) {
@@ -254,7 +255,12 @@ class MasterService
      */
     public function getMasterById(int $id): Master
     {
-        return Master::with(['services', 'gallery', 'reviews.user'])->findOrFail($id);
+        $countryId = (int) config('app.country_id');
+
+        return Master::with(['services', 'gallery', 'reviews.user'])
+            ->where('id', $id)
+            ->where('country_id', $countryId)
+            ->firstOrFail();
     }
 
     /**

@@ -17,6 +17,7 @@ Homestead.yaml
 auth.json
 npm-debug.log
 yarn-error.log
+storage/logs/xdebug.log
 /.idea
 /.vscode
 /.docker/mysql_data/ib_buffer_pool

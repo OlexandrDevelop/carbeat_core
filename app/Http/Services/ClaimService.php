@@ -32,7 +32,8 @@ class ClaimService
      */
     public function getPublicInfo(string $token): array
     {
-        $master = Master::where('claim_token', $token)->firstOrFail();
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('claim_token', $token)->where('country_id', $countryId)->firstOrFail();
 
         return [
             'status' => 'ok',
@@ -50,7 +51,8 @@ class ClaimService
      */
     public function sendSms(int $masterId, string $phone): array
     {
-        $master = Master::findOrFail($masterId);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $masterId)->where('country_id', $countryId)->firstOrFail();
 
         if ($master->is_claimed) {
             throw new Exception('Master profile already claimed', 409);
@@ -79,7 +81,8 @@ class ClaimService
      */
     public function verify(int $masterId, string $phone, string $code): array
     {
-        $master = Master::findOrFail($masterId);
+        $countryId = (int) config('app.country_id');
+        $master = Master::where('id', $masterId)->where('country_id', $countryId)->firstOrFail();
         $normalizedPhone = $this->phoneHelper->normalize($phone);
 
         $cachedData = $this->getCachedCode($master->id);

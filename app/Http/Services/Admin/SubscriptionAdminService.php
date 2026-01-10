@@ -50,7 +50,11 @@ class SubscriptionAdminService
 
     public function get(int $id): Subscription
     {
-        return Subscription::with('user')->findOrFail($id);
+        $sub = Subscription::with('user')->findOrFail($id);
+        if (empty($sub->user)) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Subscription not found');
+        }
+        return $sub;
     }
 
     public function create(array $data): Subscription
@@ -60,7 +64,10 @@ class SubscriptionAdminService
 
     public function update(int $id, array $data): Subscription
     {
-        $sub = Subscription::findOrFail($id);
+        $sub = Subscription::with('user')->findOrFail($id);
+        if (empty($sub->user)) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Subscription not found');
+        }
         $sub->fill($data);
         $sub->save();
         return $sub->refresh();

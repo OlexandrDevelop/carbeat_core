@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Traits\AppScoped;
+use App\Models\Traits\BelongsToCountry;
 
 /**
  * @property int $id
@@ -27,10 +28,11 @@ use App\Models\Traits\AppScoped;
  */
 class Service extends Model
 {
-    use HasFactory, AppScoped;
+    use HasFactory, AppScoped, BelongsToCountry;
 
     protected $fillable = [
         'name',
+        'country_id',
     ];
 
     protected $hidden = [

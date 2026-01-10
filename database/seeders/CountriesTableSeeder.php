@@ -22,6 +22,20 @@ class CountriesTableSeeder extends Seeder
                 'updated_at' => now(),
             ]
         );
+        //USA
+        DB::table('countries')->updateOrInsert(
+            ['code' => 'US'],
+            [
+                'name' => 'United States',
+                'phone_code' => '+1',
+                'currency' => 'USD',
+                'locale' => 'en_US',
+                'timezone' => 'America/New_York',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 }
 

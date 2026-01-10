@@ -81,6 +81,10 @@ class BookingController extends Controller
 
         $booking = Booking::with('master')->findOrFail($bookingId);
 
+        if (empty($booking->master)) {
+            abort(404, 'Booking not found');
+        }
+
         // Optional: ensure the user owns this master
         if ($user->master && $user->master->id !== $booking->master_id) {
             abort(403, 'Forbidden');

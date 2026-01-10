@@ -43,12 +43,13 @@ class MasterAdminService
     {
         return Master::with(['services', 'user', 'reviews', 'gallery', 'city'])
             ->withAvg('reviews', 'rating')
-            ->findOrFail($id);
+            ->where('id', $id)
+            ->firstOrFail();
     }
 
     public function updateMaster(int $id, array $data): Master
     {
-        $master = Master::findOrFail($id);
+        $master = Master::where('id', $id)->firstOrFail();
         $master->fill($data);
         $master->save();
 
@@ -62,7 +63,7 @@ class MasterAdminService
     public function deleteMaster(int $id): void
     {
         DB::transaction(function () use ($id) {
-            $master = Master::with(['services', 'reviews'])->findOrFail($id);
+            $master = Master::with(['services', 'reviews'])->where('id', $id)->firstOrFail();
 
             if (method_exists($master, 'reviews')) {
                 $master->reviews()->delete();
@@ -139,7 +140,10 @@ class MasterAdminService
 
     public function updateReview(int $reviewId, array $data): Review
     {
-        $review = Review::findOrFail($reviewId);
+        $review = Review::with('master')->findOrFail($reviewId);
+        if (empty($review->master)) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Review not found');
+        }
         $review->fill($data);
         $review->save();
         return $review->load('user:id,name,phone');
@@ -147,7 +151,10 @@ class MasterAdminService
 
     public function deleteReview(int $reviewId): void
     {
-        $review = Review::findOrFail($reviewId);
+        $review = Review::with('master')->findOrFail($reviewId);
+        if (empty($review->master)) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Review not found');
+        }
         $review->delete();
     }
 

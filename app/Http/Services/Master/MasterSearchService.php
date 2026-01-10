@@ -3,8 +3,10 @@
 namespace App\Http\Services\Master;
 
 use App\Enums\AppBrand;
+use App\Helpers\CountryHelper;
 use App\Models\Master;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
 
 class MasterSearchService
 {
@@ -15,6 +17,10 @@ class MasterSearchService
 
         $latDelta = $maxDistance / 111; // 111 км ≈ 1° широти
         $lngDelta = $maxDistance / (111 * cos(deg2rad($lat))); // Δ довготи залежить від широти
+
+        // Retrieve current request country id from config set by middleware
+        $country = CountryHelper::currentCountry();
+
 
         $query = '
     SELECT
@@ -73,6 +79,12 @@ class MasterSearchService
             'max_lng' => $lng + $lngDelta,
             'max_distance' => $maxDistance,
         ];
+
+        // Enforce country restriction at SQL level
+
+        $query .= " AND masters.country_id = :country_id\n";
+        $queryParams['country_id'] = $country->id;
+
 
         // Додатково застосовуємо фільтри, якщо потрібно
         MasterFilterService::applyFilters($filters, $query, $queryParams);

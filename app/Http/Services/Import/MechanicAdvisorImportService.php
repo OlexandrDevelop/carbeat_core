@@ -110,7 +110,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 }
 
                 // Normalize phone & decide service id if needed
-                $dto['phone'] = app(PhoneHelper::class)->normalize($dto['phone']);
+                $dto['phone'] = app(PhoneHelper::class)->normalizeUSA($dto['phone']);
                 // Prepare Service models for scraped services (create if not exists)
                 $serviceModels = [];
                 $seenNormalized = [];
@@ -120,7 +120,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                         if ($normalized === '') { continue; }
                         if (isset($seenNormalized[$normalized])) { continue; }
                         $seenNormalized[$normalized] = true;
-                        $serviceModels[] = Service::firstOrCreate(['name' => $normalized], ['name' => $normalized]);
+                        $serviceModels[] = Service::firstOrCreate(['name' => $normalized, 'country_id' => 2], ['name' => $normalized, 'country_id' => 2]);
                     }
                 }
                 // Determine primary service id: user-provided or first scraped service, fallback to 1
@@ -141,6 +141,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                     'working_hours' => $dto['working_hours'] ?? null,
                     'place_id' => $dto['place_id'] ?? null,
                     'rating_google' => null,
+                    'country_id' => 2, //USA
                 ];
 
                 DB::beginTransaction();

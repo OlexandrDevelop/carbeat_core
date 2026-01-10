@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MasterSlotsController;
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\UserStatusController;
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\InitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +40,9 @@ Route::get('/test', function () {
 Route::prefix('public')->group(function () {
     Route::get('/claim/{token}', [ClaimController::class, 'publicInfo']);
 });
+
+// App init endpoint (returns detected country, cities, services)
+Route::get('/app/init', [InitController::class, 'init']);
 
 Route::prefix('masters')->group(function () {
     Route::get('/', [MasterController::class, 'index']);

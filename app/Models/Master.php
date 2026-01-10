@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use App\Models\Traits\AppScoped;
+use App\Models\Traits\BelongsToCountry;
 
 /**
  * @property int $id
@@ -83,7 +84,7 @@ use App\Models\Traits\AppScoped;
  */
 class Master extends Model
 {
-    use HasFactory, AppScoped;
+    use HasFactory, AppScoped, BelongsToCountry;
 
     protected $hidden = [
         'created_at',
@@ -139,6 +140,7 @@ class Master extends Model
         'is_claimed',
         'claim_token',
         'phone_verified_at',
+        'country_id',
     ];
 
     protected static function booted(): void

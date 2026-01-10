@@ -4,6 +4,23 @@ namespace App\Helpers;
 
 class PhoneHelper
 {
+    public function normalizeUSA(string $phone): string
+    {
+        // Залишаємо тільки цифри
+        $digits = preg_replace('/\D+/', '', $phone);
+        // Якщо 10 цифр, додаємо +1
+        if (strlen($digits) === 10) {
+            return '+1'.$digits;
+        }
+        // Якщо 11 цифр і починається з 1, додаємо +
+        if (strlen($digits) === 11 && strpos($digits, '1') === 0) {
+            return '+'.$digits;
+        }
+
+        // Інакше повертаємо як є
+        return '+'.$digits;
+    }
+
     public function normalize(string $phone): string
     {
         // Залишаємо тільки цифри

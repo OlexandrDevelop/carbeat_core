@@ -24,7 +24,7 @@ class TelegramController extends Controller
         $application = config('app.name');
         $environment = config('app.env');
         $methodType = $request->method();
-        $ip = $request->getClientIp();
+        $ip = '';
         $url = $request->url();
         $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
         $message = "*{$application}({$environment})*"."\n";
@@ -33,7 +33,6 @@ class TelegramController extends Controller
         $message .= '*Module:* '.$e->getFile()."\n";
         $message .= '*Line:* '.$e->getLine()."\n";
         $message .= '*User:* '.$userName.' ('.$userId.')'."\n";
-        $message .= '*IP:* '.$ip."\n";
 
         if ($methodType === 'POST') {
             $postParams = json_encode($request->all(), JSON_PRETTY_PRINT);

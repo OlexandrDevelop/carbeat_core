@@ -16,8 +16,9 @@ class BookingService
 
     public function createBooking(int $masterId, ?int $clientId, Carbon $start, Carbon $end, string $note = null): Booking
     {
-        // Ensure master exists
-        Master::findOrFail($masterId);
+        // Ensure master exists and belongs to request country
+        $countryId = (int) config('app.country_id');
+        Master::where('id', $masterId)->where('country_id', $countryId)->firstOrFail();
 
         // Check slot is fully inside free interval
         if (! $this->redisService->isIntervalFree($masterId, $start, $end)) {

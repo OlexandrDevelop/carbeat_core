@@ -31,7 +31,7 @@ class UpdateMasterServicesRequest extends FormRequest
     protected function passedValidation(): void
     {
         $masterId = (int) $this->route('id');
-        $master = \App\Models\Master::findOrFail($masterId);
+        $master = \App\Models\Master::where('id', $masterId)->firstOrFail();
         $isPremium = (bool) $master->is_premium;
 
         $limit = $isPremium

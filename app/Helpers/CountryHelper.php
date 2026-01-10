@@ -1,7 +1,13 @@
 <?php
+namespace App\Helpers;
 use App\Models\Country;
 
-function currentCountry(): Country
+
+
+class CountryHelper
 {
-    return request()->attributes->get('country');
+    public static function currentCountry(): Country
+    {
+        return request()->attributes->get('country');
+    }
 }

@@ -34,7 +34,7 @@ class AddMasterGalleryPhotosRequest extends FormRequest
     protected function passedValidation(): void
     {
         $masterId = (int) $this->route('id');
-        $master = Master::findOrFail($masterId);
+        $master = Master::where('id', $masterId)->firstOrFail();
 
         $currentCount = $master->gallery()->count();
         $isPremium = (bool) $master->is_premium;
@@ -62,5 +62,3 @@ class AddMasterGalleryPhotosRequest extends FormRequest
         ], 422));
     }
 }
-
-
