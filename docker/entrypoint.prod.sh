@@ -44,9 +44,14 @@ php /app/artisan optimize:clear
 php /app/artisan storage:link
 
 # Ensure storage and cache are writable
-mkdir -p /app/storage /app/bootstrap/cache
+mkdir -p /app/storage /app/bootstrap/cache /app/storage/app/public
 chown -R application:application /app/storage /app/bootstrap/cache || true
 chmod -R ug+rwX /app/storage /app/bootstrap/cache || true
+
+# Create symlink for sitemap.xml if it doesn't exist
+if [ ! -f /app/public/sitemap.xml ] || [ -L /app/public/sitemap.xml ]; then
+  ln -sf /app/storage/app/public/sitemap.xml /app/public/sitemap.xml || true
+fi
 
 # Notify Telegram that deployment finished
 send_telegram "✅ Deployment finished on PRODUCTION at $(date '+%Y-%m-%d %H:%M:%S')"
