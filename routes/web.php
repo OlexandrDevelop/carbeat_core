@@ -8,6 +8,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/sitemap.xml', function () {
+    $sitemapPath = public_path('sitemap.xml');
+
+    if (!file_exists($sitemapPath)) {
+        abort(404, 'Sitemap not found');
+    }
+
+    return response()->file($sitemapPath, [
+        'Content-Type' => 'application/xml; charset=utf-8',
+    ]);
+})->name('sitemap');
+
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 
