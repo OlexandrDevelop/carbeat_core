@@ -684,26 +684,6 @@
                 <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                     <div class="flex flex-1"></div>
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
-                        <!-- Global project/brand switcher -->
-                        <div class="relative">
-                            <label for="brandSwitcher" class="sr-only"
-                                >Project</label
-                            >
-                            <select
-                                id="brandSwitcher"
-                                class="block w-44 rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6"
-                                v-model="selectedBrand"
-                                @change="onBrandChange"
-                            >
-                                <option
-                                    v-for="b in brands"
-                                    :key="b.value"
-                                    :value="b.value"
-                                >
-                                    {{ b.label }}
-                                </option>
-                            </select>
-                        </div>
                         <!-- Profile dropdown -->
                         <div class="relative">
                             <button
@@ -735,37 +715,8 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Inertia } from '@inertiajs/inertia';
-import { Link, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const sidebarOpen = ref(false);
-
-const page = usePage();
-// Keep brands reactive
-const brands = computed(() => page.props.brands || []);
-
-// Local selected value to bind with v-model to avoid flicker when Inertia updates
-const selectedBrand = ref(page.props.adminBrand || '');
-// Keep local selectedBrand in sync when Inertia replaces page props
-watch(
-    () => page.props.adminBrand,
-    (v) => {
-        selectedBrand.value = v || '';
-    },
-);
-
-function onBrandChange(e) {
-    const value = e.target ? e.target.value : selectedBrand.value;
-    // Immediately update select value locally to avoid flashing
-    selectedBrand.value = value;
-    // Use Inertia to navigate with the brand query param so shared props update
-    const url = new URL(window.location.href);
-    const pathname = url.pathname;
-    Inertia.get(
-        pathname,
-        { ...Object.fromEntries(url.searchParams.entries()), brand: value },
-        { preserveState: false, preserveScroll: true },
-    );
-}
 </script>

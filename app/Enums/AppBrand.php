@@ -5,7 +5,7 @@ namespace App\Enums;
 enum AppBrand: string
 {
     case CARBEAT = 'carbeat';
-    case FLOXCITY = 'flox';
+    case FLOXCITY = 'floxcity';
 
     public static function fromHeader(?string $header): self
     {
@@ -17,10 +17,9 @@ enum AppBrand: string
 
     public static function fromHost(string $host): self
     {
-        foreach (self::cases() as $brand) {
-            if (str_contains(strtolower($host), $brand->value)) {
-                return $brand;
-            }
+        $host = strtolower($host);
+        if (str_contains($host, 'flox')) {
+            return self::FLOXCITY;
         }
         return self::CARBEAT;
     }

@@ -32,47 +32,6 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        // Determine brand for this request in the same order as AdminBrand middleware
-        // so that Inertia shares reflect the immediate query param / session / cookie.
-        $selected = null;
-        try {
-            $brandParam = $request->query('brand');
-            if ($brandParam) {
-                $selected = AppBrand::from($brandParam);
-            }
-        } catch (\Throwable $e) {
-            $selected = null;
-        }
-
-        if (! $selected) {
-            try {
-                $stored = $request->session()->get('admin_brand');
-                $cookieBrand = $request->cookie('admin_brand');
-
-                if ($stored) {
-                    $selected = AppBrand::from($stored);
-                } elseif ($cookieBrand) {
-                    $selected = AppBrand::from($cookieBrand);
-                }
-            } catch (\Throwable $e) {
-                $selected = null;
-            }
-        }
-
-        // Fallback to DetectApp-detected brand (set via hostname / env / header)
-        if (! $selected) {
-            $detected = config('app.client');
-            $selected = $detected instanceof AppBrand ? $detected : AppBrand::fromHost($request->getHost());
-        }
-
-        $brandValue = $selected instanceof AppBrand ? $selected->value : (string) ($selected ?? AppBrand::CARBEAT->value);
-        $brands = array_map(function (AppBrand $b) {
-            return [
-                'value' => $b->value,
-                'label' => strtoupper($b->value),
-            ];
-        }, AppBrand::cases());
-
         return [
             ...parent::share($request),
             'auth' => [
@@ -89,8 +48,6 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'csrf_token' => csrf_token(),
-            'adminBrand' => $brandValue,
-            'brands' => $brands,
             'brand' => config('app.client') instanceof AppBrand
                 ? config('app.client')->value
                 : AppBrand::CARBEAT->value,
