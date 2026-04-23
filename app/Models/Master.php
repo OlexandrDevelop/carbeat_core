@@ -36,6 +36,7 @@ use App\Models\Traits\AppScoped;
  * @property bool $main_thumb_generated
  * @property string|null $main_thumb_url
  * @property string|null $slug
+ * @property int $sms_invites_sent
  * @property float|null $rating_google
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Booking> $bookings
  * @property-read int|null $bookings_count
@@ -101,6 +102,7 @@ class Master extends Model
         'reviews_count' => 'integer',
         'working_hours' => 'array',
         'main_thumb_generated' => 'boolean',
+        'sms_invites_sent' => 'integer',
         'is_premium' => 'boolean',
         'premium_until' => 'datetime',
         'is_claimed' => 'boolean',
@@ -125,6 +127,7 @@ class Master extends Model
         'service_id',
         'city_id',
         'slug',
+        'sms_invites_sent',
         'user_id',
         'place_id',
         'rating_google',

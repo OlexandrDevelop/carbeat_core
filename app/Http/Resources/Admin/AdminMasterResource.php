@@ -51,6 +51,7 @@ class AdminMasterResource extends JsonResource
             'is_premium' => (bool) $this->is_premium,
             'premium_until' => optional($this->premium_until)->toISOString(),
             'slug' => (string) $this->slug,
+            'sms_invites_sent' => (int) ($this->sms_invites_sent ?? 0),
             'services' => $this->whenLoaded('services', function () {
                 return $this->services->map(fn ($s) => [
                     'id' => (int) $s->id,

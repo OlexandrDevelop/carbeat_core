@@ -53,6 +53,15 @@
                         <option value="true">Uses system</option>
                         <option value="false">Does not use</option>
                     </select>
+                    <select
+                        v-model="filters.sms_invited"
+                        @change="fetchData"
+                        class="min-w-[160px] rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
+                        <option value="">All SMS</option>
+                        <option value="true">Invited</option>
+                        <option value="false">Not invited</option>
+                    </select>
 
                     <label class="flex items-center gap-2">
                         <input
@@ -184,6 +193,15 @@
                                         filters.sort_dir === 'asc' ? '▲' : '▼'
                                     }}</span
                                 >
+                            </th>
+                            <th
+                                @click="setSort('sms_invites_sent')"
+                                class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
+                                <span>SMS</span>
+                                <span v-if="filters.sort_by === 'sms_invites_sent'">{{
+                                    filters.sort_dir === 'asc' ? '▲' : '▼'
+                                }}</span>
                             </th>
                             <th
                                 @click="setSort('available')"
@@ -319,6 +337,9 @@
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-600">
                                 {{ m.photos_count ?? 0 }}
+                            </td>
+                            <td class="px-6 py-3 text-sm text-gray-600">
+                                {{ m.sms_invites_sent ?? 0 }}
                             </td>
                             <td class="px-6 py-3 text-sm">
                                 <span
@@ -498,12 +519,14 @@ const filters = ref<{
     uses_system: string;
     sort_by: string;
     sort_dir: string;
+    sms_invited: string;
 }>({
     search: '',
     available: '',
     service_id: '',
     city_id: '',
     uses_system: '',
+    sms_invited: '',
     sort_by: 'created_at',
     sort_dir: 'desc',
 });
@@ -539,6 +562,8 @@ async function fetchData() {
         params.set('city_id', String(filters.value.city_id));
     if (filters.value.uses_system !== '')
         params.set('uses_system', String(filters.value.uses_system));
+    if (filters.value.sms_invited !== '')
+        params.set('sms_invited', filters.value.sms_invited);
     if (filters.value.sort_by) params.set('sort_by', filters.value.sort_by);
     if (filters.value.sort_dir) params.set('sort_dir', filters.value.sort_dir);
     if (no_pagination.value) params.set('no_pagination', 'true');

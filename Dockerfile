@@ -50,3 +50,9 @@ RUN pecl install xdebug \
 
 # Add Xdebug configuration
 COPY docker/php/xdebug.ini /usr/local/etc/php/conf.d/98-xdebug.ini
+
+COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["php-fpm"]

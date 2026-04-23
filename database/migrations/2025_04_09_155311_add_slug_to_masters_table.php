@@ -13,11 +13,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('masters', function (Blueprint $table) {
-            $table->string('slug')->unique()->nullable();
-        });
+        if (!Schema::hasColumn('masters', 'slug')) {
+            Schema::table('masters', function (Blueprint $table) {
+                $table->string('slug')->unique()->nullable();
+            });
+        }
 
-        Master::all()->each(function ($master) {
+        Master::withoutGlobalScopes()->get()->each(function ($master) {
             $master->slug = MasterService::generateSlug($master);
             $master->save();
         });

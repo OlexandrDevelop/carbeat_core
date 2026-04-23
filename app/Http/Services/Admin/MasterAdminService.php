@@ -183,6 +183,14 @@ class MasterAdminService
                 $query->where('user_id', 1);
             }
         }
+
+        if (isset($filters['sms_invited']) && $filters['sms_invited'] !== '') {
+            if (filter_var($filters['sms_invited'], FILTER_VALIDATE_BOOLEAN)) {
+                $query->where('sms_invites_sent', '>', 0);
+            } else {
+                $query->where('sms_invites_sent', 0);
+            }
+        }
     }
 
     public function listCities()
@@ -226,6 +234,7 @@ class MasterAdminService
                 $query->orderByRaw('(CASE WHEN photo IS NOT NULL AND photo != "" THEN 1 ELSE 0 END) '.$direction)
                     ->orderBy('id', 'desc');
                 break;
+            case 'sms_invites_sent':
             case 'name':
             case 'age':
             case 'created_at':
@@ -297,6 +306,7 @@ class MasterAdminService
                 }else {
                     TurboSMS::sendMessages($normalizedPhone, $message);
                 }
+                $master->increment('sms_invites_sent');
                 $sent++;
             } catch (\Throwable $e) {
                 Log::warning('Failed to send invite SMS', [
