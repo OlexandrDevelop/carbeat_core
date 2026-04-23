@@ -191,6 +191,16 @@ class MasterAdminService
                 $query->where('sms_invites_sent', 0);
             }
         }
+
+        if (isset($filters['mobile_phone']) && $filters['mobile_phone'] !== '') {
+            // Ukrainian mobile operator codes: 50,63,66,67,68,73,91-99
+            $mobileRegexp = '^(380|0)(50|63|66|67|68|73|91|92|93|94|95|96|97|98|99)[0-9]{7}$';
+            if (filter_var($filters['mobile_phone'], FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereRaw("REGEXP_REPLACE(contact_phone, '[^0-9]', '') REGEXP ?", [$mobileRegexp]);
+            } else {
+                $query->whereRaw("REGEXP_REPLACE(contact_phone, '[^0-9]', '') NOT REGEXP ?", [$mobileRegexp]);
+            }
+        }
     }
 
     public function listCities()

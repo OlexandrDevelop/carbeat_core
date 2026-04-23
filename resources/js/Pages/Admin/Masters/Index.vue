@@ -62,6 +62,15 @@
                         <option value="true">Invited</option>
                         <option value="false">Not invited</option>
                     </select>
+                    <select
+                        v-model="filters.mobile_phone"
+                        @change="fetchData"
+                        class="min-w-[160px] rounded-xl bg-gray-100 px-3 py-2 text-sm"
+                    >
+                        <option value="">All phones</option>
+                        <option value="true">Mobile only</option>
+                        <option value="false">Non-mobile only</option>
+                    </select>
 
                     <label class="flex items-center gap-2">
                         <input
@@ -520,6 +529,7 @@ const filters = ref<{
     sort_by: string;
     sort_dir: string;
     sms_invited: string;
+    mobile_phone: string;
 }>({
     search: '',
     available: '',
@@ -527,6 +537,7 @@ const filters = ref<{
     city_id: '',
     uses_system: '',
     sms_invited: '',
+    mobile_phone: '',
     sort_by: 'created_at',
     sort_dir: 'desc',
 });
@@ -564,6 +575,8 @@ async function fetchData() {
         params.set('uses_system', String(filters.value.uses_system));
     if (filters.value.sms_invited !== '')
         params.set('sms_invited', filters.value.sms_invited);
+    if (filters.value.mobile_phone !== '')
+        params.set('mobile_phone', filters.value.mobile_phone);
     if (filters.value.sort_by) params.set('sort_by', filters.value.sort_by);
     if (filters.value.sort_dir) params.set('sort_dir', filters.value.sort_dir);
     if (no_pagination.value) params.set('no_pagination', 'true');
