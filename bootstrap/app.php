@@ -26,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend(HandleCors::class);
+        $middleware->web(prepend: [
+            DetectApp::class,
+        ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -61,7 +64,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => $e->getMessage()], $e->getStatusCode());
             }
 
-            return \Inertia\Inertia::render('Error', ['status' => $e->getStatusCode()])
+            $brand = config('app.client') instanceof \App\Enums\AppBrand
+                ? config('app.client')
+                : \App\Enums\AppBrand::CARBEAT;
+            $errorPage = $brand === \App\Enums\AppBrand::FLOXCITY ? 'Floxcity/Error' : 'Carbeat/Error';
+
+            return \Inertia\Inertia::render($errorPage, ['status' => $e->getStatusCode()])
                 ->toResponse($request)
                 ->setStatusCode($e->getStatusCode());
         });

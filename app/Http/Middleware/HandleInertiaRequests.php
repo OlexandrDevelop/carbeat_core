@@ -59,9 +59,10 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
-        // Fallback to header-detection (DetectApp) if still nothing selected
+        // Fallback to DetectApp-detected brand (set via hostname / env / header)
         if (! $selected) {
-            $selected = AppBrand::fromHeader($request->header('X-App'));
+            $detected = config('app.client');
+            $selected = $detected instanceof AppBrand ? $detected : AppBrand::fromHost($request->getHost());
         }
 
         $brandValue = $selected instanceof AppBrand ? $selected->value : (string) ($selected ?? AppBrand::CARBEAT->value);
@@ -90,6 +91,9 @@ class HandleInertiaRequests extends Middleware
             'csrf_token' => csrf_token(),
             'adminBrand' => $brandValue,
             'brands' => $brands,
+            'brand' => config('app.client') instanceof AppBrand
+                ? config('app.client')->value
+                : AppBrand::CARBEAT->value,
         ];
     }
 }

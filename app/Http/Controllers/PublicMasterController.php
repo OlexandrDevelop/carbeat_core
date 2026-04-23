@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AppBrand;
 use App\Models\Master;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -33,7 +34,10 @@ class PublicMasterController extends Controller
 
         $claimLink = $master->is_claimed ? null : $this->buildClaimLink($master);
 
-        return Inertia::render('Public/Master', [
+        $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+        $page = $brand === AppBrand::FLOXCITY ? 'Floxcity/Public/Master' : 'Carbeat/Public/Master';
+
+        return Inertia::render($page, [
             'master' => [
                 'id' => $master->id,
                 'name' => $master->name,

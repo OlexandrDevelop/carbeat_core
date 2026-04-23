@@ -13,8 +13,14 @@ class DetectApp
      */
     public function handle(Request $request, Closure $next)
     {
-        // Read brand from header via enum (defaults to CARBEAT)
-        $brand = AppBrand::fromHeader($request->header('X-App'));
+        // Priority: X-App header → APP_CLIENT env var → hostname → default CARBEAT
+        if ($request->header('X-App')) {
+            $brand = AppBrand::fromHeader($request->header('X-App'));
+        } elseif (env('APP_CLIENT')) {
+            $brand = AppBrand::fromHeader(env('APP_CLIENT'));
+        } else {
+            $brand = AppBrand::fromHost($request->getHost());
+        }
         config(['app.client' => $brand]);
 
         // Optionally load brand-specific config if present: config/brand/{brand}.php

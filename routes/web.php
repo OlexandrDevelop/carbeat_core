@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AppBrand;
 use App\Http\Controllers\ClaimLinkController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicMasterController;
@@ -23,10 +24,21 @@ Route::get('/sitemap.xml', function () {
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 
-// Public pages
-Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
-Route::get('/privacy', fn () => Inertia::render('Privacy'))->name('privacy');
-Route::get('/data-deletion', fn () => Inertia::render('DataDeletion'))->name('data_deletion');
+// Public pages — brand-specific
+Route::get('/terms', function () {
+    $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+    return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/Terms' : 'Carbeat/Terms');
+})->name('terms');
+
+Route::get('/privacy', function () {
+    $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+    return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/Privacy' : 'Carbeat/Privacy');
+})->name('privacy');
+
+Route::get('/data-deletion', function () {
+    $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+    return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/DataDeletion' : 'Carbeat/DataDeletion');
+})->name('data_deletion');
 
 Route::get('/', LandingController::class)->name('landing');
 
