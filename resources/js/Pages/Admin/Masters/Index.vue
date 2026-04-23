@@ -702,6 +702,7 @@ async function sendInvites() {
         inviteFeedback.value = `Відправлено ${data.sent} із ${data.requested}. Пропущено ${data.skipped.length}.`;
         inviteModalOpen.value = false;
         selectedIds.value = [];
+        await fetchData();
     } catch (error: any) {
         inviteError.value =
             error?.response?.data?.message || 'Не вдалося надіслати інвайти';
