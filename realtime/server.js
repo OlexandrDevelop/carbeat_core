@@ -112,6 +112,17 @@ async function subscribeWithRetry() {
                     }
                 },
             );
+            await subscriber.pSubscribe(
+                '*status-requests:events',
+                (message, channel) => {
+                    try {
+                        const data = JSON.parse(message);
+                        io.emit('status-request:update', data);
+                    } catch (e) {
+                        console.error('status-requests:events parse error', e, message);
+                    }
+                },
+            );
             // Subscribe to keyevent expired notifications
             await subscriber.pSubscribe(
                 '__keyevent@*__:expired',

@@ -31,5 +31,16 @@ class RealtimePublisher
             logger()->error('Failed to publish master created event to Redis: ' . $e->getMessage());
         }
     }
-}
 
+    public function publishStatusRequestUpdate(array $payload): void
+    {
+        $flavor = $payload['flavor'] ?? 'carbeat';
+        $channel = $flavor . ':status-requests:events';
+
+        try {
+            Redis::publish($channel, json_encode($payload));
+        } catch (Throwable $e) {
+            logger()->error('Failed to publish status request event to Redis: ' . $e->getMessage());
+        }
+    }
+}

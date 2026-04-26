@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\V1\MasterSlotsController;
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\UserStatusController;
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\MasterStatusRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -129,6 +131,9 @@ Route::prefix('subscription')->middleware('auth:api')->group(function () {
 Route::middleware('auth:api')->get('/user/status', [UserStatusController::class, 'status']);
 
 Route::middleware('auth:api')->post('/master/update', [MasterController::class, 'updateOwnProfile']);
+Route::middleware('auth:api')->post('/devices/tokens', [DeviceTokenController::class, 'store']);
+Route::post('/request-status', [MasterStatusRequestController::class, 'store']);
+Route::middleware('auth:api')->post('/status-requests/{masterStatusRequest}/respond', [MasterStatusRequestController::class, 'respond']);
 
 
 Route::group(['middleware' => 'auth:api'], function () {

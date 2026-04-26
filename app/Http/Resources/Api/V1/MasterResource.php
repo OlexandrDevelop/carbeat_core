@@ -70,6 +70,8 @@ class MasterResource extends JsonResource
         $approved = $this->getResourceProperty('approved');
         $isPremium = $this->getResourceProperty('is_premium');
         $premiumUntil = $this->getResourceProperty('premium_until');
+        $status = $this->getResourceProperty('status');
+        $statusExpiresAt = $this->getResourceProperty('status_expires_at');
         $isClaimed = $this->getResourceProperty('is_claimed');
         $phoneVerifiedAt = $this->getResourceProperty('phone_verified_at');
         $slug = $this->getResourceProperty('slug');
@@ -98,6 +100,8 @@ class MasterResource extends JsonResource
                 : (bool) ($userId ?? 0),
             'is_premium' => (bool) $isPremium,
             'premium_until' => $this->formatDateTime($premiumUntil),
+            'status' => $status ? (string) $status : 'gray',
+            'status_expires_at' => $this->formatDateTime($statusExpiresAt),
             'is_claimed' => (bool) $isClaimed,
             'phone_verified_at' => $this->formatDateTime($phoneVerifiedAt),
             'slug' => (string) $slug,

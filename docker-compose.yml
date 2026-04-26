@@ -21,6 +21,28 @@ services:
         networks:
             - garage_network
 
+    vite:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: garage_vite
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+            - vite_node_modules:/var/www/node_modules
+        command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+        environment:
+            USE_POLLING: 1
+            VITE_HOST: 0.0.0.0
+            VITE_PORT: 5173
+            VITE_HMR_HOST: localhost
+            VITE_HMR_PORT: 5173
+        ports:
+            - "5173:5173"
+        networks:
+            - garage_network
+
     nginx:
         image: nginx:alpine
         container_name: garage_nginx
@@ -129,3 +151,4 @@ volumes:
     dbdata:
     redis_data:
         driver: local
+    vite_node_modules:

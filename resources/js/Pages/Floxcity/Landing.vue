@@ -92,6 +92,13 @@
                                 перукарів, косметологів та салонів краси по всій Україні.
                             </p>
 
+                            <p
+                                class="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                            >
+                                <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                                Майстер вільний прямо зараз
+                            </p>
+
                             <ul class="mt-6 space-y-2 text-sm text-gray-600" aria-label="Переваги">
                                 <li class="flex items-center gap-2">
                                     <svg
@@ -228,6 +235,7 @@
                                                 <div class="min-w-0 flex-1">
                                                     <div class="truncate text-xs font-semibold text-gray-900">Олена Сидоренко</div>
                                                     <div class="text-xs text-gray-500">Перукар · 0.7 км</div>
+                                                    <div class="mt-1 text-[11px] font-semibold text-emerald-600">Майстер вільний прямо зараз</div>
                                                 </div>
                                                 <div class="text-xs font-bold text-yellow-500">★ 4.8</div>
                                             </div>

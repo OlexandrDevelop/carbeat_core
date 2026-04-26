@@ -36,7 +36,10 @@ return [
     ],
 
     'fcm' => [
-        'fcm_token_path' => env('FCM_TOKEN_PATH'),
+        'projects' => [
+            'carbeat' => env('FCM_TOKEN_PATH_CARBEAT'),
+            'floxcity' => env('FCM_TOKEN_PATH_FLOXCITY'),
+        ],
     ],
 
     'telegram-bot-api' => [

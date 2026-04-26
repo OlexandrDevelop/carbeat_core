@@ -17,15 +17,15 @@ export default defineConfig(({ mode }) => {
         base: isProd ? '/build/' : '/',
         server: {
             https: false,
-            host: '127.0.0.1',
-            port: 5173,
+            host: process.env.VITE_HOST || '127.0.0.1',
+            port: Number(process.env.VITE_PORT || 5173),
             strictPort: true,
             cors: true,
             hmr: {
-                host: '127.0.0.1',
-                port: 5173,
+                host: process.env.VITE_HMR_HOST || '127.0.0.1',
+                port: Number(process.env.VITE_HMR_PORT || process.env.VITE_PORT || 5173),
                 protocol: 'ws',
-                clientPort: 5173,
+                clientPort: Number(process.env.VITE_HMR_PORT || process.env.VITE_PORT || 5173),
             },
             // Configure watcher options to ignore large vendor/storage folders
             // and to optionally use polling when enabled via env.

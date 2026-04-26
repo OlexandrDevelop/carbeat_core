@@ -3,6 +3,7 @@
 use App\Enums\AppBrand;
 use App\Http\Controllers\ClaimLinkController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MasterStatusRequestWebController;
 use App\Http\Controllers\PublicMasterController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,8 @@ Route::get('/sitemap.xml', function () {
 
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
+Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');
+Route::post('/r/{token}', [MasterStatusRequestWebController::class, 'respond'])->name('status-request.respond');
 
 // Public pages — brand-specific
 Route::get('/terms', function () {

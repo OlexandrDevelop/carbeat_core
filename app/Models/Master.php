@@ -27,6 +27,8 @@ use App\Models\Traits\AppScoped;
  * @property string $description
  * @property string|null $address
  * @property array<array-key, mixed>|null $working_hours
+ * @property string|null $status
+ * @property \Illuminate\Support\Carbon|null $status_expires_at
  * @property bool $is_premium
  * @property \Illuminate\Support\Carbon|null $premium_until
  * @property bool $is_claimed
@@ -101,6 +103,7 @@ class Master extends Model
         'age' => 'integer',
         'reviews_count' => 'integer',
         'working_hours' => 'array',
+        'status_expires_at' => 'datetime',
         'main_thumb_generated' => 'boolean',
         'sms_invites_sent' => 'integer',
         'is_premium' => 'boolean',
@@ -137,6 +140,8 @@ class Master extends Model
         'city',
         'reviews_count',
         'working_hours',
+        'status',
+        'status_expires_at',
         'is_premium',
         'premium_until',
         'is_claimed',
