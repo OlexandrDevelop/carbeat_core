@@ -77,9 +77,10 @@ class MasterController extends Controller
         return response()->json($this->service->listServices());
     }
 
-    public function cities(): JsonResponse
+    public function cities(Request $request): JsonResponse
     {
-        return response()->json($this->service->listCities());
+        $countryCode = $request->query('country_code') ?: null;
+        return response()->json($this->service->listCities($countryCode));
     }
 
     public function destroy(int $id): JsonResponse

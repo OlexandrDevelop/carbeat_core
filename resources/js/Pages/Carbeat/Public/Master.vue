@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+    detectLanguageByRegion,
+    SERVICE_LABELS,
+    type Lang,
+} from '@/shared/guest-map-display-labels';
 import { Head } from '@inertiajs/vue3';
 import QrcodeVue from 'qrcode.vue';
 import { computed, onMounted, ref } from 'vue';
@@ -46,6 +51,7 @@ const props = defineProps<{
 const currentUrl = ref<string>('');
 const canUseShare = ref(false);
 const copyFeedback = ref<string | null>(null);
+const currentLang = ref<Lang>('en');
 
 onMounted(() => {
     if (typeof window !== 'undefined') {
@@ -54,6 +60,13 @@ onMounted(() => {
     canUseShare.value =
         typeof navigator !== 'undefined' &&
         typeof navigator.share === 'function';
+
+    const saved = localStorage.getItem('site_lang');
+    if (saved === 'en' || saved === 'uk' || saved === 'de') {
+        currentLang.value = saved;
+    } else {
+        currentLang.value = detectLanguageByRegion();
+    }
 });
 
 const telLink = computed(() => {
@@ -126,6 +139,10 @@ const masterInitials = computed(() => {
 
     return initials || 'CB';
 });
+
+function serviceLabel(serviceName: string): string {
+    return SERVICE_LABELS[serviceName]?.[currentLang.value] ?? serviceName;
+}
 
 function formatWorkingHours(
     hours: WorkingHours | null,
@@ -274,7 +291,7 @@ function claimProfile() {
                         v-if="mainService"
                         class="mb-1 text-[15px] font-medium text-[#8E8E93]"
                     >
-                        {{ mainService.name }}
+                        {{ serviceLabel(mainService.name) }}
                     </p>
                     <p v-if="locationLine" class="text-sm text-[#636366]">
                         {{ locationLine }}
@@ -533,7 +550,7 @@ function claimProfile() {
                             :key="service.id"
                             class="rounded-lg bg-[#2C2F33] px-3 py-1.5 text-[14px] text-[#E1E3E5]"
                         >
-                            {{ service.name }}
+                            {{ serviceLabel(service.name) }}
                         </span>
                     </div>
                 </section>

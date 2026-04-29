@@ -124,7 +124,7 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 14px;
-            align-content: center;
+            align-content: start;
         }
 
         @media (min-width: 900px) {
@@ -438,6 +438,116 @@
         .footer-copy {
             font-size: 11px;
             color: var(--subtle);
+        }
+
+        /* Mobile-first polish for status-request page */
+        @media (max-width: 640px) {
+            .page {
+                padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+                gap: 10px;
+            }
+
+            .site-header {
+                gap: 10px;
+            }
+
+            .brand-logo {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            .brand-name {
+                font-size: 15px;
+            }
+
+            .nav-cta {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .main {
+                gap: 10px;
+            }
+
+            .primary-col {
+                gap: 10px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .subtitle {
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            .meta-list {
+                grid-template-columns: 1fr;
+                gap: 7px;
+            }
+
+            .meta-item {
+                padding: 9px 10px;
+                border-radius: 10px;
+            }
+
+            .meta-value {
+                font-size: 12px;
+            }
+
+            .status-card {
+                border-radius: 14px;
+                padding: 12px;
+            }
+
+            .status-heading {
+                font-size: 16px;
+            }
+
+            .status-copy {
+                font-size: 13px;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                margin-top: 12px;
+            }
+
+            .btn {
+                min-height: 44px;
+                padding: 12px;
+                border-radius: 10px;
+                font-size: 14px;
+            }
+
+            .state {
+                margin-top: 12px;
+                padding: 10px;
+                border-radius: 10px;
+            }
+
+            .download {
+                border-radius: 14px;
+                padding: 14px;
+            }
+
+            .download-title {
+                font-size: 16px;
+            }
+
+            .download-copy {
+                font-size: 13px;
+            }
+
+            .gplay {
+                width: 100%;
+                justify-content: center;
+                padding: 10px 12px;
+            }
         }
     </style>
 </head>

@@ -4,6 +4,7 @@ use App\Enums\AppBrand;
 use App\Http\Controllers\ClaimLinkController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MasterStatusRequestWebController;
+use App\Http\Controllers\PublicGuestMapController;
 use App\Http\Controllers\PublicMasterController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,6 +45,7 @@ Route::get('/data-deletion', function () {
 })->name('data_deletion');
 
 Route::get('/', LandingController::class)->name('landing');
+Route::get('/guest-map', PublicGuestMapController::class)->name('public.guest-map');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => Inertia::render('Admin/Auth/Login'))->name('login');

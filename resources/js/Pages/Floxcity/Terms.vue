@@ -67,9 +67,7 @@
                 </p>
 
                 <h2 class="mt-6 text-xl font-semibold">Контакти</h2>
-                <p>
-                    З питаннями щодо цих Умов звертайтесь: admin@flox.city
-                </p>
+                <p>З питаннями щодо цих Умов звертайтесь: admin@flox.city</p>
             </section>
         </main>
     </div>

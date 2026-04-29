@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+    detectLanguageByRegion,
+    SERVICE_LABELS,
+    type Lang,
+} from '@/shared/guest-map-display-labels';
+import { dayLabel, masterText } from '@/shared/public-master-display-labels';
 import { Head } from '@inertiajs/vue3';
 import QrcodeVue from 'qrcode.vue';
 import { computed, onMounted, ref } from 'vue';
@@ -46,6 +52,7 @@ const props = defineProps<{
 const currentUrl = ref<string>('');
 const canUseShare = ref(false);
 const copyFeedback = ref<string | null>(null);
+const currentLang = ref<Lang>('en');
 
 onMounted(() => {
     if (typeof window !== 'undefined') {
@@ -54,6 +61,13 @@ onMounted(() => {
     canUseShare.value =
         typeof navigator !== 'undefined' &&
         typeof navigator.share === 'function';
+
+    const saved = localStorage.getItem('site_lang');
+    if (saved === 'en' || saved === 'uk' || saved === 'de') {
+        currentLang.value = saved;
+    } else {
+        currentLang.value = detectLanguageByRegion();
+    }
 });
 
 const telLink = computed(() => {
@@ -127,6 +141,10 @@ const masterInitials = computed(() => {
     return initials || 'CB';
 });
 
+function serviceLabel(serviceName: string): string {
+    return SERVICE_LABELS[serviceName]?.[currentLang.value] ?? serviceName;
+}
+
 function formatWorkingHours(
     hours: WorkingHours | null,
 ): Array<{ day: string; value: string }> {
@@ -135,36 +153,36 @@ function formatWorkingHours(
     }
 
     const order = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const dayLabels: Record<string, string> = {
-        mon: 'Пн',
-        tue: 'Вт',
-        wed: 'Ср',
-        thu: 'Чт',
-        fri: 'Пт',
-        sat: 'Сб',
-        sun: 'Нд',
-    };
 
     return order
         .filter((key) => key in hours)
         .map((key) => {
-            const dayLabel = dayLabels[key] ?? key;
+            const label = dayLabel(currentLang.value, key);
             const value = hours[key];
 
             if (!value) {
-                return { day: dayLabel, value: 'Вихідний' };
+                return { day: label, value: t('dayOff') };
             }
 
             if (typeof value === 'string') {
-                return { day: dayLabel, value };
+                return { day: label, value };
             }
 
             if (typeof value === 'object' && 'from' in value && 'to' in value) {
-                return { day: dayLabel, value: `${value.from} – ${value.to}` };
+                return { day: label, value: `${value.from} – ${value.to}` };
             }
 
-            return { day: dayLabel, value: '—' };
+            return { day: label, value: '—' };
         });
+}
+
+function t(key: Parameters<typeof masterText>[1]): string {
+    return masterText(currentLang.value, key);
+}
+
+function setLanguage(lang: Lang): void {
+    currentLang.value = lang;
+    localStorage.setItem('site_lang', lang);
 }
 
 async function shareProfile() {
@@ -177,7 +195,7 @@ async function shareProfile() {
 
     const shareData = {
         title: props.master.name,
-        text: 'Мій профіль майстра краси у Floxcity',
+        text: t('shareProfileText'),
         url: fallbackUrl,
     };
 
@@ -201,7 +219,7 @@ async function shareProfile() {
     ) {
         try {
             await navigator.clipboard.writeText(shareData.url);
-            copyFeedback.value = 'Посилання скопійовано';
+            copyFeedback.value = t('copiedLink');
             return;
         } catch (_) {
             // падаємо до ручного варіанту нижче
@@ -234,12 +252,50 @@ function claimProfile() {
                     <span class="text-lg font-bold tracking-tight text-white"
                         >Floxcity</span
                     >
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            class="rounded-md px-2 py-1 text-xs font-semibold"
+                            :class="
+                                currentLang === 'en'
+                                    ? 'bg-white text-slate-900'
+                                    : 'bg-white/15 text-white'
+                            "
+                            @click="setLanguage('en')"
+                        >
+                            EN
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-md px-2 py-1 text-xs font-semibold"
+                            :class="
+                                currentLang === 'uk'
+                                    ? 'bg-white text-slate-900'
+                                    : 'bg-white/15 text-white'
+                            "
+                            @click="setLanguage('uk')"
+                        >
+                            UK
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-md px-2 py-1 text-xs font-semibold"
+                            :class="
+                                currentLang === 'de'
+                                    ? 'bg-white text-slate-900'
+                                    : 'bg-white/15 text-white'
+                            "
+                            @click="setLanguage('de')"
+                        >
+                            DE
+                        </button>
+                    </div>
                     <span
                         v-if="master.is_claimed"
                         class="inline-flex items-center gap-1.5 rounded-full bg-[#1C1F22] px-3 py-1.5 text-xs font-medium text-[#4CD964]"
                     >
                         <span class="h-1.5 w-1.5 rounded-full bg-[#4CD964]" />
-                        Підтверджено
+                        {{ t('verified') }}
                     </span>
                 </div>
 
@@ -274,7 +330,7 @@ function claimProfile() {
                         v-if="mainService"
                         class="mb-1 text-[15px] font-medium text-[#8E8E93]"
                     >
-                        {{ mainService.name }}
+                        {{ serviceLabel(mainService.name) }}
                     </p>
                     <p v-if="locationLine" class="text-sm text-[#636366]">
                         {{ locationLine }}
@@ -287,21 +343,21 @@ function claimProfile() {
                             :href="telLink"
                             class="flex flex-1 items-center justify-center rounded-2xl bg-[#0A84FF] px-4 py-3.5 text-[15px] font-semibold text-white transition active:opacity-80"
                         >
-                            Подзвонити
+                            {{ t('call') }}
                         </a>
                         <button
                             v-if="canClaim"
                             @click="claimProfile"
                             class="flex flex-1 items-center justify-center rounded-2xl bg-[#32D74B] px-4 py-3.5 text-[15px] font-semibold text-black transition active:opacity-80"
                         >
-                            Це я
+                            {{ t('claim') }}
                         </button>
                         <button
                             v-else
                             @click="shareProfile"
                             class="flex flex-1 items-center justify-center rounded-2xl bg-[#1C1F22] px-4 py-3.5 text-[15px] font-semibold text-white transition active:bg-[#2C2F33]"
                         >
-                            Поділитися
+                            {{ t('share') }}
                         </button>
                     </div>
                 </div>
@@ -345,9 +401,9 @@ function claimProfile() {
                                 />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white"
-                            >Маршрут</span
-                        >
+                        <span class="text-sm font-medium text-white">{{
+                            t('route')
+                        }}</span>
                     </a>
 
                     <button
@@ -371,9 +427,9 @@ function claimProfile() {
                                 />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white"
-                            >Поділитися</span
-                        >
+                        <span class="text-sm font-medium text-white">{{
+                            t('share')
+                        }}</span>
                     </button>
                 </div>
 
@@ -390,12 +446,12 @@ function claimProfile() {
                             <p
                                 class="text-xs font-bold uppercase tracking-wider text-white/70"
                             >
-                                Власник?
+                                {{ t('owner') }}
                             </p>
                             <p
                                 class="mt-1 text-[15px] font-semibold text-white"
                             >
-                                Відкрити у додатку
+                                {{ t('openInApp') }}
                             </p>
                         </div>
                         <div
@@ -423,7 +479,7 @@ function claimProfile() {
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
                     >
-                        Про майстра
+                        {{ t('aboutMaster') }}
                     </h3>
                     <p
                         class="whitespace-pre-line text-[15px] leading-relaxed text-[#E1E3E5]"
@@ -437,7 +493,7 @@ function claimProfile() {
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
                     >
-                        Деталі
+                        {{ t('details') }}
                     </h3>
                     <div
                         class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
@@ -446,19 +502,19 @@ function claimProfile() {
                             v-if="master.experience"
                             class="flex items-center justify-between bg-[#232629] p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
-                                >Досвід</span
-                            >
+                            <span class="text-[15px] text-[#8E8E93]">{{
+                                t('experience')
+                            }}</span>
                             <span class="text-[15px] font-medium text-white"
-                                >{{ master.experience }} років</span
+                                >{{ master.experience }} {{ t('years') }}</span
                             >
                         </div>
                         <div
                             class="flex items-center justify-between bg-[#232629] p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
-                                >Послуги</span
-                            >
+                            <span class="text-[15px] text-[#8E8E93]">{{
+                                t('services')
+                            }}</span>
                             <span class="text-[15px] font-medium text-white">{{
                                 services.length
                             }}</span>
@@ -467,9 +523,9 @@ function claimProfile() {
                             v-if="master.city"
                             class="flex items-center justify-between bg-[#232629] p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
-                                >Місто</span
-                            >
+                            <span class="text-[15px] text-[#8E8E93]">{{
+                                t('city')
+                            }}</span>
                             <span class="text-[15px] font-medium text-white">{{
                                 master.city
                             }}</span>
@@ -482,7 +538,7 @@ function claimProfile() {
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
                     >
-                        Графік роботи
+                        {{ t('workSchedule') }}
                     </h3>
                     <div
                         class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
@@ -507,7 +563,7 @@ function claimProfile() {
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
                     >
-                        Портфоліо
+                        {{ t('portfolio') }}
                     </h3>
                     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         <img
@@ -525,7 +581,7 @@ function claimProfile() {
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
                     >
-                        Всі послуги
+                        {{ t('allServices') }}
                     </h3>
                     <div class="flex flex-wrap gap-2">
                         <span
@@ -533,7 +589,7 @@ function claimProfile() {
                             :key="service.id"
                             class="rounded-lg bg-[#2C2F33] px-3 py-1.5 text-[14px] text-[#E1E3E5]"
                         >
-                            {{ service.name }}
+                            {{ serviceLabel(service.name) }}
                         </span>
                     </div>
                 </section>
@@ -544,7 +600,7 @@ function claimProfile() {
                         <QrcodeVue :value="currentUrl" :size="120" />
                     </div>
                     <p class="text-xs font-medium text-[#636366]">
-                        Відскануйте, щоб відкрити у Floxcity
+                        {{ t('scanOpenInApp') }}
                     </p>
                 </div>
             </div>

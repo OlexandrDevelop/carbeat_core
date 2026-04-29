@@ -12,7 +12,7 @@ class PublicMasterController extends Controller
 {
     public function show(string $slug): Response
     {
-        $master = Master::with(['services', 'gallery', 'city'])
+        $master = Master::with(['services.translations', 'gallery', 'city'])
             ->where('slug', $slug)
             ->firstOrFail();
 

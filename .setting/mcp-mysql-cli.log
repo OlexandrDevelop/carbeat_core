@@ -1,0 +1,24 @@
+2026-04-27T14:05:23.139Z | INFO | Starting MCP MySQL server from: /home/rotting/.npm/_npx/080bc9f59514dad9/node_modules/@liangshanli/mcp-server-mysql/src/server-final.js
+2026-04-27T14:05:23.145Z | INFO | Starting MCP MySQL server with environment: | {"MYSQL_HOST":"127.0.0.1","MYSQL_PORT":"3311","MYSQL_USER":"carbeat","MYSQL_DATABASE":"carbeat_db","READONLY":"false","ALLOW_DDL":"false","ALLOW_DROP":"false","ALLOW_DELETE":"false","TOOL_PREFIX":"(not set)","PROJECT_NAME":"(not set)","MCP_LOG_DIR":"./.setting","MCP_DDL_LOG_FILE":"ddl.sql"}
+2026-04-27T14:05:23.149Z | INFO | MCP MySQL server process started with PID: 847979
+2026-04-27T14:05:23.149Z | INFO | Signal handlers registered for SIGINT and SIGTERM
+2026-04-27T14:05:23.149Z | INFO | Press Ctrl+C to gracefully shutdown the server
+2026-04-27T14:05:30.237Z | INFO | Received SIGTERM, shutting down server...
+2026-04-27T14:05:30.238Z | INFO | Sent SIGTERM signal to server process 847979
+2026-04-27T14:05:30.243Z | INFO | MCP MySQL server exited with code: 0
+2026-04-27T14:05:30.245Z | INFO | Server requested restart, restarting...
+2026-04-27T14:05:32.248Z | INFO | Starting MCP MySQL server with environment: | {"MYSQL_HOST":"127.0.0.1","MYSQL_PORT":"3311","MYSQL_USER":"carbeat","MYSQL_DATABASE":"carbeat_db","READONLY":"false","ALLOW_DDL":"false","ALLOW_DROP":"false","ALLOW_DELETE":"false","TOOL_PREFIX":"(not set)","PROJECT_NAME":"(not set)","MCP_LOG_DIR":"./.setting","MCP_DDL_LOG_FILE":"ddl.sql"}
+2026-04-27T14:05:32.250Z | INFO | MCP MySQL server process started with PID: 848545
+2026-04-27T14:05:32.250Z | INFO | Signal handlers registered for SIGINT and SIGTERM
+2026-04-27T14:05:32.250Z | INFO | Press Ctrl+C to gracefully shutdown the server
+2026-04-27T14:20:26.147Z | INFO | Starting MCP MySQL server from: /home/rotting/.npm/_npx/080bc9f59514dad9/node_modules/@liangshanli/mcp-server-mysql/src/server-final.js
+2026-04-27T14:20:26.151Z | INFO | Starting MCP MySQL server with environment: | {"MYSQL_HOST":"127.0.0.1","MYSQL_PORT":"3311","MYSQL_USER":"carbeat","MYSQL_DATABASE":"carbeat_db","READONLY":"false","ALLOW_DDL":"false","ALLOW_DROP":"false","ALLOW_DELETE":"false","TOOL_PREFIX":"(not set)","PROJECT_NAME":"(not set)","MCP_LOG_DIR":"./.setting","MCP_DDL_LOG_FILE":"ddl.sql"}
+2026-04-27T14:20:26.155Z | INFO | MCP MySQL server process started with PID: 856949
+2026-04-27T14:20:26.155Z | INFO | Signal handlers registered for SIGINT and SIGTERM
+2026-04-27T14:20:26.156Z | INFO | Press Ctrl+C to gracefully shutdown the server
+2026-04-27T14:22:27.426Z | INFO | MCP MySQL server exited with code: 0
+2026-04-27T14:22:27.426Z | INFO | Server requested restart, restarting...
+2026-04-27T14:22:29.429Z | INFO | Starting MCP MySQL server with environment: | {"MYSQL_HOST":"127.0.0.1","MYSQL_PORT":"3311","MYSQL_USER":"carbeat","MYSQL_DATABASE":"carbeat_db","READONLY":"false","ALLOW_DDL":"false","ALLOW_DROP":"false","ALLOW_DELETE":"false","TOOL_PREFIX":"(not set)","PROJECT_NAME":"(not set)","MCP_LOG_DIR":"./.setting","MCP_DDL_LOG_FILE":"ddl.sql"}
+2026-04-27T14:22:29.431Z | INFO | MCP MySQL server process started with PID: 857810
+2026-04-27T14:22:29.431Z | INFO | Signal handlers registered for SIGINT and SIGTERM
+2026-04-27T14:22:29.432Z | INFO | Press Ctrl+C to gracefully shutdown the server

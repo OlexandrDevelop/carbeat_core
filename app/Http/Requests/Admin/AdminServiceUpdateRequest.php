@@ -14,7 +14,9 @@ class AdminServiceUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'translations'     => ['required', 'array'],
+            'translations.uk'  => ['required', 'string', 'max:255'],
+            'translations.en'  => ['nullable', 'string', 'max:255'],
         ];
     }
 }

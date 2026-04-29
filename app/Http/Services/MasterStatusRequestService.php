@@ -277,8 +277,11 @@ class MasterStatusRequestService
 
     private function sendPlainSms(string $phone, string $text, string $link, string $brandName): void
     {
-        if (app()->environment('local')) {
-            $this->sendTelegramFallback($phone, $link, $brandName);
+        if ($this->shouldUseLocalSmsFallback()) {
+            // Do not block API response with Telegram network I/O in local/test mode.
+            dispatch(function () use ($phone, $link, $brandName): void {
+                $this->sendTelegramFallback($phone, $link, $brandName);
+            })->afterResponse();
 
             return;
         }
@@ -288,6 +291,11 @@ class MasterStatusRequestService
         } catch (\Throwable $e) {
             logger()->warning('Status request SMS failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    private function shouldUseLocalSmsFallback(): bool
+    {
+        return app()->environment('local') || (bool) config('turbosms.test_mode', false);
     }
 
     private function sendTelegramFallback(string $phone, string $link, string $brandName): void

@@ -12,20 +12,17 @@ class ServiceService
 {
     public function getServices(Request $request): Collection|array|LengthAwarePaginator
     {
-        $query = Service::query()
+        return Service::query()
             ->select(['id', 'name'])
-            ->withCount('masters');
-
-        $page = $request->input('page');
-
-        return $query->paginate(100, ['*'], 'page', $page);
-
+            ->with('translations')
+            ->withCount('masters')
+            ->paginate(100, ['*'], 'page', $request->input('page'));
     }
 
     public function getServicesForMaster(int $masterId): Collection|array|LengthAwarePaginator
     {
         $master = Master::find($masterId);
 
-        return $master->services;
+        return $master->services()->with('translations')->get();
     }
 }

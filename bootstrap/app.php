@@ -98,6 +98,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Console\Commands\ImportRatelist::class,
             \App\Commands\GenerateSitemap::class,
             SyncSubscriptions::class,
+            \App\Console\Commands\NormalizeServiceNames::class,
         ]
     )
     ->create();

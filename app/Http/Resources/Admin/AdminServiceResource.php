@@ -10,10 +10,12 @@ class AdminServiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (int) ($this['id'] ?? 0),
-            'name' => (string) ($this['name'] ?? ''),
-            'providers' => $this['providers'] ?? [],
-            'all_masters' => $this['all_masters'] ?? [],
+            'id'           => (int) ($this['id'] ?? 0),
+            'name'         => (string) ($this['name'] ?? ''),
+            'canonical'    => (string) ($this['canonical'] ?? ''),
+            'translations' => $this['translations'] ?? [],
+            'providers'    => $this['providers'] ?? [],
+            'all_masters'  => $this['all_masters'] ?? [],
         ];
     }
 }

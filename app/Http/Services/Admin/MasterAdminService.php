@@ -24,7 +24,7 @@ class MasterAdminService
     public function listMasters(array $params): \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection
     {
         $query = Master::query()
-            ->with(['services', 'user', 'city'])
+            ->with(['services.translations', 'user', 'city'])
             ->withAvg('reviews', 'rating')
             ->withCount('gallery');
 
@@ -41,7 +41,7 @@ class MasterAdminService
 
     public function getMaster(int $id): Master
     {
-        return Master::with(['services', 'user', 'reviews', 'gallery', 'city'])
+        return Master::with(['services.translations', 'user', 'reviews', 'gallery', 'city'])
             ->withAvg('reviews', 'rating')
             ->findOrFail($id);
     }
@@ -56,13 +56,13 @@ class MasterAdminService
             $master->services()->sync($data['service_ids']);
         }
 
-        return $master->fresh(['services', 'user', 'reviews'])->loadAvg('reviews', 'rating');
+        return $master->fresh(['services.translations', 'user', 'reviews'])->loadAvg('reviews', 'rating');
     }
 
     public function deleteMaster(int $id): void
     {
         DB::transaction(function () use ($id) {
-            $master = Master::with(['services', 'reviews'])->findOrFail($id);
+            $master = Master::with(['services.translations', 'reviews'])->findOrFail($id);
 
             if (method_exists($master, 'reviews')) {
                 $master->reviews()->delete();
@@ -176,6 +176,11 @@ class MasterAdminService
             $query->where('city_id', $cityId);
         }
 
+        if (! empty($filters['country_code'])) {
+            $countryCode = (string) $filters['country_code'];
+            $query->whereHas('city', fn($q) => $q->where('country_code', $countryCode));
+        }
+
         if (isset($filters['uses_system']) && $filters['uses_system'] !== '') {
             if (filter_var($filters['uses_system'], FILTER_VALIDATE_BOOLEAN)) {
                 $query->where('user_id', '!=', 1);
@@ -193,8 +198,9 @@ class MasterAdminService
         }
 
         if (isset($filters['mobile_phone']) && $filters['mobile_phone'] !== '') {
-            // Ukrainian mobile operator codes: 50,63,66,67,68,73,91-99
-            $mobileRegexp = '^(380|0)(50|63|66|67|68|73|91|92|93|94|95|96|97|98|99)[0-9]{7}$';
+            // Ukrainian mobile: 380/0 + operator code 50,63,66-68,73,91-99
+            // German mobile: 49 + 15x / 16x / 17x
+            $mobileRegexp = '^((380|0)(50|63|66|67|68|73|91|92|93|94|95|96|97|98|99)[0-9]{7}|49(15|16|17)[0-9]{8,9})$';
             if (filter_var($filters['mobile_phone'], FILTER_VALIDATE_BOOLEAN)) {
                 $query->whereRaw("REGEXP_REPLACE(contact_phone, '[^0-9]', '') REGEXP ?", [$mobileRegexp]);
             } else {
@@ -203,9 +209,13 @@ class MasterAdminService
         }
     }
 
-    public function listCities()
+    public function listCities(?string $countryCode = null)
     {
-        return City::query()->orderBy('name')->get(['id', 'name']);
+        $q = City::query()->orderBy('name');
+        if ($countryCode !== null) {
+            $q->where('country_code', $countryCode);
+        }
+        return $q->get(['id', 'name', 'country_code']);
     }
 
     private function applySorting(Builder $query, string $sortBy, string $sortDir): void

@@ -60,6 +60,11 @@
                             <th
                                 class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
+                                Key
+                            </th>
+                            <th
+                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
                                 <button
                                     class="inline-flex items-center gap-1 hover:text-gray-700"
                                     @click="toggleSort('masters_count')"
@@ -108,6 +113,11 @@
                                 class="px-6 py-3 text-sm font-medium text-gray-900"
                             >
                                 {{ s.name }}
+                            </td>
+                            <td
+                                class="px-6 py-3 font-mono text-xs text-gray-400"
+                            >
+                                {{ s.canonical }}
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-600">
                                 {{ s.masters_count }}
@@ -309,7 +319,12 @@ import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
 
 const services = ref<
-    Array<{ id: number; name: string; masters_count: number }>
+    Array<{
+        id: number;
+        name: string;
+        canonical: string;
+        masters_count: number;
+    }>
 >([]);
 const search = ref('');
 const sortBy = ref<'name' | 'masters_count'>('name');

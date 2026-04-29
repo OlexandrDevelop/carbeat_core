@@ -88,8 +88,8 @@ class MasterResource extends JsonResource
             'phone' => $phone,
             'reviews_count' => (int) $reviewsCount,
             'rating' => (float) round($rating, 1),
-            'main_photo' => (string) 'storage/'.$photo,
-            'main_thumb_url' => $mainThumbUrl ? (string) ('storage/'.$mainThumbUrl) : null,
+            'main_photo' => $this->formatPublicAssetUrl($photo),
+            'main_thumb_url' => $mainThumbUrl ? $this->formatPublicAssetUrl($mainThumbUrl) : null,
             'distance' => (float) round($distance, 3),
             'main_service_id' => (int) $serviceId,
             'available' => array_key_exists($id, $this->availabilityMap)
@@ -112,7 +112,7 @@ class MasterResource extends JsonResource
                 function () {
                     return $this->services->map(fn ($s) => [
                         'id' => (int) $s->id,
-                        'name' => (string) $s->name,
+                        'name' => (string) $s->translate(app()->getLocale()),
                         'is_primary' => (int) $this->service_id === (int) $s->id,
                     ]);
                 }
@@ -125,7 +125,7 @@ class MasterResource extends JsonResource
                 function () {
                     return $this->gallery->map(fn ($g) => [
                         'id' => (int) $g->id,
-                        'url' => (string) ('storage/'.$g->photo),
+                        'url' => $this->formatPublicAssetUrl($g->photo),
                     ]);
                 }
             ),
@@ -177,7 +177,7 @@ class MasterResource extends JsonResource
         }
 
         if ($value instanceof \DateTime || $value instanceof \Illuminate\Support\Carbon) {
-            return $value->toISOString();
+            return $value->format(\DateTimeInterface::ATOM);
         }
 
         // If it's already a string timestamp, try to parse it
@@ -199,5 +199,27 @@ class MasterResource extends JsonResource
         // } catch (\Exception $e) {
         return $address;
         // }
+    }
+
+    private function formatPublicAssetUrl(?string $path): string
+    {
+        $path = trim((string) $path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            return '/' . $path;
+        }
+
+        return '/storage/' . ltrim($path, '/');
     }
 }

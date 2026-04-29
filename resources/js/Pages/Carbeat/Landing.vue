@@ -1,7 +1,9 @@
 <template>
     <div class="min-h-screen bg-white text-gray-900">
         <Head>
-            <title>Carbeat — Пошук автосервісів та майстрів для ремонту авто</title>
+            <title>
+                Carbeat — Пошук автосервісів та майстрів для ремонту авто
+            </title>
             <meta
                 name="description"
                 content="Знайдіть перевірений автосервіс (СТО) або майстра для ремонту авто поряд з вами. Відгуки, послуги, контакти — все в безкоштовному додатку Carbeat."
@@ -14,27 +16,45 @@
             <meta name="robots" content="index, follow" />
             <meta property="og:type" content="website" />
             <meta property="og:url" content="https://carbeat.online/" />
-            <meta property="og:title" content="Carbeat — Пошук автосервісів та майстрів для ремонту авто" />
+            <meta
+                property="og:title"
+                content="Carbeat — Пошук автосервісів та майстрів для ремонту авто"
+            />
             <meta
                 property="og:description"
                 content="Знайдіть перевірений автосервіс (СТО) або майстра для ремонту авто поряд з вами. Відгуки, послуги, контакти — безкоштовно."
             />
-            <meta property="og:image" content="https://carbeat.online/og-image.jpg" />
+            <meta
+                property="og:image"
+                content="https://carbeat.online/og-image.jpg"
+            />
             <meta property="og:site_name" content="Carbeat" />
             <meta property="og:locale" content="uk_UA" />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:url" content="https://carbeat.online/" />
-            <meta name="twitter:title" content="Carbeat — Пошук автосервісів та майстрів для ремонту авто" />
+            <meta
+                name="twitter:title"
+                content="Carbeat — Пошук автосервісів та майстрів для ремонту авто"
+            />
             <meta
                 name="twitter:description"
                 content="Знайдіть перевірений автосервіс або майстра для ремонту авто поряд з вами."
             />
-            <meta name="twitter:image" content="https://carbeat.online/og-image.jpg" />
-            <component :is="'script'" type="application/ld+json" v-text="jsonLd" />
+            <meta
+                name="twitter:image"
+                content="https://carbeat.online/og-image.jpg"
+            />
+            <component
+                :is="'script'"
+                type="application/ld+json"
+                v-text="jsonLd"
+            />
         </Head>
 
         <!-- HEADER -->
-        <header class="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
+        <header
+            class="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm"
+        >
             <nav
                 class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4"
                 aria-label="Головна навігація"
@@ -45,11 +65,21 @@
                     >
                         CB
                     </div>
-                    <span class="text-xl font-bold tracking-tight">{{ appName }}</span>
+                    <span class="text-xl font-bold tracking-tight">{{
+                        appName
+                    }}</span>
                 </a>
-                <div class="hidden gap-6 text-sm font-medium text-gray-600 sm:flex">
-                    <a href="#features" class="transition hover:text-sky-600">Можливості</a>
-                    <a href="#how-it-works" class="transition hover:text-sky-600">Як це працює</a>
+                <div
+                    class="hidden gap-6 text-sm font-medium text-gray-600 sm:flex"
+                >
+                    <a href="#features" class="transition hover:text-sky-600"
+                        >Можливості</a
+                    >
+                    <a
+                        href="#how-it-works"
+                        class="transition hover:text-sky-600"
+                        >Як це працює</a
+                    >
                     <a href="#faq" class="transition hover:text-sky-600">FAQ</a>
                 </div>
                 <a
@@ -65,7 +95,11 @@
 
         <main>
             <!-- HERO -->
-            <section id="hero" class="relative overflow-hidden bg-white py-16 sm:py-24" aria-label="Головна секція">
+            <section
+                id="hero"
+                class="relative overflow-hidden bg-white py-16 sm:py-24"
+                aria-label="Головна секція"
+            >
                 <div
                     class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_-10%,theme(colors.sky.50),transparent)]"
                 ></div>
@@ -87,19 +121,28 @@
                                 поряд з вами
                             </h1>
 
-                            <p class="mt-5 text-lg leading-relaxed text-gray-600 sm:text-xl">
-                                Carbeat — безкоштовна платформа для пошуку перевірених СТО та майстрів
-                                для ремонту авто по всій Україні.
+                            <p
+                                class="mt-5 text-lg leading-relaxed text-gray-600 sm:text-xl"
+                            >
+                                Carbeat — безкоштовна платформа для пошуку
+                                перевірених СТО та майстрів для ремонту авто по
+                                всій Україні.
                             </p>
 
                             <p
                                 class="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200"
                             >
-                                <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                                <span
+                                    class="h-2 w-2 rounded-full bg-emerald-500"
+                                    aria-hidden="true"
+                                ></span>
                                 Майстер вільний прямо зараз
                             </p>
 
-                            <ul class="mt-6 space-y-2 text-sm text-gray-600" aria-label="Переваги">
+                            <ul
+                                class="mt-6 space-y-2 text-sm text-gray-600"
+                                aria-label="Переваги"
+                            >
                                 <li class="flex items-center gap-2">
                                     <svg
                                         class="h-5 w-5 flex-shrink-0 text-sky-500"
@@ -108,7 +151,12 @@
                                         stroke="currentColor"
                                         aria-hidden="true"
                                     >
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2.5"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     Відгуки клієнтів та рейтинги СТО
                                 </li>
@@ -120,7 +168,12 @@
                                         stroke="currentColor"
                                         aria-hidden="true"
                                     >
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2.5"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     Пошук за геолокацією — сервіси поряд
                                 </li>
@@ -132,7 +185,12 @@
                                         stroke="currentColor"
                                         aria-hidden="true"
                                     >
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2.5"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     Безкоштовно для клієнтів
                                 </li>
@@ -153,28 +211,63 @@
                                         aria-hidden="true"
                                     >
                                         <g>
-                                            <path style="fill: #349886" d="M13.424,13.689c-0.692,2.431-1.165,5.053-1.165,8.048v246.356c0,2.95,0.473,5.544,1.138,7.948 l138.267-130.993C151.664,145.047,13.424,13.689,13.424,13.689z"></path>
-                                            <path style="fill: #3db39e" d="M205.621,93.921L44.185,4.121C37.749,0.207,31.413-0.785,26.06,0.58l138.85,131.931 C164.91,132.511,205.621,93.921,205.621,93.921z"></path>
-                                            <path style="fill: #f4b459" d="M265.142,127.031l-43.088-23.97l-44.135,41.804l44.954,42.733l41.923-23.023 C285.261,152.913,277.796,134.141,265.142,127.031z"></path>
-                                            <path style="fill: #e2574c" d="M25.65,289.095c5.435,1.52,11.926,0.61,18.526-3.405l161.928-88.907L164.655,157.4 C164.655,157.401,25.65,289.095,25.65,289.095z"></path>
+                                            <path
+                                                style="fill: #349886"
+                                                d="M13.424,13.689c-0.692,2.431-1.165,5.053-1.165,8.048v246.356c0,2.95,0.473,5.544,1.138,7.948 l138.267-130.993C151.664,145.047,13.424,13.689,13.424,13.689z"
+                                            ></path>
+                                            <path
+                                                style="fill: #3db39e"
+                                                d="M205.621,93.921L44.185,4.121C37.749,0.207,31.413-0.785,26.06,0.58l138.85,131.931 C164.91,132.511,205.621,93.921,205.621,93.921z"
+                                            ></path>
+                                            <path
+                                                style="fill: #f4b459"
+                                                d="M265.142,127.031l-43.088-23.97l-44.135,41.804l44.954,42.733l41.923-23.023 C285.261,152.913,277.796,134.141,265.142,127.031z"
+                                            ></path>
+                                            <path
+                                                style="fill: #e2574c"
+                                                d="M25.65,289.095c5.435,1.52,11.926,0.61,18.526-3.405l161.928-88.907L164.655,157.4 C164.655,157.401,25.65,289.095,25.65,289.095z"
+                                            ></path>
                                         </g>
                                     </svg>
                                     <div class="text-left">
-                                        <div class="text-xs text-gray-300">Завантажити в</div>
-                                        <div class="text-base font-semibold leading-none">Google Play</div>
+                                        <div class="text-xs text-gray-300">
+                                            Завантажити в
+                                        </div>
+                                        <div
+                                            class="text-base font-semibold leading-none"
+                                        >
+                                            Google Play
+                                        </div>
                                     </div>
                                 </a>
                             </div>
 
-                            <div class="mt-6 flex flex-wrap gap-4 text-sm text-gray-400">
-                                <a :href="termsUrl" class="underline underline-offset-2 hover:text-gray-600">Умови використання</a>
-                                <a :href="privacyUrl" class="underline underline-offset-2 hover:text-gray-600">Конфіденційність</a>
-                                <a :href="dataDeletionUrl" class="underline underline-offset-2 hover:text-gray-600">Видалення даних</a>
+                            <div
+                                class="mt-6 flex flex-wrap gap-4 text-sm text-gray-400"
+                            >
+                                <a
+                                    :href="termsUrl"
+                                    class="underline underline-offset-2 hover:text-gray-600"
+                                    >Умови використання</a
+                                >
+                                <a
+                                    :href="privacyUrl"
+                                    class="underline underline-offset-2 hover:text-gray-600"
+                                    >Конфіденційність</a
+                                >
+                                <a
+                                    :href="dataDeletionUrl"
+                                    class="underline underline-offset-2 hover:text-gray-600"
+                                    >Видалення даних</a
+                                >
                             </div>
                         </div>
 
                         <!-- Right: Phone Mockup -->
-                        <div class="flex justify-center lg:justify-end" aria-hidden="true">
+                        <div
+                            class="flex justify-center lg:justify-end"
+                            aria-hidden="true"
+                        >
                             <div class="relative">
                                 <div
                                     class="absolute -inset-6 rounded-[56px] bg-sky-100 opacity-60 blur-3xl"
@@ -183,59 +276,143 @@
                                     class="relative mx-auto w-[264px] overflow-hidden rounded-[40px] border-[8px] border-gray-800 bg-gray-900 shadow-2xl ring-1 ring-gray-700"
                                 >
                                     <!-- Status bar -->
-                                    <div class="flex items-center justify-between bg-gray-900 px-5 py-2">
-                                        <span class="text-xs font-semibold text-white">9:41</span>
+                                    <div
+                                        class="flex items-center justify-between bg-gray-900 px-5 py-2"
+                                    >
+                                        <span
+                                            class="text-xs font-semibold text-white"
+                                            >9:41</span
+                                        >
                                         <div class="flex items-center gap-1">
-                                            <div class="h-2 w-2 rounded-full bg-sky-400"></div>
-                                            <div class="h-2 w-5 rounded-full bg-white/30"></div>
-                                            <div class="h-2 w-3 rounded-full bg-white/30"></div>
+                                            <div
+                                                class="h-2 w-2 rounded-full bg-sky-400"
+                                            ></div>
+                                            <div
+                                                class="h-2 w-5 rounded-full bg-white/30"
+                                            ></div>
+                                            <div
+                                                class="h-2 w-3 rounded-full bg-white/30"
+                                            ></div>
                                         </div>
                                     </div>
                                     <!-- App bar -->
                                     <div class="bg-slate-800 px-5 py-3">
-                                        <p class="text-sm font-bold text-white">Carbeat</p>
-                                        <p class="text-xs text-sky-300">Автосервіси поряд</p>
+                                        <p class="text-sm font-bold text-white">
+                                            Carbeat
+                                        </p>
+                                        <p class="text-xs text-sky-300">
+                                            Автосервіси поряд
+                                        </p>
                                     </div>
                                     <!-- Search bar -->
                                     <div class="bg-slate-900 px-3 pb-3">
-                                        <div class="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/50">
+                                        <div
+                                            class="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/50"
+                                        >
                                             🔍 Послуга або СТО...
                                         </div>
                                     </div>
                                     <!-- Cards -->
                                     <div class="space-y-2 bg-gray-50 p-3">
-                                        <div class="rounded-xl bg-white p-3 shadow-sm">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">АС</div>
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="truncate text-xs font-semibold text-gray-900">АвтоСервіс Плюс</div>
-                                                    <div class="text-xs text-gray-500">Шиномонтаж · 0.4 км</div>
+                                        <div
+                                            class="rounded-xl bg-white p-3 shadow-sm"
+                                        >
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
+                                                <div
+                                                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700"
+                                                >
+                                                    АС
                                                 </div>
-                                                <div class="text-xs font-bold text-yellow-500">★ 4.7</div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div
+                                                        class="truncate text-xs font-semibold text-gray-900"
+                                                    >
+                                                        АвтоСервіс Плюс
+                                                    </div>
+                                                    <div
+                                                        class="text-xs text-gray-500"
+                                                    >
+                                                        Шиномонтаж · 0.4 км
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="text-xs font-bold text-yellow-500"
+                                                >
+                                                    ★ 4.7
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="rounded-xl bg-white p-3 shadow-sm">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">МС</div>
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="truncate text-xs font-semibold text-gray-900">Майстер Стас</div>
-                                                    <div class="text-xs text-gray-500">Розвал-сход · 0.8 км</div>
-                                                    <div class="mt-1 text-[11px] font-semibold text-emerald-600">Майстер вільний прямо зараз</div>
+                                        <div
+                                            class="rounded-xl bg-white p-3 shadow-sm"
+                                        >
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
+                                                <div
+                                                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700"
+                                                >
+                                                    МС
                                                 </div>
-                                                <div class="text-xs font-bold text-yellow-500">★ 4.9</div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div
+                                                        class="truncate text-xs font-semibold text-gray-900"
+                                                    >
+                                                        Майстер Стас
+                                                    </div>
+                                                    <div
+                                                        class="text-xs text-gray-500"
+                                                    >
+                                                        Розвал-сход · 0.8 км
+                                                    </div>
+                                                    <div
+                                                        class="mt-1 text-[11px] font-semibold text-emerald-600"
+                                                    >
+                                                        Майстер вільний прямо
+                                                        зараз
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="text-xs font-bold text-yellow-500"
+                                                >
+                                                    ★ 4.9
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="rounded-xl bg-white p-3 shadow-sm">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">СТО</div>
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="truncate text-xs font-semibold text-gray-900">СТО Кравченко</div>
-                                                    <div class="text-xs text-gray-500">Діагностика · 1.1 км</div>
+                                        <div
+                                            class="rounded-xl bg-white p-3 shadow-sm"
+                                        >
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
+                                                <div
+                                                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700"
+                                                >
+                                                    СТО
                                                 </div>
-                                                <div class="text-xs font-bold text-yellow-500">★ 4.8</div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div
+                                                        class="truncate text-xs font-semibold text-gray-900"
+                                                    >
+                                                        СТО Кравченко
+                                                    </div>
+                                                    <div
+                                                        class="text-xs text-gray-500"
+                                                    >
+                                                        Діагностика · 1.1 км
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="text-xs font-bold text-yellow-500"
+                                                >
+                                                    ★ 4.8
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="h-12 rounded-xl bg-white/50"></div>
+                                        <div
+                                            class="h-12 rounded-xl bg-white/50"
+                                        ></div>
                                     </div>
                                 </div>
                             </div>
@@ -247,18 +424,30 @@
             <!-- STATS -->
             <section class="bg-slate-900" aria-label="Статистика платформи">
                 <div class="mx-auto max-w-6xl px-6 py-14">
-                    <div class="grid grid-cols-1 gap-10 text-center text-white sm:grid-cols-3">
+                    <div
+                        class="grid grid-cols-1 gap-10 text-center text-white sm:grid-cols-3"
+                    >
                         <div>
-                            <div class="text-5xl font-extrabold text-sky-400">1000+</div>
-                            <div class="mt-2 text-slate-300">Автосервісів та майстрів</div>
+                            <div class="text-5xl font-extrabold text-sky-400">
+                                1000+
+                            </div>
+                            <div class="mt-2 text-slate-300">
+                                Автосервісів та майстрів
+                            </div>
                         </div>
                         <div>
-                            <div class="text-5xl font-extrabold text-sky-400">10+</div>
-                            <div class="mt-2 text-slate-300">Видів послуг для авто</div>
+                            <div class="text-5xl font-extrabold text-sky-400">
+                                10+
+                            </div>
+                            <div class="mt-2 text-slate-300">
+                                Видів послуг для авто
+                            </div>
                         </div>
                         <div>
                             <div class="text-5xl font-extrabold">🇺🇦</div>
-                            <div class="mt-2 text-slate-300">По всій Україні</div>
+                            <div class="mt-2 text-slate-300">
+                                По всій Україні
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -274,7 +463,8 @@
                         Послуги для авто в Carbeat
                     </h2>
                     <p class="mt-4 text-center text-gray-600">
-                        Знаходьте фахівців з будь-якого виду ремонту та обслуговування авто
+                        Знаходьте фахівців з будь-якого виду ремонту та
+                        обслуговування авто
                     </p>
                     <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div
@@ -283,14 +473,20 @@
                             class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-sky-300 hover:shadow-md"
                         >
                             <span class="text-2xl">{{ cat.emoji }}</span>
-                            <span class="text-sm font-medium text-gray-800">{{ cat.name }}</span>
+                            <span class="text-sm font-medium text-gray-800">{{
+                                cat.name
+                            }}</span>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- FEATURES -->
-            <section id="features" class="bg-gray-50 py-20" aria-labelledby="features-heading">
+            <section
+                id="features"
+                class="bg-gray-50 py-20"
+                aria-labelledby="features-heading"
+            >
                 <div class="mx-auto max-w-6xl px-6">
                     <div class="text-center">
                         <h2
@@ -300,7 +496,8 @@
                             Чому обирають Carbeat
                         </h2>
                         <p class="mt-4 text-gray-600">
-                            Все необхідне для власників авто та автосервісів — в одному безкоштовному додатку
+                            Все необхідне для власників авто та автосервісів — в
+                            одному безкоштовному додатку
                         </p>
                     </div>
                     <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -314,10 +511,14 @@
                             >
                                 {{ feat.icon }}
                             </div>
-                            <h3 class="mt-4 text-base font-semibold text-gray-900">
+                            <h3
+                                class="mt-4 text-base font-semibold text-gray-900"
+                            >
                                 {{ feat.title }}
                             </h3>
-                            <p class="mt-2 text-sm leading-relaxed text-gray-600">
+                            <p
+                                class="mt-2 text-sm leading-relaxed text-gray-600"
+                            >
                                 {{ feat.desc }}
                             </p>
                         </article>
@@ -326,7 +527,11 @@
             </section>
 
             <!-- HOW IT WORKS -->
-            <section id="how-it-works" class="py-20" aria-labelledby="how-heading">
+            <section
+                id="how-it-works"
+                class="py-20"
+                aria-labelledby="how-heading"
+            >
                 <div class="mx-auto max-w-6xl px-6">
                     <div class="text-center">
                         <h2
@@ -354,10 +559,14 @@
                             >
                                 {{ i + 1 }}
                             </div>
-                            <h3 class="mt-5 text-lg font-semibold text-gray-900">
+                            <h3
+                                class="mt-5 text-lg font-semibold text-gray-900"
+                            >
                                 {{ step.title }}
                             </h3>
-                            <p class="mt-2 text-sm leading-relaxed text-gray-600">
+                            <p
+                                class="mt-2 text-sm leading-relaxed text-gray-600"
+                            >
                                 {{ step.desc }}
                             </p>
                         </div>
@@ -366,7 +575,10 @@
             </section>
 
             <!-- FOR MASTERS / SERVICE OWNERS -->
-            <section class="bg-slate-900 py-20 text-white" aria-label="Для власників СТО">
+            <section
+                class="bg-slate-900 py-20 text-white"
+                aria-label="Для власників СТО"
+            >
                 <div class="mx-auto max-w-6xl px-6">
                     <div class="grid items-center gap-12 lg:grid-cols-2">
                         <div>
@@ -379,8 +591,9 @@
                                 Залучайте нових клієнтів через Carbeat
                             </h2>
                             <p class="mt-4 text-slate-300">
-                                Створіть профіль свого автосервісу, вкажіть перелік послуг та ціни.
-                                Клієнти знайдуть вас через пошук за геолокацією.
+                                Створіть профіль свого автосервісу, вкажіть
+                                перелік послуг та ціни. Клієнти знайдуть вас
+                                через пошук за геолокацією.
                             </p>
                             <ul class="mt-6 space-y-3 text-slate-300">
                                 <li
@@ -395,7 +608,12 @@
                                         stroke="currentColor"
                                         aria-hidden="true"
                                     >
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2.5"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     {{ benefit }}
                                 </li>
@@ -408,25 +626,58 @@
                                     class="inline-flex items-center gap-2 rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow transition hover:bg-sky-400"
                                 >
                                     Додати свій автосервіс
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                    <svg
+                                        class="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                        />
                                     </svg>
                                 </a>
                             </div>
                         </div>
                         <div class="flex justify-center">
                             <div class="grid grid-cols-2 gap-4 text-center">
-                                <div class="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-                                    <div class="text-4xl font-extrabold text-sky-400">1000+</div>
-                                    <div class="mt-1 text-sm text-slate-400">автосервісів</div>
+                                <div
+                                    class="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                                >
+                                    <div
+                                        class="text-4xl font-extrabold text-sky-400"
+                                    >
+                                        1000+
+                                    </div>
+                                    <div class="mt-1 text-sm text-slate-400">
+                                        автосервісів
+                                    </div>
                                 </div>
-                                <div class="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-                                    <div class="text-4xl font-extrabold text-sky-400">4.7★</div>
-                                    <div class="mt-1 text-sm text-slate-400">середній рейтинг</div>
+                                <div
+                                    class="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                                >
+                                    <div
+                                        class="text-4xl font-extrabold text-sky-400"
+                                    >
+                                        4.7★
+                                    </div>
+                                    <div class="mt-1 text-sm text-slate-400">
+                                        середній рейтинг
+                                    </div>
                                 </div>
-                                <div class="col-span-2 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-                                    <div class="text-4xl font-extrabold">🇺🇦</div>
-                                    <div class="mt-2 text-sm text-slate-400">Вся Україна — один додаток</div>
+                                <div
+                                    class="col-span-2 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10"
+                                >
+                                    <div class="text-4xl font-extrabold">
+                                        🇺🇦
+                                    </div>
+                                    <div class="mt-2 text-sm text-slate-400">
+                                        Вся Україна — один додаток
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -435,7 +686,11 @@
             </section>
 
             <!-- FAQ -->
-            <section id="faq" class="bg-gray-50 py-20" aria-labelledby="faq-heading">
+            <section
+                id="faq"
+                class="bg-gray-50 py-20"
+                aria-labelledby="faq-heading"
+            >
                 <div class="mx-auto max-w-3xl px-6">
                     <div class="text-center">
                         <h2
@@ -444,7 +699,9 @@
                         >
                             Часті запитання про Carbeat
                         </h2>
-                        <p class="mt-4 text-gray-600">Відповіді на найпопулярніші питання</p>
+                        <p class="mt-4 text-gray-600">
+                            Відповіді на найпопулярніші питання
+                        </p>
                     </div>
                     <div class="mt-10 space-y-3">
                         <details
@@ -463,10 +720,17 @@
                                     stroke="currentColor"
                                     aria-hidden="true"
                                 >
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19 9l-7 7-7-7"
+                                    />
                                 </svg>
                             </summary>
-                            <p class="px-6 pb-5 text-sm leading-relaxed text-gray-600">
+                            <p
+                                class="px-6 pb-5 text-sm leading-relaxed text-gray-600"
+                            >
                                 {{ faq.a }}
                             </p>
                         </details>
@@ -484,9 +748,12 @@
                         Завантажте Carbeat вже сьогодні
                     </h2>
                     <p class="mt-4 text-lg text-gray-600">
-                        Безкоштовно для Android. Знайдіть потрібний автосервіс за лічені секунди.
+                        Безкоштовно для Android. Знайдіть потрібний автосервіс
+                        за лічені секунди.
                     </p>
-                    <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                    <div
+                        class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+                    >
                         <a
                             :href="playMarketUrl"
                             target="_blank"
@@ -500,15 +767,31 @@
                                 aria-hidden="true"
                             >
                                 <g>
-                                    <path style="fill: #349886" d="M13.424,13.689c-0.692,2.431-1.165,5.053-1.165,8.048v246.356c0,2.95,0.473,5.544,1.138,7.948 l138.267-130.993C151.664,145.047,13.424,13.689,13.424,13.689z"></path>
-                                    <path style="fill: #3db39e" d="M205.621,93.921L44.185,4.121C37.749,0.207,31.413-0.785,26.06,0.58l138.85,131.931 C164.91,132.511,205.621,93.921,205.621,93.921z"></path>
-                                    <path style="fill: #f4b459" d="M265.142,127.031l-43.088-23.97l-44.135,41.804l44.954,42.733l41.923-23.023 C285.261,152.913,277.796,134.141,265.142,127.031z"></path>
-                                    <path style="fill: #e2574c" d="M25.65,289.095c5.435,1.52,11.926,0.61,18.526-3.405l161.928-88.907L164.655,157.4 C164.655,157.401,25.65,289.095,25.65,289.095z"></path>
+                                    <path
+                                        style="fill: #349886"
+                                        d="M13.424,13.689c-0.692,2.431-1.165,5.053-1.165,8.048v246.356c0,2.95,0.473,5.544,1.138,7.948 l138.267-130.993C151.664,145.047,13.424,13.689,13.424,13.689z"
+                                    ></path>
+                                    <path
+                                        style="fill: #3db39e"
+                                        d="M205.621,93.921L44.185,4.121C37.749,0.207,31.413-0.785,26.06,0.58l138.85,131.931 C164.91,132.511,205.621,93.921,205.621,93.921z"
+                                    ></path>
+                                    <path
+                                        style="fill: #f4b459"
+                                        d="M265.142,127.031l-43.088-23.97l-44.135,41.804l44.954,42.733l41.923-23.023 C285.261,152.913,277.796,134.141,265.142,127.031z"
+                                    ></path>
+                                    <path
+                                        style="fill: #e2574c"
+                                        d="M25.65,289.095c5.435,1.52,11.926,0.61,18.526-3.405l161.928-88.907L164.655,157.4 C164.655,157.401,25.65,289.095,25.65,289.095z"
+                                    ></path>
                                 </g>
                             </svg>
                             <div class="text-left">
-                                <div class="text-xs text-gray-300">Завантажити в</div>
-                                <div class="text-lg font-bold leading-none">Google Play</div>
+                                <div class="text-xs text-gray-300">
+                                    Завантажити в
+                                </div>
+                                <div class="text-lg font-bold leading-none">
+                                    Google Play
+                                </div>
                             </div>
                         </a>
                     </div>
@@ -522,24 +805,36 @@
         <!-- FOOTER -->
         <footer class="border-t border-gray-100 py-10" role="contentinfo">
             <div class="mx-auto max-w-6xl px-6">
-                <div class="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+                <div
+                    class="flex flex-col items-center gap-6 sm:flex-row sm:justify-between"
+                >
                     <div class="flex items-center gap-3">
                         <div
                             class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-xs font-bold text-white"
                         >
                             CB
                         </div>
-                        <span class="font-semibold text-gray-900">{{ appName }}</span>
+                        <span class="font-semibold text-gray-900">{{
+                            appName
+                        }}</span>
                     </div>
                     <nav
                         class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500"
                         aria-label="Підвал навігація"
                     >
-                        <a :href="termsUrl" class="hover:text-gray-700">Умови використання</a>
-                        <a :href="privacyUrl" class="hover:text-gray-700">Конфіденційність</a>
-                        <a :href="dataDeletionUrl" class="hover:text-gray-700">Видалення даних</a>
+                        <a :href="termsUrl" class="hover:text-gray-700"
+                            >Умови використання</a
+                        >
+                        <a :href="privacyUrl" class="hover:text-gray-700"
+                            >Конфіденційність</a
+                        >
+                        <a :href="dataDeletionUrl" class="hover:text-gray-700"
+                            >Видалення даних</a
+                        >
                     </nav>
-                    <p class="text-sm text-gray-400">© {{ year }} {{ appName }}</p>
+                    <p class="text-sm text-gray-400">
+                        © {{ year }} {{ appName }}
+                    </p>
                 </div>
             </div>
         </footer>
@@ -592,7 +887,7 @@ const features = [
     {
         icon: '📞',
         title: 'Прямий контакт',
-        desc: 'Телефон та адреса СТО — зв\'яжіться напряму без зайвих посередників.',
+        desc: "Телефон та адреса СТО — зв'яжіться напряму без зайвих посередників.",
     },
     {
         icon: '🕐',
@@ -616,7 +911,7 @@ const steps = [
         desc: 'Оберіть послугу та знайдіть перевірені СТО поряд з вами — з відгуками та цінами.',
     },
     {
-        title: 'Зв\'яжіться та запишіться',
+        title: "Зв'яжіться та запишіться",
         desc: 'Зателефонуйте напряму або запишіться на зручний для вас час.',
     },
 ];
@@ -656,9 +951,14 @@ const jsonLd = computed(() =>
             operatingSystem: 'ANDROID',
             applicationCategory: 'AutomotiveApplication',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'UAH' },
-            aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.5', ratingCount: '123' },
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.5',
+                ratingCount: '123',
+            },
             url: 'https://carbeat.online/',
-            description: 'Безкоштовна платформа для пошуку автосервісів (СТО) та майстрів для ремонту авто по всій Україні.',
+            description:
+                'Безкоштовна платформа для пошуку автосервісів (СТО) та майстрів для ремонту авто по всій Україні.',
         },
         {
             '@context': 'https://schema.org',
@@ -674,7 +974,11 @@ const jsonLd = computed(() =>
             '@type': 'Organization',
             name: 'Carbeat',
             url: 'https://carbeat.online/',
-            contactPoint: { '@type': 'ContactPoint', email: 'admin@carbeat.online', contactType: 'customer support' },
+            contactPoint: {
+                '@type': 'ContactPoint',
+                email: 'admin@carbeat.online',
+                contactType: 'customer support',
+            },
         },
     ]),
 );

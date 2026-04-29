@@ -4,6 +4,7 @@ namespace App\Http\Services\Import;
 
 use App\Helpers\PhoneHelper;
 use App\Helpers\PhotoHelper;
+use App\Helpers\ServiceNameMapper;
 use App\Http\Services\ClientService;
 use App\Http\Services\Master\MasterService;
 use App\Models\MasterGallery;
@@ -116,7 +117,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 $seenNormalized = [];
                 if (! empty($dto['services'])) {
                     foreach ($dto['services'] as $serviceName) {
-                        $normalized = $serviceName;
+                        $normalized = ServiceNameMapper::toCanonical($serviceName);
                         if ($normalized === '') { continue; }
                         if (isset($seenNormalized[$normalized])) { continue; }
                         $seenNormalized[$normalized] = true;

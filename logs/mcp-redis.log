@@ -1,0 +1,4 @@
+2026-04-27T14:05:23.215Z | server_start | {"name":"redis-mcp-server","version":"1.0.0","logDir":"./logs","logFile":"logs/mcp-redis.log"} | SUCCESS | RESPONSE: {"status":"started"}
+2026-04-27T14:05:30.258Z | SIGTERM | {"signal":"SIGTERM"} | SUCCESS | RESPONSE: {"status":"shutting_down"}
+2026-04-27T14:05:30.259Z | connection_closed | {} | SUCCESS | RESPONSE: {"status":"closed"}
+2026-04-27T14:20:25.820Z | server_start | {"name":"redis-mcp-server","version":"1.0.0","logDir":"./logs","logFile":"logs/mcp-redis.log"} | SUCCESS | RESPONSE: {"status":"started"}

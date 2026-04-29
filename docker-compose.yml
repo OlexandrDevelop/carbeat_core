@@ -36,7 +36,8 @@ services:
             USE_POLLING: 1
             VITE_HOST: 0.0.0.0
             VITE_PORT: 5173
-            VITE_HMR_HOST: localhost
+            VITE_ORIGIN: ${VITE_ORIGIN:-http://carbeat.local:5173}
+            VITE_HMR_HOST: ${VITE_HMR_HOST:-carbeat.local}
             VITE_HMR_PORT: 5173
         ports:
             - "5173:5173"

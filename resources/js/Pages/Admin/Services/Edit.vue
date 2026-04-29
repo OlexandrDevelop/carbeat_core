@@ -16,7 +16,7 @@
                         >Back</Link
                     >
                     <button
-                        @click="saveName"
+                        @click="saveTranslations"
                         class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
                     >
                         Save
@@ -35,14 +35,41 @@
             <div
                 class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
             >
-                <label class="mb-2 block text-sm font-medium text-gray-700"
-                    >Service name</label
+                <div
+                    class="mb-4 text-xs font-medium uppercase tracking-wider text-gray-400"
                 >
-                <input
-                    v-model="name"
-                    type="text"
-                    class="w-full rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                    Canonical key:
+                    <span class="font-mono text-gray-600">{{ canonical }}</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="mb-1 block text-sm font-medium text-gray-700"
+                        >
+                            Назва (uk) <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            v-model="translations.uk"
+                            type="text"
+                            placeholder="Назва послуги українською"
+                            class="w-full rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="mb-1 block text-sm font-medium text-gray-700"
+                        >
+                            Name (en)
+                        </label>
+                        <input
+                            v-model="translations.en"
+                            type="text"
+                            placeholder="Service name in English"
+                            class="w-full rounded-xl bg-gray-100 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
             </div>
 
             <div
@@ -170,7 +197,8 @@ import { onMounted, ref } from 'vue';
 
 const props = defineProps<{ serviceId: number }>();
 
-const name = ref('');
+const canonical = ref('');
+const translations = ref<Record<string, string>>({ uk: '', en: '' });
 const providers = ref<Array<{ id: number; name: string; is_main: boolean }>>(
     [],
 );
@@ -181,14 +209,15 @@ async function load() {
     const { data } = await axios.get(
         `/admin-api/admin-services/${props.serviceId}`,
     );
-    name.value = data.name;
+    canonical.value = data.canonical ?? '';
+    translations.value = { uk: '', en: '', ...(data.translations ?? {}) };
     providers.value = data.providers;
     allMasters.value = data.all_masters;
 }
 
-async function saveName() {
+async function saveTranslations() {
     await axios.put(`/admin-api/admin-services/${props.serviceId}`, {
-        name: name.value,
+        translations: translations.value,
     });
 }
 
@@ -211,7 +240,7 @@ function addProvider() {
 
 function removeProvider(id: number) {
     const p = providers.value.find((x) => x.id === id);
-    if (p?.is_main) return; // protected in UI
+    if (p?.is_main) return;
     providers.value = providers.value.filter((x) => x.id !== id);
 }
 

@@ -1,0 +1,6 @@
+2026-04-27T14:05:23.271Z | server_start | {"name":"mysql-mcp-server","version":"1.0.0","logDir":"./.setting","logFile":".setting/mcp-mysql.log"} | SUCCESS | RESPONSE: {"status":"started"}
+2026-04-27T14:05:30.237Z | SIGTERM | {"signal":"SIGTERM"} | SUCCESS | RESPONSE: {"status":"shutting_down"}
+2026-04-27T14:05:32.334Z | server_start | {"name":"mysql-mcp-server","version":"1.0.0","logDir":"./.setting","logFile":".setting/mcp-mysql.log"} | SUCCESS | RESPONSE: {"status":"started"}
+2026-04-27T14:20:26.241Z | server_start | {"name":"mysql-mcp-server","version":"1.0.0","logDir":"./.setting","logFile":".setting/mcp-mysql.log"} | SUCCESS | RESPONSE: {"status":"started"}
+2026-04-27T14:22:27.421Z | SIGTERM | {"signal":"SIGTERM"} | SUCCESS | RESPONSE: {"status":"shutting_down"}
+2026-04-27T14:22:29.514Z | server_start | {"name":"mysql-mcp-server","version":"1.0.0","logDir":"./.setting","logFile":".setting/mcp-mysql.log"} | SUCCESS | RESPONSE: {"status":"started"}

@@ -15,18 +15,8 @@ class ServiceResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->tempTranslateUkraineMap($this->name),
+            'name' => $this->translate(app()->getLocale()),
             'masters_count' => $this->masters_count ?? 0,
         ];
-    }
-
-    public function tempTranslateUkraineMap(String $name)
-    {
-        $map = [
-            'barbershop'        => 'Барбершоп',
-            'hairdresser_women' => 'Жіночий перукар',
-            'hairdresser_unisex'=> 'Стрижка',
-        ];
-        return $map[$name] ?? $name;
     }
 }

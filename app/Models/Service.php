@@ -45,4 +45,20 @@ class Service extends Model
     {
         return $this->hasMany(Master::class, 'service_id', 'id');
     }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ServiceTranslation::class);
+    }
+
+    public function translate(string $locale): string
+    {
+        $translations = $this->relationLoaded('translations')
+            ? $this->translations
+            : $this->translations()->get();
+
+        return $translations->firstWhere('locale', $locale)?->name
+            ?? $translations->firstWhere('locale', 'uk')?->name
+            ?? $this->name;
+    }
 }

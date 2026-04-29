@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Services\Import\AutoWerkstattImportService;
 use App\Http\Services\Import\ImportServiceFactory;
 use App\Http\Services\Import\MechanicAdvisorImportService;
 use App\Http\Services\Import\RatelistImportService;
@@ -25,7 +26,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ImportServiceFactory::class, function ($app) {
             return new ImportServiceFactory(
                 $app->make(RatelistImportService::class),
-                $app->make(MechanicAdvisorImportService::class)
+                $app->make(MechanicAdvisorImportService::class),
+                $app->make(AutoWerkstattImportService::class),
             );
         });
     }

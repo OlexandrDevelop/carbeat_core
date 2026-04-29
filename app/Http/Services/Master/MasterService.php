@@ -61,6 +61,7 @@ class MasterService
     public function createOrUpdate(array $data): Master
     {
         $photo = $data['photo'] ?? null;
+        unset($data['photo']); // handled separately by handlePhoto after save
         // Map phone to contact_phone for persistence
         if (isset($data['phone'])) {
             $data['contact_phone'] = $data['phone'];
@@ -136,14 +137,18 @@ class MasterService
         $photoBase64 = app(PhotoHelper::class)->downloadAndConvertToBase64($data['main_photo'] ?? '');
         $data['phone'] = app(PhoneHelper::class)->normalize($data['phone'] ?? '');
 
-        // Resolve city from first word of address
-        $cityId = null;
-        $address = (string) ($data['address'] ?? '');
-        if ($address !== '') {
-            $firstToken = trim(preg_split('/\s+/', $address)[0] ?? '');
-            if ($firstToken !== '') {
-                $city = City::firstOrCreate(['name' => $firstToken], ['name' => $firstToken]);
-                $cityId = $city->id;
+        // Prefer explicitly provided city_id; fall back to first-word-of-address heuristic
+        if (array_key_exists('city_id', $data)) {
+            $cityId = $data['city_id'];
+        } else {
+            $cityId = null;
+            $address = (string) ($data['address'] ?? '');
+            if ($address !== '') {
+                $firstToken = trim(preg_split('/\s+/', $address)[0] ?? '');
+                if ($firstToken !== '') {
+                    $city = City::firstOrCreate(['name' => $firstToken], ['name' => $firstToken]);
+                    $cityId = $city->id;
+                }
             }
         }
         $masterData = [
@@ -254,7 +259,7 @@ class MasterService
      */
     public function getMasterById(int $id): Master
     {
-        return Master::with(['services', 'gallery', 'reviews.user'])->findOrFail($id);
+        return Master::with(['services.translations', 'gallery', 'reviews.user'])->findOrFail($id);
     }
 
     /**

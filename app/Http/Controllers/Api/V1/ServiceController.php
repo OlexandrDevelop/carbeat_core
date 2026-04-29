@@ -20,7 +20,7 @@ class ServiceController extends Controller
 
     public function getService($id): ServiceResource
     {
-        $service = Service::find($id);
+        $service = Service::with('translations')->findOrFail($id);
 
         return new ServiceResource($service);
     }

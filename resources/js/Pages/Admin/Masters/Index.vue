@@ -208,9 +208,14 @@
                                 class="cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
                                 <span>SMS</span>
-                                <span v-if="filters.sort_by === 'sms_invites_sent'">{{
-                                    filters.sort_dir === 'asc' ? '▲' : '▼'
-                                }}</span>
+                                <span
+                                    v-if="
+                                        filters.sort_by === 'sms_invites_sent'
+                                    "
+                                    >{{
+                                        filters.sort_dir === 'asc' ? '▲' : '▼'
+                                    }}</span
+                                >
                             </th>
                             <th
                                 @click="setSort('available')"

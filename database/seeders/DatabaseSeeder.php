@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ServicesTableSeeder::class,
+            ServiceTranslationsSeeder::class,
         ]);
         // count of masters
         // $total = 1000;

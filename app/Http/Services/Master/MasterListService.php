@@ -16,7 +16,7 @@ class MasterListService
         $this->applyFilters($query, $filters);
         $this->applySorting($query, $filters['sort_by'] ?? 'rating');
 
-        $query->with(['services', 'reviews']);
+        $query->with(['services.translations', 'reviews']);
 
         $perPage = $filters['per_page'] ?? 20;
 

@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
     process.env.NODE_ENV = mode;
 
     const isProd = mode === 'production';
+    const viteOrigin = process.env.VITE_ORIGIN;
 
     // Allow enabling polling via env (USE_POLLING=1) as a fallback when
     // system inotify watchers are exhausted (ENOSPC). Polling is less
@@ -19,6 +20,7 @@ export default defineConfig(({ mode }) => {
             https: false,
             host: process.env.VITE_HOST || '127.0.0.1',
             port: Number(process.env.VITE_PORT || 5173),
+            origin: viteOrigin || undefined,
             strictPort: true,
             cors: true,
             hmr: {

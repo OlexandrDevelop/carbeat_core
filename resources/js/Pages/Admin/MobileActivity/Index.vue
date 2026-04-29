@@ -17,9 +17,7 @@
                                 isLoading ? 'bg-yellow-500' : 'bg-emerald-500'
                             "
                         ></span>
-                        <span>{{
-                            isLoading ? 'Updating...' : 'Live'
-                        }}</span>
+                        <span>{{ isLoading ? 'Updating...' : 'Live' }}</span>
                     </span>
                     <span class="hidden text-gray-300 sm:inline">|</span>
                     <span class="hidden sm:inline"
@@ -165,7 +163,7 @@
                                 class="hover:bg-gray-50"
                             >
                                 <td
-                                    class="px-6 py-3 text-sm font-mono font-medium text-gray-900"
+                                    class="px-6 py-3 font-mono text-sm font-medium text-gray-900"
                                 >
                                     {{ user.ip }}
                                 </td>
@@ -193,8 +191,8 @@
                                 <td class="px-6 py-3 text-sm text-gray-600">
                                     <div class="max-w-xs truncate">
                                         {{
-                                            user.recent_actions[0]?.description ||
-                                            '-'
+                                            user.recent_actions[0]
+                                                ?.description || '-'
                                         }}
                                     </div>
                                 </td>
@@ -208,9 +206,7 @@
                                                 ? 'Hide'
                                                 : 'Show'
                                         }}
-                                        ({{
-                                            user.recent_actions.length
-                                        }})
+                                        ({{ user.recent_actions.length }})
                                     </button>
                                 </td>
                             </tr>
@@ -229,7 +225,9 @@
                                         </div>
                                         <div class="space-y-1">
                                             <div
-                                                v-for="(action, idx) in user.recent_actions"
+                                                v-for="(
+                                                    action, idx
+                                                ) in user.recent_actions"
                                                 :key="idx"
                                                 class="flex items-center gap-3 text-sm"
                                             >
@@ -241,9 +239,7 @@
                                                 >
                                                 <span
                                                     class="rounded bg-gray-200 px-1.5 py-0.5 text-xs font-medium text-gray-700"
-                                                    >{{
-                                                        action.method
-                                                    }}</span
+                                                    >{{ action.method }}</span
                                                 >
                                                 <span class="text-gray-900">{{
                                                     action.description
@@ -266,8 +262,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from 'vue';
 import axios from 'axios';
+import { onMounted, onUnmounted, reactive, ref } from 'vue';
 
 interface Action {
     endpoint: string;
@@ -386,4 +382,3 @@ onUnmounted(() => {
 </script>
 
 <style scoped></style>
-
