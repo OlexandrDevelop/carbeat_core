@@ -325,7 +325,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         });
 
         if (toRemove.length) cluster.removeLayers(toRemove);
-        if (toAdd.length) cluster.addLayers(toAdd, { chunkedLoading: true });
+        if (toAdd.length) cluster.addLayers(toAdd);
         if (shouldRefreshClusters || toAdd.length || toRemove.length) {
             cluster.refreshClusters?.();
         }
