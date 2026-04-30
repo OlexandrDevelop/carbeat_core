@@ -13,7 +13,15 @@ class MasterSearchServiceQueryTest extends TestCase
     public function test_get_masters_on_distance_returns_array(): void
     {
         // mock DB::select to avoid raw sql execution
-        DB::shouldReceive('select')->once()->andReturn([]);
+        DB::shouldReceive('select')
+            ->once()
+            ->withArgs(function (string $query, array $params): bool {
+                $this->assertStringContainsString('masters.status', $query);
+                $this->assertStringContainsString('masters.status_expires_at', $query);
+
+                return $params !== [];
+            })
+            ->andReturn([]);
 
         $service = new MasterSearchService;
 

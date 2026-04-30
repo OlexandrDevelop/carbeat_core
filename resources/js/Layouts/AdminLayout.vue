@@ -128,6 +128,35 @@
                                                     <Link
                                                         :href="
                                                             route(
+                                                                'admin.smart_random_status.index',
+                                                            )
+                                                        "
+                                                        :class="[
+                                                            route().current(
+                                                                'admin.smart_random_status.*',
+                                                            )
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-circle text-lg"
+                                                            :class="[
+                                                                route().current(
+                                                                    'admin.smart_random_status.*',
+                                                                )
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Smart Status
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        :href="
+                                                            route(
                                                                 'admin.services.index',
                                                             )
                                                         "
@@ -442,6 +471,27 @@
                                             ]"
                                         ></i>
                                         Masters
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.smart_random_status.index')"
+                                        :class="[
+                                            route().current('admin.smart_random_status.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-circle text-lg"
+                                            :class="[
+                                                route().current('admin.smart_random_status.*')
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Smart Status
                                     </Link>
                                 </li>
                                 <li>

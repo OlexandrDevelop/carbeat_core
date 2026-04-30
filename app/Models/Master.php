@@ -29,6 +29,8 @@ use App\Models\Traits\AppScoped;
  * @property array<array-key, mixed>|null $working_hours
  * @property string|null $status
  * @property \Illuminate\Support\Carbon|null $status_expires_at
+ * @property bool $is_fake_online
+ * @property \Illuminate\Support\Carbon|null $last_status_update
  * @property bool $is_premium
  * @property \Illuminate\Support\Carbon|null $premium_until
  * @property bool $is_claimed
@@ -105,6 +107,8 @@ class Master extends Model
         'working_hours' => 'array',
         'extra_info' => 'array',
         'status_expires_at' => 'datetime',
+        'is_fake_online' => 'boolean',
+        'last_status_update' => 'datetime',
         'main_thumb_generated' => 'boolean',
         'sms_invites_sent' => 'integer',
         'is_premium' => 'boolean',
@@ -144,6 +148,8 @@ class Master extends Model
         'extra_info',
         'status',
         'status_expires_at',
+        'is_fake_online',
+        'last_status_update',
         'is_premium',
         'premium_until',
         'is_claimed',

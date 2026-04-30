@@ -27,6 +27,8 @@ class MasterSearchService
         masters.description,
         masters.main_thumb_url,
         masters.slug,
+        masters.status,
+        masters.status_expires_at,
         masters.age,
         masters.photo,
         masters.service_id,

@@ -24,6 +24,7 @@ use App\Http\Services\Master\MasterFetcher;
 use App\Http\Services\Master\MasterGalleryService;
 use App\Http\Services\Master\MasterService;
 use App\Http\Services\Realtime\RealtimePublisher;
+use App\Http\Services\SmartRandomStatusService;
 use App\Http\Services\SmsService;
 use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
@@ -110,12 +111,14 @@ class MasterController extends Controller
     public function setUnavailable(
         SetUnavailableMasterRequest $request,
         string $id,
-        MasterAvailabilityService $availabilityService
+        MasterAvailabilityService $availabilityService,
+        SmartRandomStatusService $smartRandomStatusService
     ): JsonResponse {
         $id = (int) $id;
         $master = Master::findOrFail($id);
 
         $availabilityService->setUnavailable($id, $master->app);
+        $smartRandomStatusService->setManualStatus($master, 'gray');
 
         return new AvailabilityResponse([
             'message' => 'Master is unavailable',
@@ -142,11 +145,15 @@ class MasterController extends Controller
     public function setAvailable(
         SetAvailableMasterRequest $request,
         string $id,
-        MasterAvailabilityService $availabilityService
+        MasterAvailabilityService $availabilityService,
+        SmartRandomStatusService $smartRandomStatusService
     ): JsonResponse {
         $id = (int) $id;
         $master = Master::findOrFail($id);
         $data = $request->validated();
+        $expiresAt = isset($data['duration'])
+            ? now()->addMinutes((int) $data['duration'])
+            : null;
 
         $availabilityService->setAvailable(
             $id,
@@ -154,6 +161,7 @@ class MasterController extends Controller
             $data['start_time'] ?? null,
             $master->app
         );
+        $smartRandomStatusService->setManualStatus($master, 'green', $expiresAt);
 
         return new AvailabilityResponse([
             'message' => 'Master is available',

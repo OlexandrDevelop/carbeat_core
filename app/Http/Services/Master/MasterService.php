@@ -73,6 +73,10 @@ class MasterService
         $this->handlePhoto($master, $photo);
         $this->assignNearestCity($master);
 
+        if ($master->service_id) {
+            $master->services()->syncWithoutDetaching([$master->service_id]);
+        }
+
         return $master;
     }
 
@@ -115,6 +119,10 @@ class MasterService
         }
         $master->update($data);
         $this->assignNearestCity($master);
+
+        if (isset($data['service_id']) && $master->service_id) {
+            $master->services()->syncWithoutDetaching([$master->service_id]);
+        }
     }
 
     public function addReview(mixed $data): Model

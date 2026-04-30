@@ -21,6 +21,7 @@ class MasterStatusRequestService
         private readonly FcmService $fcmService,
         private readonly SmsService $smsService,
         private readonly MasterAvailabilityService $availabilityService,
+        private readonly SmartRandomStatusService $smartRandomStatusService,
         private readonly RealtimePublisher $realtimePublisher,
         private readonly GuestPushCallbackService $guestPushCallbackService,
         private readonly TelegramService $telegramService,
@@ -129,10 +130,11 @@ class MasterStatusRequestService
         ])->save();
 
         if ($answer === 'free') {
-            $master->forceFill([
-                'status' => 'green',
-                'status_expires_at' => now()->addMinutes(self::AVAILABLE_FOR_MINUTES),
-            ])->save();
+            $this->smartRandomStatusService->setManualStatus(
+                $master,
+                'green',
+                now()->addMinutes(self::AVAILABLE_FOR_MINUTES)
+            );
 
             $this->availabilityService->setAvailable(
                 $master->id,
@@ -143,10 +145,7 @@ class MasterStatusRequestService
 
             $message = "Майстер {$master->name} вільний і чекає на вас!";
         } else {
-            $master->forceFill([
-                'status' => 'gray',
-                'status_expires_at' => null,
-            ])->save();
+            $this->smartRandomStatusService->setManualStatus($master, 'gray');
 
             $this->availabilityService->setUnavailable($master->id, $master->app);
             $message = 'На жаль, майстер зараз зайнятий';

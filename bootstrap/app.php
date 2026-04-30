@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\GenerateSlugForMasters;
+use App\Console\Commands\SyncSmartRandomStatuses;
 use App\Console\Commands\SyncSubscriptions;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
@@ -91,10 +92,14 @@ return Application::configure(basePath: dirname(__DIR__))
             ->at('00:00');
         $schedule->command('masters:generate-thumbnails')
             ->everyFifteenMinutes();
+        $schedule->command('smart-random-statuses:sync')
+            ->everyFifteenMinutes()
+            ->runInBackground();
     })
     ->withCommands(
         [
             GenerateSlugForMasters::class,
+            SyncSmartRandomStatuses::class,
             \App\Console\Commands\ImportRatelist::class,
             \App\Commands\GenerateSitemap::class,
             SyncSubscriptions::class,
