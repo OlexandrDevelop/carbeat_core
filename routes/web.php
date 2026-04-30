@@ -44,8 +44,9 @@ Route::get('/data-deletion', function () {
     return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/DataDeletion' : 'Carbeat/DataDeletion');
 })->name('data_deletion');
 
-Route::get('/', LandingController::class)->name('landing');
+Route::get('/', PublicGuestMapController::class)->name('landing');
 Route::get('/guest-map', PublicGuestMapController::class)->name('public.guest-map');
+Route::get('/landing', LandingController::class)->name('marketing.landing');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => Inertia::render('Admin/Auth/Login'))->name('login');

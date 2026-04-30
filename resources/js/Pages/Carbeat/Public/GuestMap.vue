@@ -103,16 +103,16 @@ const themeVars = computed<Record<string, string>>(() =>
               '--glass-tint': 'rgba(147, 197, 253, 0.07)',
               '--glass-accent-rgb': '37, 99, 235',
               '--panel-bg':
-                  'linear-gradient(180deg, rgba(12, 18, 30, 0.58) 0%, rgba(10, 14, 24, 0.42) 100%)',
-              '--panel-border': 'rgba(255, 255, 255, 0.14)',
-              '--panel-text': 'rgba(255, 255, 255, 0.92)',
-              '--panel-muted-text': 'rgba(255, 255, 255, 0.70)',
-              '--surface-bg': 'rgba(255, 255, 255, 0.10)',
-              '--surface-bg-hover': 'rgba(255, 255, 255, 0.16)',
-              '--surface-border': 'rgba(255, 255, 255, 0.14)',
-              '--surface-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
-              '--loading-pill-bg': 'rgba(11, 15, 25, 0.48)',
-              '--dropdown-bg': 'rgba(10, 14, 24, 0.62)',
+                  'linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(239, 246, 255, 0.64) 100%)',
+              '--panel-border': 'rgba(37, 99, 235, 0.16)',
+              '--panel-text': 'rgba(15, 23, 42, 0.92)',
+              '--panel-muted-text': 'rgba(15, 23, 42, 0.62)',
+              '--surface-bg': 'rgba(255, 255, 255, 0.58)',
+              '--surface-bg-hover': 'rgba(255, 255, 255, 0.72)',
+              '--surface-border': 'rgba(37, 99, 235, 0.16)',
+              '--surface-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.55)',
+              '--loading-pill-bg': 'rgba(255, 255, 255, 0.72)',
+              '--dropdown-bg': 'rgba(255, 255, 255, 0.82)',
               '--brand-primary': '#2563eb',
               '--brand-primary-rgb': '37, 99, 235',
               '--brand-primary-strong': '#0369a1',
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
     <Head title="Guest Map" />
 
     <div
-        class="guest-map-root relative h-screen w-screen overflow-hidden bg-black"
+        class="guest-map-root relative h-screen w-screen overflow-hidden bg-slate-100"
         :style="themeVars"
     >
         <div ref="mapEl" class="h-full w-full" />
@@ -671,8 +671,8 @@ onBeforeUnmount(() => {
                             class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
                             :class="
                                 isFloxcity
-                                    ? 'bg-emerald-500/25 text-emerald-100'
-                                    : 'bg-sky-500/25 text-sky-100'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-sky-100 text-sky-700'
                             "
                         >
                             {{ isFloxcity ? 'Floxcity' : 'Carbeat' }}
@@ -687,7 +687,7 @@ onBeforeUnmount(() => {
                         </a>
                         <div
                             class="inline-flex items-center gap-1 rounded-lg p-0.5"
-                            :class="isFloxcity ? 'bg-emerald-900/10' : 'bg-black/20'"
+                            :class="isFloxcity ? 'bg-emerald-50' : 'bg-sky-50'"
                         >
                             <button
                                 type="button"
@@ -695,9 +695,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     currentLang === 'en'
                                         ? 'bg-white text-slate-900'
-                                        : isFloxcity
-                                          ? 'bg-emerald-900/10 text-slate-800'
-                                          : 'bg-white/15 text-white'
+                                        : 'bg-white/70 text-slate-600'
                                 "
                                 @click="setLanguage('en')"
                             >
@@ -709,9 +707,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     currentLang === 'uk'
                                         ? 'bg-white text-slate-900'
-                                        : isFloxcity
-                                          ? 'bg-emerald-900/10 text-slate-800'
-                                          : 'bg-white/15 text-white'
+                                        : 'bg-white/70 text-slate-600'
                                 "
                                 @click="setLanguage('uk')"
                             >
@@ -723,9 +719,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     currentLang === 'de'
                                         ? 'bg-white text-slate-900'
-                                        : isFloxcity
-                                          ? 'bg-emerald-900/10 text-slate-800'
-                                          : 'bg-white/15 text-white'
+                                        : 'bg-white/70 text-slate-600'
                                 "
                                 @click="setLanguage('de')"
                             >
@@ -888,13 +882,14 @@ onBeforeUnmount(() => {
                                 />
                                 <div>
                                     <div
-                                        class="text-xs font-semibold uppercase tracking-wide text-emerald-200/90"
+                                        class="text-xs font-semibold uppercase tracking-wide"
+                                        :class="isFloxcity ? 'text-emerald-700' : 'text-sky-700'"
                                     >
                                         Status update
                                     </div>
                                     <div
                                         class="mt-0.5 text-sm"
-                                        :class="isFloxcity ? 'text-slate-800' : 'text-white'"
+                                        :class="'text-slate-800'"
                                     >
                                         {{ statusBeacon.masterName }} is
                                         available now.
@@ -906,8 +901,8 @@ onBeforeUnmount(() => {
                                 class="rounded-md px-2 py-1 text-xs font-semibold"
                                 :class="
                                     isFloxcity
-                                        ? 'bg-emerald-900/10 text-slate-800 hover:bg-emerald-900/15'
-                                        : 'bg-white/15 text-white hover:bg-white/25'
+                                        ? 'bg-emerald-50 text-slate-800 hover:bg-emerald-100'
+                                        : 'bg-sky-50 text-slate-800 hover:bg-sky-100'
                                 "
                                 @click="closeStatusBeacon"
                             >
@@ -936,13 +931,13 @@ onBeforeUnmount(() => {
                             <div>
                                 <h2
                                     class="text-lg font-semibold"
-                                    :class="isFloxcity ? 'text-slate-900' : 'text-white'"
+                                    :class="'text-slate-900'"
                                 >
                                     {{ selectedMaster.name }}
                                 </h2>
                                 <p
                                     class="text-sm"
-                                    :class="isFloxcity ? 'text-slate-600' : 'text-white/70'"
+                                    :class="'text-slate-600'"
                                 >
                                     {{ selectedMaster.address }}
                                 </p>
@@ -958,9 +953,7 @@ onBeforeUnmount(() => {
                                                     selectedMaster.rating ?? 0,
                                                 )
                                                     ? 'text-yellow-500'
-                                                    : isFloxcity
-                                                      ? 'text-slate-300'
-                                                      : 'text-white/30'
+                                                    : 'text-slate-300'
                                             "
                                         >
                                             ★
@@ -968,7 +961,7 @@ onBeforeUnmount(() => {
                                     </div>
                                     <span
                                         class="text-sm font-medium"
-                                        :class="isFloxcity ? 'text-slate-800' : 'text-white/85'"
+                                        :class="'text-slate-800'"
                                     >
                                         {{
                                             (
@@ -980,7 +973,7 @@ onBeforeUnmount(() => {
                             </div>
                             <button
                                 class="lg-close rounded-lg px-2 py-1"
-                                :class="isFloxcity ? 'text-slate-800' : 'text-white'"
+                                :class="'text-slate-800'"
                                 @click="closeDetails"
                             >
                                 ✕
@@ -1041,7 +1034,7 @@ onBeforeUnmount(() => {
                         <div
                             v-if="statusRequestMessage"
                             class="mb-3 rounded-lg px-3 py-2 text-sm"
-                            :class="isFloxcity ? 'bg-emerald-900/10 text-slate-800' : 'bg-white/10 text-white/90'"
+                            :class="isFloxcity ? 'bg-emerald-50 text-slate-800' : 'bg-sky-50 text-slate-800'"
                         >
                             {{ statusRequestMessage }}
                         </div>
@@ -1049,17 +1042,17 @@ onBeforeUnmount(() => {
                         <div
                             v-if="primaryService"
                             class="mb-3 rounded-xl p-3"
-                            :class="isFloxcity ? 'bg-emerald-900/10' : 'bg-white/10'"
+                            :class="'bg-white/70'"
                         >
                             <div
                                 class="text-xs uppercase tracking-wide"
-                                :class="isFloxcity ? 'text-slate-500' : 'text-white/60'"
+                                :class="'text-slate-500'"
                             >
                                 {{ t('mainService') }}
                             </div>
                             <div
                                 class="mt-1 text-sm font-semibold"
-                                :class="isFloxcity ? 'text-slate-900' : 'text-white'"
+                                :class="'text-slate-900'"
                             >
                                 {{
                                     SERVICE_LABELS[primaryService.name]?.[
@@ -1100,7 +1093,7 @@ onBeforeUnmount(() => {
                         <div v-if="extraServices.length" class="mt-3">
                             <div
                                 class="mb-2 text-sm font-semibold"
-                                :class="isFloxcity ? 'text-slate-900' : 'text-white'"
+                                :class="'text-slate-900'"
                             >
                                 {{ t('extraServices') }}
                             </div>
@@ -1109,7 +1102,7 @@ onBeforeUnmount(() => {
                                     v-for="service in extraServices"
                                     :key="service.id"
                                     class="rounded-full px-3 py-1 text-sm"
-                                    :class="isFloxcity ? 'bg-emerald-900/10 text-slate-800' : 'bg-white/15 text-white'"
+                                    :class="isFloxcity ? 'bg-emerald-50 text-slate-800' : 'bg-sky-50 text-slate-800'"
                                 >
                                     {{
                                         SERVICE_LABELS[service.name]?.[
@@ -1123,7 +1116,7 @@ onBeforeUnmount(() => {
                         <div class="mt-4">
                             <div
                                 class="mb-2 text-sm font-semibold"
-                                :class="isFloxcity ? 'text-slate-900' : 'text-white'"
+                                :class="'text-slate-900'"
                             >
                                 {{ t('reviews') }}
                             </div>
@@ -1135,11 +1128,11 @@ onBeforeUnmount(() => {
                                     v-for="review in selectedMaster.reviews"
                                     :key="review.id"
                                     class="rounded-lg p-3 text-sm"
-                                    :class="isFloxcity ? 'bg-emerald-900/10' : 'bg-white/10'"
+                                    :class="'bg-white/70'"
                                 >
                                     <div
                                         class="font-medium"
-                                        :class="isFloxcity ? 'text-slate-900' : 'text-white'"
+                                        :class="'text-slate-900'"
                                     >
                                         {{
                                             review.user?.name || t('anonymous')
@@ -1148,7 +1141,7 @@ onBeforeUnmount(() => {
                                     <div :class="isFloxcity ? 'text-yellow-500' : 'text-yellow-300'">
                                         ★ {{ review.rating }}
                                     </div>
-                                    <div :class="isFloxcity ? 'text-slate-700' : 'text-white/80'">
+                                    <div :class="'text-slate-700'">
                                         {{ review.review || '—' }}
                                     </div>
                                 </div>
@@ -1156,7 +1149,7 @@ onBeforeUnmount(() => {
                             <div
                                 v-else
                                 class="text-sm"
-                                :class="isFloxcity ? 'text-slate-500' : 'text-white/60'"
+                                :class="'text-slate-500'"
                             >
                                 {{ t('noReviews') }}
                             </div>

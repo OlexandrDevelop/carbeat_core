@@ -241,21 +241,20 @@ function claimProfile() {
 <template>
     <Head :title="`${master.name} · Carbeat`" />
 
-    <!-- Dark theme wrapper matching the app style -->
-    <div class="min-h-screen bg-[#111315] font-sans text-[#E1E3E5]">
+    <div class="min-h-screen bg-slate-100 font-sans text-slate-800">
         <!-- HERO / HEADER -->
         <header class="relative px-4 pb-12 pt-6">
             <div class="mx-auto max-w-lg">
                 <!-- Top bar -->
                 <div class="mb-8 flex items-center justify-between">
-                    <span class="text-lg font-bold tracking-tight text-white"
+                    <span class="text-lg font-bold tracking-tight text-slate-900"
                         >Carbeat</span
                     >
                     <span
                         v-if="master.is_claimed"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-[#1C1F22] px-3 py-1.5 text-xs font-medium text-[#4CD964]"
+                        class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700"
                     >
-                        <span class="h-1.5 w-1.5 rounded-full bg-[#4CD964]" />
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         Підтверджено
                     </span>
                 </div>
@@ -267,33 +266,33 @@ function claimProfile() {
                             v-if="master.main_photo"
                             :src="master.main_photo"
                             :alt="master.name"
-                            class="h-32 w-32 rounded-full object-cover ring-4 ring-[#1C1F22]"
+                            class="h-32 w-32 rounded-full object-cover ring-4 ring-white"
                         />
                         <div
                             v-else
-                            class="flex h-32 w-32 items-center justify-center rounded-full bg-[#1C1F22] text-4xl font-bold text-white ring-4 ring-[#1C1F22]"
+                            class="flex h-32 w-32 items-center justify-center rounded-full bg-sky-100 text-4xl font-bold text-sky-700 ring-4 ring-white"
                         >
                             {{ masterInitials }}
                         </div>
                         <div
                             v-if="hasRating"
-                            class="absolute -bottom-2 -right-2 flex items-center gap-1 rounded-xl bg-[#1C1F22] px-2.5 py-1.5 text-sm font-bold text-white shadow-lg"
+                            class="absolute -bottom-2 -right-2 flex items-center gap-1 rounded-xl bg-white px-2.5 py-1.5 text-sm font-bold text-slate-900 shadow-lg"
                         >
                             <span class="text-[#FFD60A]">★</span>
                             {{ ratingLabel }}
                         </div>
                     </div>
 
-                    <h1 class="mb-2 text-2xl font-bold text-white">
+                    <h1 class="mb-2 text-2xl font-bold text-slate-900">
                         {{ master.name }}
                     </h1>
                     <p
                         v-if="mainService"
-                        class="mb-1 text-[15px] font-medium text-[#8E8E93]"
+                        class="mb-1 text-[15px] font-medium text-slate-500"
                     >
                         {{ serviceLabel(mainService.name) }}
                     </p>
-                    <p v-if="locationLine" class="text-sm text-[#636366]">
+                    <p v-if="locationLine" class="text-sm text-slate-500">
                         {{ locationLine }}
                     </p>
 
@@ -316,7 +315,7 @@ function claimProfile() {
                         <button
                             v-else
                             @click="shareProfile"
-                            class="flex flex-1 items-center justify-center rounded-2xl bg-[#1C1F22] px-4 py-3.5 text-[15px] font-semibold text-white transition active:bg-[#2C2F33]"
+                            class="flex flex-1 items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-[15px] font-semibold text-slate-800 transition active:bg-slate-100"
                         >
                             Поділитися
                         </button>
@@ -327,7 +326,7 @@ function claimProfile() {
 
         <!-- CONTENT -->
         <main
-            class="relative z-10 -mt-4 rounded-t-[32px] bg-[#1C1F22] px-4 pb-12 pt-8 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+            class="relative z-10 -mt-4 rounded-t-[32px] bg-white px-4 pb-12 pt-8 shadow-[0_-4px_24px_rgba(15,23,42,0.08)]"
         >
             <div class="mx-auto max-w-lg space-y-8">
                 <!-- Actions Grid -->
@@ -337,10 +336,10 @@ function claimProfile() {
                         :href="mapsLink"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
+                        class="flex flex-col items-center gap-2 rounded-2xl bg-slate-100 p-4 text-center active:opacity-80"
                     >
                         <div
-                            class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]"
+                            class="grid h-10 w-10 place-items-center rounded-full bg-sky-100 text-[#0A84FF]"
                         >
                             <svg
                                 class="h-5 w-5"
@@ -362,17 +361,17 @@ function claimProfile() {
                                 />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white"
+                        <span class="text-sm font-medium text-slate-900"
                             >Маршрут</span
                         >
                     </a>
 
                     <button
                         @click="shareProfile"
-                        class="flex flex-col items-center gap-2 rounded-2xl bg-[#2C2F33] p-4 text-center active:opacity-80"
+                        class="flex flex-col items-center gap-2 rounded-2xl bg-slate-100 p-4 text-center active:opacity-80"
                     >
                         <div
-                            class="grid h-10 w-10 place-items-center rounded-full bg-[#3A3D41] text-[#0A84FF]"
+                            class="grid h-10 w-10 place-items-center rounded-full bg-sky-100 text-[#0A84FF]"
                         >
                             <svg
                                 class="h-5 w-5"
@@ -388,7 +387,7 @@ function claimProfile() {
                                 />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-white"
+                        <span class="text-sm font-medium text-slate-900"
                             >Поділитися</span
                         >
                     </button>
@@ -405,7 +404,7 @@ function claimProfile() {
                     >
                         <div>
                             <p
-                                class="text-xs font-bold uppercase tracking-wider text-white/70"
+                                class="text-xs font-bold uppercase tracking-wider text-white/80"
                             >
                                 Власник?
                             </p>
@@ -438,12 +437,12 @@ function claimProfile() {
                 <!-- About -->
                 <section v-if="master.description">
                     <h3
-                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         Про майстра
                     </h3>
                     <p
-                        class="whitespace-pre-line text-[15px] leading-relaxed text-[#E1E3E5]"
+                        class="whitespace-pre-line text-[15px] leading-relaxed text-slate-700"
                     >
                         {{ master.description }}
                     </p>
@@ -452,42 +451,42 @@ function claimProfile() {
                 <!-- Info Grid -->
                 <section>
                     <h3
-                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         Деталі
                     </h3>
                     <div
-                        class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
+                        class="space-y-px overflow-hidden rounded-2xl bg-slate-200"
                     >
                         <div
                             v-if="master.experience"
-                            class="flex items-center justify-between bg-[#232629] p-4"
+                            class="flex items-center justify-between bg-slate-50 p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
+                            <span class="text-[15px] text-slate-500"
                                 >Досвід</span
                             >
-                            <span class="text-[15px] font-medium text-white"
+                            <span class="text-[15px] font-medium text-slate-900"
                                 >{{ master.experience }} років</span
                             >
                         </div>
                         <div
-                            class="flex items-center justify-between bg-[#232629] p-4"
+                            class="flex items-center justify-between bg-slate-50 p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
+                            <span class="text-[15px] text-slate-500"
                                 >Послуги</span
                             >
-                            <span class="text-[15px] font-medium text-white">{{
+                            <span class="text-[15px] font-medium text-slate-900">{{
                                 services.length
                             }}</span>
                         </div>
                         <div
                             v-if="master.city"
-                            class="flex items-center justify-between bg-[#232629] p-4"
+                            class="flex items-center justify-between bg-slate-50 p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]"
+                            <span class="text-[15px] text-slate-500"
                                 >Місто</span
                             >
-                            <span class="text-[15px] font-medium text-white">{{
+                            <span class="text-[15px] font-medium text-slate-900">{{
                                 master.city
                             }}</span>
                         </div>
@@ -497,22 +496,22 @@ function claimProfile() {
                 <!-- Schedule -->
                 <section v-if="workingSchedule.length">
                     <h3
-                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         Графік роботи
                     </h3>
                     <div
-                        class="space-y-px overflow-hidden rounded-2xl bg-[#2C2F33]"
+                        class="space-y-px overflow-hidden rounded-2xl bg-slate-200"
                     >
                         <div
                             v-for="item in workingSchedule"
                             :key="item.day"
-                            class="flex items-center justify-between bg-[#232629] p-4"
+                            class="flex items-center justify-between bg-slate-50 p-4"
                         >
-                            <span class="text-[15px] text-[#8E8E93]">{{
+                            <span class="text-[15px] text-slate-500">{{
                                 item.day
                             }}</span>
-                            <span class="text-[15px] font-medium text-white">{{
+                            <span class="text-[15px] font-medium text-slate-900">{{
                                 item.value
                             }}</span>
                         </div>
@@ -522,7 +521,7 @@ function claimProfile() {
                 <!-- Gallery -->
                 <section v-if="gallery.length">
                     <h3
-                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         Портфоліо
                     </h3>
@@ -532,7 +531,7 @@ function claimProfile() {
                             :key="photo.id"
                             :src="photo.url"
                             :alt="`Робота #${photo.id}`"
-                            class="aspect-square w-full rounded-xl bg-[#2C2F33] object-cover"
+                            class="aspect-square w-full rounded-xl bg-slate-100 object-cover"
                         />
                     </div>
                 </section>
@@ -540,7 +539,7 @@ function claimProfile() {
                 <!-- Services Tags -->
                 <section v-if="secondaryServices.length">
                     <h3
-                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-[#8E8E93]"
+                        class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         Всі послуги
                     </h3>
@@ -548,7 +547,7 @@ function claimProfile() {
                         <span
                             v-for="service in secondaryServices"
                             :key="service.id"
-                            class="rounded-lg bg-[#2C2F33] px-3 py-1.5 text-[14px] text-[#E1E3E5]"
+                            class="rounded-lg bg-slate-100 px-3 py-1.5 text-[14px] text-slate-700"
                         >
                             {{ serviceLabel(service.name) }}
                         </span>
@@ -560,7 +559,7 @@ function claimProfile() {
                     <div v-if="currentUrl" class="rounded-2xl bg-white p-3">
                         <QrcodeVue :value="currentUrl" :size="120" />
                     </div>
-                    <p class="text-xs font-medium text-[#636366]">
+                    <p class="text-xs font-medium text-slate-500">
                         Відскануйте, щоб відкрити в Carbeat
                     </p>
                 </div>
