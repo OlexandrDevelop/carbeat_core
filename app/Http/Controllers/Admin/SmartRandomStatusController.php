@@ -27,19 +27,25 @@ class SmartRandomStatusController extends Controller
 
     public function update(AdminSmartRandomStatusUpdateRequest $request): JsonResponse
     {
-        $settings = $this->service->updateSettings($request->validated());
-        $this->service->sync();
+        $app = config('app.client') instanceof \App\Enums\AppBrand
+            ? config('app.client')->value
+            : (config('app.client') ?: 'carbeat');
+        $settings = $this->service->updateSettings($request->validated(), $app);
+        $this->service->sync($app);
 
         return response()->json([
             'settings' => $settings,
-            'stats' => $this->service->getStats(),
-            'fake_green_masters' => $this->service->listFakeGreenMasters(),
+            'stats' => $this->service->getStats($app),
+            'fake_green_masters' => $this->service->listFakeGreenMasters($app),
         ]);
     }
 
     public function turnOff(int $masterId): JsonResponse
     {
-        $master = $this->service->turnOffFakeStatus($masterId);
+        $app = config('app.client') instanceof \App\Enums\AppBrand
+            ? config('app.client')->value
+            : (config('app.client') ?: 'carbeat');
+        $master = $this->service->turnOffFakeStatus($masterId, $app);
 
         if (! $master) {
             return response()->json(['message' => 'Fake green status not found'], 404);
@@ -47,8 +53,8 @@ class SmartRandomStatusController extends Controller
 
         return response()->json([
             'status' => 'ok',
-            'stats' => $this->service->getStats(),
-            'fake_green_masters' => $this->service->listFakeGreenMasters(),
+            'stats' => $this->service->getStats($app),
+            'fake_green_masters' => $this->service->listFakeGreenMasters($app),
         ]);
     }
 }

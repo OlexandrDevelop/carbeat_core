@@ -25,13 +25,16 @@ class SmartRandomStatusService
         private readonly AppointmentRedisService $appointmentRedisService,
     ) {}
 
-    public function getSettings(): array
+    public function getSettings(?string $app = null): array
     {
+        $app ??= $this->resolveCurrentApp();
+
         return [
-            'enabled' => (bool) ($this->getSettingValue(self::ENABLED_KEY) ?? false),
+            'enabled' => (bool) ($this->getSettingValueForApp(self::ENABLED_KEY, $app) ?? false),
             'percentage' => $this->normalizePercentage(
-                $this->getSettingValue(self::PERCENTAGE_KEY)
+                $this->getSettingValueForApp(self::PERCENTAGE_KEY, $app)
             ),
+            'app' => $app,
             'global_window' => [
                 'start' => self::GLOBAL_START,
                 'end' => self::GLOBAL_END,
@@ -43,23 +46,25 @@ class SmartRandomStatusService
         ];
     }
 
-    public function updateSettings(array $data): array
+    public function updateSettings(array $data, ?string $app = null): array
     {
+        $app ??= $this->resolveCurrentApp();
+
         if (array_key_exists('enabled', $data)) {
             AppSetting::updateOrCreate(
-                ['key' => self::ENABLED_KEY],
+                ['key' => $this->getAppSpecificKey(self::ENABLED_KEY, $app)],
                 ['value' => (bool) $data['enabled']]
             );
         }
 
         if (array_key_exists('percentage', $data)) {
             AppSetting::updateOrCreate(
-                ['key' => self::PERCENTAGE_KEY],
+                ['key' => $this->getAppSpecificKey(self::PERCENTAGE_KEY, $app)],
                 ['value' => $this->normalizePercentage($data['percentage'])]
             );
         }
 
-        return $this->getSettings();
+        return $this->getSettings($app);
     }
 
     public function getDashboardData(?string $app = null): array
@@ -67,7 +72,7 @@ class SmartRandomStatusService
         $app ??= $this->resolveCurrentApp();
 
         return [
-            'settings' => $this->getSettings(),
+            'settings' => $this->getSettings($app),
             'stats' => $this->getStats($app),
             'fake_green_masters' => $this->listFakeGreenMasters($app),
         ];
@@ -149,7 +154,7 @@ class SmartRandomStatusService
     {
         $app ??= $this->resolveCurrentApp();
         $now = $now ? Carbon::instance($now) : now();
-        $settings = $this->getSettings();
+        $settings = $this->getSettings($app);
 
         if (! $settings['enabled']) {
             $activeFake = $this->mastersForApp($app)
@@ -399,6 +404,22 @@ class SmartRandomStatusService
             ->where('key', $key)
             ->first()
             ?->value;
+    }
+
+    private function getSettingValueForApp(string $baseKey, string $app): mixed
+    {
+        $scoped = $this->getSettingValue($this->getAppSpecificKey($baseKey, $app));
+
+        if ($scoped !== null) {
+            return $scoped;
+        }
+
+        return $this->getSettingValue($baseKey);
+    }
+
+    private function getAppSpecificKey(string $baseKey, string $app): string
+    {
+        return sprintf('%s_%s', $baseKey, $app);
     }
 
     private function resolveCurrentApp(): string

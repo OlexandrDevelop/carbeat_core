@@ -6,6 +6,9 @@
                 <p class="text-sm text-gray-600">
                     Controls fake green statuses for imported STOs without exposing fake-vs-real to the client API.
                 </p>
+                <p class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Flavor: {{ settings.app || 'carbeat' }}
+                </p>
             </div>
             <button
                 @click="load"
@@ -186,6 +189,7 @@ const message = ref({ type: '', text: '' });
 const settings = ref({
     enabled: false,
     percentage: 50,
+    app: 'carbeat',
     global_window: { start: '08:00', end: '20:00' },
     rotation_window_minutes: { min: 30, max: 120 },
 });
