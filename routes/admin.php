@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\AppConfigController;
+use App\Http\Controllers\Admin\SeoContentController;
 use App\Http\Controllers\Admin\SmartRandomStatusController;
 use App\Http\Controllers\Admin\SubscriptionsAdminController;
 
@@ -44,6 +45,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.brand']], fun
 
     // App config UI
     Route::get('/app-config', [AppConfigController::class, 'index'])->name('admin.app_config.index');
+    Route::get('/seo-content', [SeoContentController::class, 'index'])->name('admin.seo_content.index');
     Route::get('/smart-random-status', [SmartRandomStatusController::class, 'index'])->name('admin.smart_random_status.index');
     // Subscriptions dashboard UI
     Route::get('/subscriptions-dashboard', [SubscriptionsAdminController::class, 'index'])->name('admin.subscriptions.dashboard');
@@ -98,6 +100,8 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'api', 'admin.br
     Route::post('/app-config/versions', [AppConfigController::class, 'updateVersions'])->name('admin.api.app_config.versions.update');
     Route::get('/app-config/subscription', [AppConfigController::class, 'getSubscription'])->name('admin.api.app_config.subscription.get');
     Route::post('/app-config/subscription', [AppConfigController::class, 'updateSubscription'])->name('admin.api.app_config.subscription.update');
+    Route::get('/seo-content', [SeoContentController::class, 'list'])->name('admin.api.seo_content.list');
+    Route::put('/seo-content', [SeoContentController::class, 'update'])->name('admin.api.seo_content.update');
     Route::get('/smart-random-status', [SmartRandomStatusController::class, 'show'])->name('admin.api.smart_random_status.show');
     Route::put('/smart-random-status', [SmartRandomStatusController::class, 'update'])->name('admin.api.smart_random_status.update');
     Route::post('/smart-random-status/{masterId}/turn-off', [SmartRandomStatusController::class, 'turnOff'])->name('admin.api.smart_random_status.turn_off');

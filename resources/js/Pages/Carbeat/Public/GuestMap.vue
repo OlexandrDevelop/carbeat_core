@@ -55,15 +55,63 @@ interface SeoPayload {
     canonical: string;
     robots?: string;
     ogImage?: string | null;
-    structuredData?: Record<string, unknown> | null;
+    structuredData?: unknown;
+}
+
+interface SeoLink {
+    label: string;
+    href: string;
+    active?: boolean;
+}
+
+interface SeoStat {
+    label: string;
+    value: string;
+}
+
+interface SeoFaq {
+    q: string;
+    a: string;
+}
+
+interface SeoSection {
+    heading: string;
+    body: string;
+}
+
+interface SeoMasterCard {
+    id: number;
+    name: string;
+    slug: string;
+    address?: string | null;
+    city?: string | null;
+    rating?: number;
+    reviews_count?: number;
+    service_names?: string[];
+}
+
+interface SeoContentPayload {
+    type: 'master' | 'city' | 'city_service';
+    title: string;
+    intro?: string;
+    sections?: SeoSection[];
+    breadcrumbs: SeoLink[];
+    stats: SeoStat[];
+    serviceLinks: SeoLink[];
+    topMasters: SeoMasterCard[];
+    relatedLinks: SeoLink[];
+    faq: SeoFaq[];
 }
 
 const props = defineProps<{
     apiBase: string;
     flavor?: Flavor;
     mapPath?: string;
+    initialMapView?: { center: [number, number]; zoom: number } | null;
+    initialServiceId?: number | null;
     initialSelectedMaster?: MasterDetails | null;
     seo?: SeoPayload | null;
+    seoContent?: SeoContentPayload | null;
 }>();
 
 const MASTERS_LIST_TTL = 60_000;
@@ -72,7 +120,7 @@ const LOADING_DELAY_MS = 220;
 
 const mapEl = ref<HTMLElement | null>(null);
 const services = ref<Service[]>([]);
-const selectedServiceId = ref<number | null>(null);
+const selectedServiceId = ref<number | null>(props.initialServiceId ?? null);
 const availableOnly = ref(false);
 const selectedMaster = ref<MasterDetails | null>(props.initialSelectedMaster ?? null);
 const selectedMasterId = ref<number | null>(props.initialSelectedMaster?.id ?? null);
@@ -92,6 +140,11 @@ const flavor = computed<Flavor>(() => props.flavor ?? 'carbeat');
 const isFloxcity = computed(() => flavor.value === 'floxcity');
 const brandName = computed(() => (isFloxcity.value ? 'Floxcity' : 'Carbeat'));
 const baseMapPath = computed(() => props.mapPath ?? '/');
+const seoContent = computed(() => props.seoContent ?? null);
+const isMasterSeoContent = computed(() => seoContent.value?.type === 'master');
+const hasVisibleSeoContent = computed(
+    () => !!seoContent.value && !isMasterSeoContent.value,
+);
 const mobileAppUrl = computed<string>(() =>
     isFloxcity.value
         ? 'https://play.google.com/store/search?q=Floxcity&c=apps'
@@ -165,6 +218,7 @@ const guestMap = useGuestMap({
 let socket: ReturnType<typeof io> | null = null;
 let mastersRequestSeq = 0;
 let loadingTimer: number | null = null;
+const MOBILE_SELECTION_OFFSET_Y = 160;
 
 const selectedMasterPhotos = computed<string[]>(() => {
     const master = selectedMaster.value;
@@ -439,6 +493,12 @@ const structuredDataJson = computed(() =>
         : '',
 );
 
+const mapViewportClasses = computed(() =>
+    hasVisibleSeoContent.value
+        ? 'guest-map-root relative h-[100svh] w-full overflow-hidden bg-slate-100 md:h-[82vh]'
+        : 'guest-map-root relative h-screen w-screen overflow-hidden bg-slate-100',
+);
+
 function cooldownStorageKey(masterId: number): string {
     return `master_status_request_cooldown_${masterId}`;
 }
@@ -601,14 +661,16 @@ async function loadMasters(): Promise<void> {
 
 async function openMaster(masterId: number): Promise<void> {
     selectedMasterId.value = masterId;
-    guestMap.setSelected(masterId);
-    loadCooldown(masterId);
-    statusRequestMessage.value = '';
-
     const summary = currentMasters.value.find(
         (master) => master.id === masterId,
     );
     if (summary) selectedMaster.value = { ...summary };
+    guestMap.setSelected(masterId, {
+        reveal: true,
+        offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
+    });
+    loadCooldown(masterId);
+    statusRequestMessage.value = '';
 
     try {
         const data = await cachedApi.getCached<
@@ -833,8 +895,10 @@ onMounted(async () => {
         Number.isFinite(props.initialSelectedMaster.longitude);
     const initialCenter = hasInitialCoordinates
         ? [props.initialSelectedMaster!.latitude, props.initialSelectedMaster!.longitude]
-        : [50.4501, 30.5234];
-    const initialZoom = props.initialSelectedMaster ? 14 : 11;
+        : (props.initialMapView?.center ?? [50.4501, 30.5234]);
+    const initialZoom = props.initialSelectedMaster
+        ? 14
+        : (props.initialMapView?.zoom ?? 11);
 
     guestMap.init(mapEl.value, {
         center: initialCenter as [number, number],
@@ -844,7 +908,10 @@ onMounted(async () => {
     await Promise.all([loadServices(), loadMasters()]);
 
     if (props.initialSelectedMaster?.id) {
-        guestMap.setSelected(props.initialSelectedMaster.id);
+        guestMap.setSelected(props.initialSelectedMaster.id, {
+            reveal: true,
+            offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
+        });
     }
 
     const socketUrl =
@@ -901,18 +968,16 @@ onBeforeUnmount(() => {
         />
     </Head>
 
-    <div
-        class="guest-map-root relative h-screen w-screen overflow-hidden bg-slate-100"
-        :style="themeVars"
-    >
-        <div ref="mapEl" class="h-full w-full" />
+    <div class="guest-map-page min-h-screen bg-slate-100" :style="themeVars">
+        <div :class="mapViewportClasses">
+            <div ref="mapEl" class="h-full w-full" />
 
-        <div class="pointer-events-none absolute inset-0 z-[500]">
-            <div
-                class="pointer-events-auto absolute left-3 right-3 top-3 md:left-5 md:right-auto md:w-[460px]"
-                :style="{ top: 'max(0.75rem, env(safe-area-inset-top))' }"
-            >
-                <div class="glass-panel rounded-2xl p-3">
+            <div class="pointer-events-none absolute inset-0 z-[500]">
+                <div
+                    class="pointer-events-auto absolute left-3 right-3 top-3 md:left-5 md:right-auto md:w-[460px]"
+                    :style="{ top: 'max(0.75rem, env(safe-area-inset-top))' }"
+                >
+                    <div class="glass-panel rounded-2xl p-3">
                     <div class="mb-2 flex items-center justify-between gap-2">
                         <span
                             class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
@@ -1426,6 +1491,207 @@ onBeforeUnmount(() => {
                 />
             </div>
         </Transition>
+
+        </div>
+
+        <section
+            v-if="seoContent && !isMasterSeoContent"
+            class="border-t border-slate-200 bg-white"
+        >
+            <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+                <nav
+                    v-if="seoContent.breadcrumbs.length"
+                    class="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500"
+                    aria-label="Breadcrumb"
+                >
+                    <template
+                        v-for="(crumb, index) in seoContent.breadcrumbs"
+                        :key="`${crumb.href}-${index}`"
+                    >
+                        <a
+                            :href="crumb.href"
+                            class="transition hover:text-slate-900"
+                        >
+                            {{ crumb.label }}
+                        </a>
+                        <span
+                            v-if="index < seoContent.breadcrumbs.length - 1"
+                            aria-hidden="true"
+                        >
+                            /
+                        </span>
+                    </template>
+                </nav>
+
+                <div class="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                    <div>
+                        <h1
+                            v-if="!isMasterSeoContent"
+                            class="text-3xl font-semibold tracking-tight text-slate-900"
+                        >
+                            {{ seoContent.title }}
+                        </h1>
+                        <p
+                            v-if="seoContent.intro"
+                            class="max-w-3xl text-base leading-7 text-slate-600"
+                            :class="isMasterSeoContent ? '' : 'mt-3'"
+                        >
+                            {{ seoContent.intro }}
+                        </p>
+
+                        <div
+                            v-if="seoContent.stats.length && !isMasterSeoContent"
+                            class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                        >
+                            <div
+                                v-for="stat in seoContent.stats"
+                                :key="stat.label"
+                                class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+                            >
+                                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    {{ stat.label }}
+                                </div>
+                                <div class="mt-1 text-lg font-semibold text-slate-900">
+                                    {{ stat.value }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="seoContent.sections?.length"
+                            class="mt-8 space-y-6"
+                        >
+                            <section
+                                v-for="section in seoContent.sections"
+                                :key="section.heading"
+                            >
+                                <h2 class="text-lg font-semibold text-slate-900">
+                                    {{ section.heading }}
+                                </h2>
+                                <p class="mt-2 text-base leading-7 text-slate-600">
+                                    {{ section.body }}
+                                </p>
+                            </section>
+                        </div>
+
+                        <div
+                            v-if="seoContent.serviceLinks.length && !isMasterSeoContent"
+                            class="mt-8"
+                        >
+                            <h2 class="text-lg font-semibold text-slate-900">
+                                Service Pages
+                            </h2>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <a
+                                    v-for="link in seoContent.serviceLinks"
+                                    :key="link.href"
+                                    :href="link.href"
+                                    class="rounded-full px-3 py-1.5 text-sm font-medium transition"
+                                    :class="
+                                        link.active
+                                            ? isFloxcity
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-sky-600 text-white'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    "
+                                >
+                                    {{ link.label }}
+                                </a>
+                            </div>
+                        </div>
+
+                        <div v-if="seoContent.topMasters.length" class="mt-8">
+                            <h2 class="text-lg font-semibold text-slate-900">
+                                Stations
+                            </h2>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <a
+                                    v-for="master in seoContent.topMasters"
+                                    :key="master.slug"
+                                    :href="`/sto/${master.slug}`"
+                                    class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
+                                >
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div>
+                                            <div class="text-base font-semibold text-slate-900">
+                                                {{ master.name }}
+                                            </div>
+                                            <div
+                                                v-if="master.address"
+                                                class="mt-1 text-sm text-slate-600"
+                                            >
+                                                {{ master.address }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="master.rating"
+                                            class="rounded-full bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-700"
+                                        >
+                                            ★ {{ Number(master.rating).toFixed(1) }}
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="master.service_names?.length"
+                                        class="mt-3 flex flex-wrap gap-2"
+                                    >
+                                        <span
+                                            v-for="serviceName in master.service_names"
+                                            :key="serviceName"
+                                            class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                                        >
+                                            {{ serviceName }}
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div
+                            v-if="seoContent.relatedLinks.length"
+                            class="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                        >
+                            <h2 class="text-lg font-semibold text-slate-900">
+                                Related Pages
+                            </h2>
+                            <div class="mt-3 space-y-2">
+                                <a
+                                    v-for="link in seoContent.relatedLinks"
+                                    :key="link.href"
+                                    :href="link.href"
+                                    class="block text-sm font-medium text-slate-700 transition hover:text-slate-900"
+                                >
+                                    {{ link.label }}
+                                </a>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="seoContent.faq.length"
+                            class="rounded-2xl border border-slate-200 bg-white p-5"
+                        >
+                            <h2 class="text-lg font-semibold text-slate-900">
+                                FAQ
+                            </h2>
+                            <div class="mt-4 space-y-4">
+                                <div
+                                    v-for="item in seoContent.faq"
+                                    :key="item.q"
+                                >
+                                    <h3 class="text-sm font-semibold text-slate-900">
+                                        {{ item.q }}
+                                    </h3>
+                                    <p class="mt-1 text-sm leading-6 text-slate-600">
+                                        {{ item.a }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 </template>
 
@@ -1619,19 +1885,38 @@ onBeforeUnmount(() => {
 }
 
 :global(.master-marker) {
+    position: relative;
     width: 44px;
     height: 44px;
     border-radius: 9999px;
     border: 2px solid rgba(255, 255, 255, 0.80);
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24);
     transform: translateZ(0);
-    transition: transform 0.16s ease;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+}
+
+:global(.master-marker::after) {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    opacity: 0;
+    transform: scale(0.9);
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease,
+        border-color 0.18s ease;
+    pointer-events: none;
 }
 
 :global(.master-marker.available-marker) {
     border-color: #34d399;
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.32), 0 2px 8px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.28), 0 4px 14px rgba(15, 23, 42, 0.24);
     animation: marker-pulse 1.8s infinite ease-in-out;
 }
 
@@ -1641,13 +1926,21 @@ onBeforeUnmount(() => {
 }
 
 :global(.master-marker.active-marker) {
-    transform: scale(1.22);
-    border-color: #fff;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55), 0 4px 14px rgba(0, 0, 0, 0.50);
+    transform: translateY(-4px) scale(1.24);
+    border-color: rgba(255, 255, 255, 0.98);
+    box-shadow:
+        0 0 0 4px rgba(var(--brand-primary-rgb), 0.22),
+        0 10px 26px rgba(15, 23, 42, 0.30);
+}
+
+:global(.master-marker.active-marker::after) {
+    opacity: 1;
+    transform: scale(1);
+    border-color: rgba(var(--brand-primary-rgb), 0.46);
 }
 
 :global(.master-marker:hover) {
-    transform: scale(1.10);
+    transform: translateY(-2px) scale(1.1);
 }
 
 :global(.marker-avatar-img),

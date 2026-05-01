@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\City;
 use App\Models\Master;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,6 +61,56 @@ class LandingPageTest extends TestCase
 
         $this->get('/m/legacy-sto-slug')
             ->assertRedirect('/sto/legacy-sto-slug');
+    }
+
+    public function test_city_route_renders_seo_map_page(): void
+    {
+        $city = City::create(['name' => 'Berlin', 'latitude' => 52.52, 'longitude' => 13.405]);
+        $service = Service::create(['name' => 'Oil Change']);
+
+        $master = Master::create([
+            'name' => 'Berlin Garage',
+            'contact_phone' => '+49111111111',
+            'service_id' => $service->id,
+            'city_id' => $city->id,
+            'latitude' => 52.52,
+            'longitude' => 13.405,
+            'description' => 'Berlin city test garage.',
+            'address' => 'Alexanderplatz 1',
+            'photo' => 'defaults/avatar.png',
+            'slug' => 'berlin-garage',
+        ]);
+        $master->services()->attach($service->id);
+
+        $this->get('/city/berlin')
+            ->assertOk()
+            ->assertSee('Berlin')
+            ->assertSee('/sto/berlin-garage');
+    }
+
+    public function test_city_service_route_renders_filtered_seo_map_page(): void
+    {
+        $city = City::create(['name' => 'Munich', 'latitude' => 48.137, 'longitude' => 11.575]);
+        $service = Service::create(['name' => 'Tire Service']);
+
+        $master = Master::create([
+            'name' => 'Munich Tire Point',
+            'contact_phone' => '+49222222222',
+            'service_id' => $service->id,
+            'city_id' => $city->id,
+            'latitude' => 48.137,
+            'longitude' => 11.575,
+            'description' => 'Munich tire service test garage.',
+            'address' => 'Marienplatz 1',
+            'photo' => 'defaults/avatar.png',
+            'slug' => 'munich-tire-point',
+        ]);
+        $master->services()->attach($service->id);
+
+        $this->get('/city/munich/tire-service')
+            ->assertOk()
+            ->assertSee('Munich')
+            ->assertSee('/sto/munich-tire-point');
     }
 
     public function test_admin_requires_auth_for_guests(): void

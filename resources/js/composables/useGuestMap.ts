@@ -123,7 +123,10 @@ export interface GuestMapHandle {
     ) => void;
     destroy: () => void;
     syncMasters: (masters: Master[]) => void;
-    setSelected: (masterId: number | null) => void;
+    setSelected: (
+        masterId: number | null,
+        options?: { reveal?: boolean; offsetY?: number },
+    ) => void;
     applyAvailability: (masterId: number, available: boolean) => void;
     setUserPosition: (latlng: [number, number]) => void;
     flyTo: (latlng: [number, number], zoom?: number) => void;
@@ -163,6 +166,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         master: Master,
         selected: boolean,
     ): boolean {
+        marker.setZIndexOffset(selected ? 1200 : 0);
         const state = deriveState(master, selected);
         const nextKey = iconStateKey(state);
         if (iconKeyById.get(master.id) === nextKey) return false;
@@ -331,7 +335,10 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         }
     }
 
-    function setSelected(masterId: number | null): void {
+    function setSelected(
+        masterId: number | null,
+        options?: { reveal?: boolean; offsetY?: number },
+    ): void {
         if (!map) return;
         const previous = selectedId;
         selectedId = masterId;
@@ -345,7 +352,29 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         if (masterId === null) return;
         const marker = markersById.get(masterId);
         const master = masterById.get(masterId);
-        if (marker && master) applyIcon(marker, master, true);
+        if (marker && master) {
+            applyIcon(marker, master, true);
+
+            if (options?.reveal && cluster) {
+                cluster.zoomToShowLayer(marker, () => {
+                    if (!map) return;
+
+                    const targetZoom = Math.max(map.getZoom(), 15);
+                    let targetLatLng = L.latLng(master.latitude, master.longitude);
+
+                    if (options.offsetY) {
+                        const projected = map.project(targetLatLng, targetZoom);
+                        projected.y += options.offsetY;
+                        targetLatLng = map.unproject(projected, targetZoom);
+                    }
+
+                    map.flyTo(targetLatLng, targetZoom, {
+                        duration: 0.45,
+                        easeLinearity: 0.25,
+                    });
+                });
+            }
+        }
     }
 
     function applyAvailability(masterId: number, available: boolean): void {

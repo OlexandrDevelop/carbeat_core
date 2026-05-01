@@ -70,6 +70,35 @@
                                                     <Link
                                                         :href="
                                                             route(
+                                                                'admin.seo_content.index',
+                                                            )
+                                                        "
+                                                        :class="[
+                                                            route().current(
+                                                                'admin.seo_content.*',
+                                                            )
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-search text-lg"
+                                                            :class="[
+                                                                route().current(
+                                                                    'admin.seo_content.*',
+                                                                )
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        SEO Content
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        :href="
+                                                            route(
                                                                 'admin.masters.index',
                                                             )
                                                         "
@@ -448,6 +477,29 @@
                                             ]"
                                         ></i>
                                         App Config
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.seo_content.index')"
+                                        :class="[
+                                            route().current('admin.seo_content.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-search text-lg"
+                                            :class="[
+                                                route().current(
+                                                    'admin.seo_content.*',
+                                                )
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        SEO Content
                                     </Link>
                                 </li>
                                 <li>

@@ -24,6 +24,8 @@ Route::get('/sitemap.xml', function () {
 })->name('sitemap');
 
 Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
+Route::get('/city/{citySlug}', [PublicGuestMapController::class, 'showCity'])->name('public.city.show');
+Route::get('/city/{citySlug}/{serviceSlug}', [PublicGuestMapController::class, 'showCityService'])->name('public.city.service.show');
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');
