@@ -23,6 +23,19 @@ Route::get('/sitemap.xml', function () {
     ]);
 })->name('sitemap');
 
+Route::get('/robots.txt', function () {
+    $content = implode("\n", [
+        'User-agent: *',
+        'Disallow:',
+        'Sitemap: ' . route('sitemap'),
+        '',
+    ]);
+
+    return response($content, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+    ]);
+})->name('robots');
+
 Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
 Route::get('/city/{citySlug}', [PublicGuestMapController::class, 'showCity'])->name('public.city.show');
 Route::get('/city/{citySlug}/{serviceSlug}', [PublicGuestMapController::class, 'showCityService'])->name('public.city.service.show');
