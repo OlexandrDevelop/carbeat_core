@@ -212,7 +212,9 @@ class PublicGuestMapController extends Controller
             'slug' => (string) $master->slug,
             'address' => (string) ($master->address ?? ''),
             'city' => optional($master->city)->name,
-            'rating' => $master->rating !== null ? (float) $master->rating : 0.0,
+            'rating' => $master->reviews_avg_rating !== null
+                ? (float) $master->reviews_avg_rating
+                : ($master->rating_google !== null ? (float) $master->rating_google : 0.0),
             'reviews_count' => (int) ($master->reviews_count ?? 0),
             'service_names' => $serviceNames,
         ];
@@ -759,6 +761,8 @@ class PublicGuestMapController extends Controller
     private function getCityMasters(City $city, ?int $serviceId = null): Collection
     {
         return Master::with(['services.translations', 'city'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
             ->where('city_id', $city->id)
             ->when($serviceId !== null, function ($query) use ($serviceId) {
                 $query->where(function ($subQuery) use ($serviceId) {
@@ -766,8 +770,9 @@ class PublicGuestMapController extends Controller
                         ->orWhereHas('services', fn ($services) => $services->where('services.id', $serviceId));
                 });
             })
-            ->orderByDesc('rating')
+            ->orderByDesc('reviews_avg_rating')
             ->orderByDesc('reviews_count')
+            ->orderByDesc('rating_google')
             ->orderBy('name')
             ->limit(60)
             ->get();
