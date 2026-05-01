@@ -51,10 +51,9 @@ chmod -R ug+rwX /app/storage /app/bootstrap/cache || true
 # Generate sitemap on each production deploy so new canonical /sto URLs are published immediately.
 php /app/artisan sitemap:generate || true
 
-# Create symlink for sitemap.xml if it doesn't exist
-if [ ! -f /app/public/sitemap.xml ] || [ -L /app/public/sitemap.xml ]; then
-  ln -sf /app/storage/app/public/sitemap.xml /app/public/sitemap.xml || true
-fi
+# Remove public sitemap file/symlink so /sitemap.xml is always served by Laravel
+# with application/xml; charset=utf-8 instead of nginx static text/xml defaults.
+rm -f /app/public/sitemap.xml || true
 
 # Notify Telegram that deployment finished
 send_telegram "✅ Deployment finished on PRODUCTION at $(date '+%Y-%m-%d %H:%M:%S')"

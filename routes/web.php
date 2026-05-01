@@ -12,14 +12,15 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/sitemap.xml', function () {
-    $sitemapPath = public_path('sitemap.xml');
+    $sitemapPath = storage_path('app/public/sitemap.xml');
 
     if (!file_exists($sitemapPath)) {
         abort(404, 'Sitemap not found');
     }
 
-    return response()->file($sitemapPath, [
+    return response(file_get_contents($sitemapPath), 200, [
         'Content-Type' => 'application/xml; charset=utf-8',
+        'Cache-Control' => 'public, max-age=300',
     ]);
 })->name('sitemap');
 

@@ -64,22 +64,8 @@ class GenerateSitemap extends Command
                 });
         });
 
-        // Write to storage/app/public (writable directory)
         $sitemapPath = storage_path('app/public/sitemap.xml');
         $sitemap->writeToFile($sitemapPath);
-
-        // Create symlink in public directory
-        $publicSitemapPath = public_path('sitemap.xml');
-        if (file_exists($publicSitemapPath)) {
-            if (is_link($publicSitemapPath)) {
-                unlink($publicSitemapPath);
-            } else {
-                // If it's a regular file, remove it to create symlink
-                unlink($publicSitemapPath);
-            }
-        }
-        // Create symlink to the sitemap in storage
-        symlink($sitemapPath, $publicSitemapPath);
 
         $this->info('Sitemap generated successfully.');
         return self::SUCCESS;
