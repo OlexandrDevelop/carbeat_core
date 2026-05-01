@@ -23,6 +23,7 @@ Route::get('/sitemap.xml', function () {
     ]);
 })->name('sitemap');
 
+Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');
@@ -44,8 +45,8 @@ Route::get('/data-deletion', function () {
     return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/DataDeletion' : 'Carbeat/DataDeletion');
 })->name('data_deletion');
 
-Route::get('/', PublicGuestMapController::class)->name('landing');
-Route::get('/guest-map', PublicGuestMapController::class)->name('public.guest-map');
+Route::get('/', [PublicGuestMapController::class, 'index'])->name('landing');
+Route::get('/guest-map', [PublicGuestMapController::class, 'index'])->name('public.guest-map');
 Route::get('/landing', LandingController::class)->name('marketing.landing');
 
 Route::middleware('guest')->group(function () {

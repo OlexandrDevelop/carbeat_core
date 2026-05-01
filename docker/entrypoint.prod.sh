@@ -48,6 +48,9 @@ mkdir -p /app/storage /app/bootstrap/cache /app/storage/app/public
 chown -R application:application /app/storage /app/bootstrap/cache || true
 chmod -R ug+rwX /app/storage /app/bootstrap/cache || true
 
+# Generate sitemap on each production deploy so new canonical /sto URLs are published immediately.
+php /app/artisan sitemap:generate || true
+
 # Create symlink for sitemap.xml if it doesn't exist
 if [ ! -f /app/public/sitemap.xml ] || [ -L /app/public/sitemap.xml ]; then
   ln -sf /app/storage/app/public/sitemap.xml /app/public/sitemap.xml || true

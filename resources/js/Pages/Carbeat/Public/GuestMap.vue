@@ -30,8 +30,11 @@ type Flavor = 'carbeat' | 'floxcity';
 
 interface MasterDetails extends Master {
     slug?: string | null;
+    description?: string | null;
     address?: string | null;
+    city?: string | null;
     rating?: number;
+    reviews_count?: number;
     phone?: string | null;
     services?: Array<{ id: number; name: string; is_primary?: boolean }>;
     reviews?: Array<{
@@ -41,11 +44,27 @@ interface MasterDetails extends Master {
         user?: { name?: string };
     }>;
     photos?: Array<{ id: number; url: string }>;
+    working_hours?: Array<Record<string, unknown>> | Record<string, unknown> | null;
     is_claimed?: boolean;
     claim_link?: string | null;
 }
 
-const props = defineProps<{ apiBase: string; flavor?: Flavor }>();
+interface SeoPayload {
+    title: string;
+    description: string;
+    canonical: string;
+    robots?: string;
+    ogImage?: string | null;
+    structuredData?: Record<string, unknown> | null;
+}
+
+const props = defineProps<{
+    apiBase: string;
+    flavor?: Flavor;
+    mapPath?: string;
+    initialSelectedMaster?: MasterDetails | null;
+    seo?: SeoPayload | null;
+}>();
 
 const MASTERS_LIST_TTL = 60_000;
 const MASTER_DETAILS_TTL = 5 * 60_000;
@@ -55,9 +74,11 @@ const mapEl = ref<HTMLElement | null>(null);
 const services = ref<Service[]>([]);
 const selectedServiceId = ref<number | null>(null);
 const availableOnly = ref(false);
-const selectedMaster = ref<MasterDetails | null>(null);
-const selectedMasterId = ref<number | null>(null);
-const currentMasters = ref<MasterDetails[]>([]);
+const selectedMaster = ref<MasterDetails | null>(props.initialSelectedMaster ?? null);
+const selectedMasterId = ref<number | null>(props.initialSelectedMaster?.id ?? null);
+const currentMasters = ref<MasterDetails[]>(
+    props.initialSelectedMaster ? [{ ...props.initialSelectedMaster }] : [],
+);
 const loading = ref(false);
 const isSendingStatusRequest = ref(false);
 const statusRequestMessage = ref('');
@@ -69,6 +90,8 @@ let statusBeaconTimer: number | null = null;
 
 const flavor = computed<Flavor>(() => props.flavor ?? 'carbeat');
 const isFloxcity = computed(() => flavor.value === 'floxcity');
+const brandName = computed(() => (isFloxcity.value ? 'Floxcity' : 'Carbeat'));
+const baseMapPath = computed(() => props.mapPath ?? '/');
 const mobileAppUrl = computed<string>(() =>
     isFloxcity.value
         ? 'https://play.google.com/store/search?q=Floxcity&c=apps'
@@ -291,6 +314,131 @@ function photoUrl(path?: string | null): string | null {
     return path.startsWith('/') ? path : `/${path}`;
 }
 
+function currentOrigin(): string | null {
+    if (typeof window !== 'undefined') return window.location.origin;
+
+    const canonical = props.seo?.canonical;
+    if (!canonical) return null;
+
+    try {
+        return new URL(canonical).origin;
+    } catch {
+        return null;
+    }
+}
+
+function buildMasterPath(slug?: string | null): string {
+    return slug ? `/sto/${encodeURIComponent(slug)}` : baseMapPath.value;
+}
+
+function buildCanonicalUrl(path: string): string {
+    if (/^https?:\/\//i.test(path)) return path;
+
+    const origin = currentOrigin();
+    return origin ? new URL(path, origin).toString() : path;
+}
+
+function normalizeMetaText(value?: string | null): string {
+    return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function buildGenericSeo(): SeoPayload {
+    return {
+        title: `${brandName.value} Map`,
+        description: `Find nearby car service stations and auto repair specialists on the ${brandName.value} map.`,
+        canonical: buildCanonicalUrl(baseMapPath.value),
+        robots: 'index, follow',
+        ogImage: props.seo?.ogImage ?? '/og-image.jpg',
+        structuredData: {
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: `${brandName.value} Map`,
+            url: buildCanonicalUrl(baseMapPath.value),
+            description: `Interactive map of nearby car service stations and auto repair specialists on ${brandName.value}.`,
+        },
+    };
+}
+
+function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
+    const servicesText = (master.services ?? [])
+        .map((service) => normalizeMetaText(service.name))
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(', ');
+    const location = [master.city, master.address]
+        .map((value) => normalizeMetaText(value))
+        .filter(Boolean)
+        .join(', ');
+    const descriptionBody = [
+        location,
+        servicesText ? `Services: ${servicesText}.` : '',
+        normalizeMetaText(master.description).slice(0, 120),
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const description = (
+        descriptionBody
+            ? `${master.name} on ${brandName.value}. ${descriptionBody}`
+            : `${master.name} on ${brandName.value}. View services, location and reviews on the map.`
+    ).slice(0, 160);
+    const canonical = buildCanonicalUrl(buildMasterPath(master.slug));
+    const structuredData: Record<string, unknown> = {
+        '@context': 'https://schema.org',
+        '@type': 'AutoRepair',
+        name: master.name,
+        url: canonical,
+        description,
+        image: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.jpg',
+        telephone: master.phone ?? undefined,
+        geo: {
+            '@type': 'GeoCoordinates',
+            latitude: master.latitude,
+            longitude: master.longitude,
+        },
+    };
+
+    const addressParts: Record<string, unknown> = {
+        '@type': 'PostalAddress',
+    };
+    if (normalizeMetaText(master.address)) {
+        addressParts.streetAddress = normalizeMetaText(master.address);
+    }
+    if (normalizeMetaText(master.city)) {
+        addressParts.addressLocality = normalizeMetaText(master.city);
+    }
+    if (Object.keys(addressParts).length > 1) {
+        structuredData.address = addressParts;
+    }
+
+    if ((master.rating ?? 0) > 0 && (master.reviews_count ?? 0) > 0) {
+        structuredData.aggregateRating = {
+            '@type': 'AggregateRating',
+            ratingValue: Number(master.rating ?? 0).toFixed(1),
+            reviewCount: master.reviews_count,
+        };
+    }
+
+    return {
+        title: `${master.name} · ${brandName.value}`,
+        description,
+        canonical,
+        robots: 'index, follow',
+        ogImage: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.jpg',
+        structuredData,
+    };
+}
+
+const pageSeo = computed<SeoPayload>(() => {
+    if (selectedMaster.value?.slug) return buildSelectedMasterSeo(selectedMaster.value);
+    return props.seo ?? buildGenericSeo();
+});
+
+const structuredDataJson = computed(() =>
+    pageSeo.value.structuredData
+        ? JSON.stringify(pageSeo.value.structuredData)
+        : '',
+);
+
 function cooldownStorageKey(masterId: number): string {
     return `master_status_request_cooldown_${masterId}`;
 }
@@ -435,8 +583,13 @@ async function loadMasters(): Promise<void> {
         if (seq !== mastersRequestSeq) return;
 
         const list = Array.isArray(data?.data) ? data.data : [];
-        currentMasters.value = list;
-        guestMap.syncMasters(list);
+        const mergedList =
+            selectedMaster.value &&
+            !list.some((master) => master.id === selectedMaster.value?.id)
+                ? [{ ...selectedMaster.value }, ...list]
+                : list;
+        currentMasters.value = mergedList;
+        guestMap.syncMasters(mergedList);
         if (selectedMasterId.value !== null)
             guestMap.setSelected(selectedMasterId.value);
     } catch (error) {
@@ -601,6 +754,60 @@ function applyAvailabilityRealtime(payload: unknown): void {
     guestMap.applyAvailability(masterId, available);
 }
 
+function extractMasterSlug(pathname: string): string | null {
+    const match = pathname.match(/^\/sto\/([^/]+)$/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function findMasterBySlug(slug: string): MasterDetails | null {
+    if (selectedMaster.value?.slug === slug) return selectedMaster.value;
+
+    return (
+        currentMasters.value.find((master) => master.slug === slug) ??
+        (props.initialSelectedMaster?.slug === slug
+            ? props.initialSelectedMaster
+            : null)
+    );
+}
+
+async function syncSelectionFromLocation(): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    const slug = extractMasterSlug(window.location.pathname);
+    if (!slug) {
+        if (selectedMaster.value !== null || selectedMasterId.value !== null) {
+            closeDetails();
+        }
+        return;
+    }
+
+    const matched = findMasterBySlug(slug);
+    if (matched?.id) {
+        if (selectedMasterId.value === matched.id) return;
+        await openMaster(matched.id);
+        return;
+    }
+
+    window.location.reload();
+}
+
+watch(
+    () => selectedMaster.value?.slug ?? null,
+    (slug, previousSlug) => {
+        if (typeof window === 'undefined') return;
+
+        const nextPath = slug ? buildMasterPath(slug) : baseMapPath.value;
+        if (window.location.pathname === nextPath) return;
+
+        if (!previousSlug && slug) {
+            window.history.pushState({}, '', nextPath);
+            return;
+        }
+
+        window.history.replaceState({}, '', nextPath);
+    },
+);
+
 watch([selectedServiceId, availableOnly], () => {
     selectedMaster.value = null;
     selectedMasterId.value = null;
@@ -619,9 +826,26 @@ onMounted(async () => {
     window.addEventListener('keydown', onWindowKeydown);
     window.addEventListener('resize', syncViewportMode);
 
-    guestMap.init(mapEl.value, { center: [50.4501, 30.5234], zoom: 11 });
+    const hasInitialCoordinates =
+        typeof props.initialSelectedMaster?.latitude === 'number' &&
+        Number.isFinite(props.initialSelectedMaster.latitude) &&
+        typeof props.initialSelectedMaster?.longitude === 'number' &&
+        Number.isFinite(props.initialSelectedMaster.longitude);
+    const initialCenter = hasInitialCoordinates
+        ? [props.initialSelectedMaster!.latitude, props.initialSelectedMaster!.longitude]
+        : [50.4501, 30.5234];
+    const initialZoom = props.initialSelectedMaster ? 14 : 11;
+
+    guestMap.init(mapEl.value, {
+        center: initialCenter as [number, number],
+        zoom: initialZoom,
+    });
 
     await Promise.all([loadServices(), loadMasters()]);
+
+    if (props.initialSelectedMaster?.id) {
+        guestMap.setSelected(props.initialSelectedMaster.id);
+    }
 
     const socketUrl =
         import.meta.env.VITE_SOCKET_IO_URL || window.location.origin;
@@ -632,6 +856,7 @@ onMounted(async () => {
     });
 
     socket.on('availability:update', applyAvailabilityRealtime);
+    window.addEventListener('popstate', syncSelectionFromLocation);
 });
 
 onBeforeUnmount(() => {
@@ -648,11 +873,33 @@ onBeforeUnmount(() => {
         window.clearTimeout(loadingTimer);
         loadingTimer = null;
     }
+    window.removeEventListener('popstate', syncSelectionFromLocation);
 });
 </script>
 
 <template>
-    <Head title="Guest Map" />
+    <Head>
+        <title>{{ pageSeo.title }}</title>
+        <meta name="description" :content="pageSeo.description" />
+        <meta name="robots" :content="pageSeo.robots ?? 'index, follow'" />
+        <link rel="canonical" :href="pageSeo.canonical" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" :content="pageSeo.canonical" />
+        <meta property="og:title" :content="pageSeo.title" />
+        <meta property="og:description" :content="pageSeo.description" />
+        <meta property="og:site_name" :content="brandName" />
+        <meta v-if="pageSeo.ogImage" property="og:image" :content="pageSeo.ogImage" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="pageSeo.title" />
+        <meta name="twitter:description" :content="pageSeo.description" />
+        <meta v-if="pageSeo.ogImage" name="twitter:image" :content="pageSeo.ogImage" />
+        <component
+            :is="'script'"
+            v-if="structuredDataJson"
+            type="application/ld+json"
+            v-text="structuredDataJson"
+        />
+    </Head>
 
     <div
         class="guest-map-root relative h-screen w-screen overflow-hidden bg-slate-100"

@@ -12,7 +12,7 @@
                 <div class="flex items-center gap-2">
                     <a
                         v-if="master?.slug"
-                        :href="`/m/${master.slug}`"
+                        :href="`/sto/${master.slug}`"
                         target="_blank"
                         rel="noopener"
                         class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
