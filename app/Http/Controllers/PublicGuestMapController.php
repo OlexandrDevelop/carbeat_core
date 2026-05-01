@@ -222,17 +222,17 @@ class PublicGuestMapController extends Controller
         $brandName = $brand === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
 
         return [
-            'title' => "{$brandName} Map",
-            'description' => "Find nearby car service stations and auto repair specialists on the {$brandName} map.",
+            'title' => "{$brandName} Car Service Map & STO Near You",
+            'description' => "Find nearby STO stations, auto repair shops and car service specialists on the {$brandName} map. Compare ratings, services and direct profile pages.",
             'canonical' => route('landing'),
             'robots' => $isTechnicalGuestMapRoute ? 'noindex, follow' : 'index, follow',
-            'ogImage' => url('/og-image.jpg'),
+            'ogImage' => url('/og-image.svg'),
             'structuredData' => [
                 '@context' => 'https://schema.org',
                 '@type' => 'WebPage',
-                'name' => "{$brandName} Map",
+                'name' => "{$brandName} Car Service Map",
                 'url' => route('landing'),
-                'description' => "Interactive map of nearby car service stations and auto repair specialists on {$brandName}.",
+                'description' => "Interactive STO and auto repair map for nearby car service stations on {$brandName}.",
             ],
         ];
     }
@@ -285,7 +285,7 @@ class PublicGuestMapController extends Controller
                 'name' => $selectedMaster['name'],
                 'url' => $canonical,
                 'description' => $description,
-                'image' => $selectedMaster['main_photo'] ?: url('/images/default-master.jpg'),
+                'image' => $selectedMaster['main_photo'] ?: url('/images/default-master.svg'),
                 'telephone' => $selectedMaster['phone'] ?: null,
                 'address' => array_filter([
                     '@type' => 'PostalAddress',
@@ -315,11 +315,11 @@ class PublicGuestMapController extends Controller
         }
 
         return [
-            'title' => "{$selectedMaster['name']} · {$brandName}",
+            'title' => "{$selectedMaster['name']} STO · {$brandName}",
             'description' => $description,
             'canonical' => $canonical,
             'robots' => 'index, follow',
-            'ogImage' => $selectedMaster['main_photo'] ?: url('/images/default-master.jpg'),
+            'ogImage' => $selectedMaster['main_photo'] ?: url('/images/default-master.svg'),
             'structuredData' => $schemas,
         ];
     }
@@ -334,7 +334,7 @@ class PublicGuestMapController extends Controller
             ->take(4)
             ->map(fn (Service $service) => $service->translate(app()->getLocale()))
             ->implode(', ');
-        $title = "{$city->name} Car Service Map · {$brandName}";
+        $title = "STO and Car Service in {$city->name} · {$brandName}";
         $description = Str::limit(
             "Find car service stations and auto repair specialists in {$city->name} on {$brandName}. Browse {$count} listed stations, services, ratings and direct profile links" . ($popularServices !== '' ? " including {$popularServices}." : '.'),
             160,
@@ -356,7 +356,7 @@ class PublicGuestMapController extends Controller
             'description' => $description,
             'canonical' => $canonical,
             'robots' => 'index, follow',
-            'ogImage' => url('/og-image.jpg'),
+            'ogImage' => url('/og-image.svg'),
             'structuredData' => [
                 [
                     '@context' => 'https://schema.org',
@@ -380,7 +380,7 @@ class PublicGuestMapController extends Controller
         $brandName = $this->brandName();
         $serviceName = $service->translate(app()->getLocale());
         $count = $masters->count();
-        $title = "{$serviceName} in {$city->name} · {$brandName}";
+        $title = "{$serviceName} STO in {$city->name} · {$brandName}";
         $description = Str::limit(
             "Find {$serviceName} providers in {$city->name} on {$brandName}. Compare {$count} listed stations, addresses, ratings and direct profile pages.",
             160,
@@ -405,7 +405,7 @@ class PublicGuestMapController extends Controller
             'description' => $description,
             'canonical' => $canonical,
             'robots' => 'index, follow',
-            'ogImage' => url('/og-image.jpg'),
+            'ogImage' => url('/og-image.svg'),
             'structuredData' => [
                 [
                     '@context' => 'https://schema.org',

@@ -398,17 +398,17 @@ function normalizeMetaText(value?: string | null): string {
 
 function buildGenericSeo(): SeoPayload {
     return {
-        title: `${brandName.value} Map`,
-        description: `Find nearby car service stations and auto repair specialists on the ${brandName.value} map.`,
+        title: `${brandName.value} Car Service Map & STO Near You`,
+        description: `Find nearby STO stations, auto repair shops and car service specialists on the ${brandName.value} map. Compare ratings, services and direct profile pages.`,
         canonical: buildCanonicalUrl(baseMapPath.value),
         robots: 'index, follow',
-        ogImage: props.seo?.ogImage ?? '/og-image.jpg',
+        ogImage: props.seo?.ogImage ?? '/og-image.svg',
         structuredData: {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
-            name: `${brandName.value} Map`,
+            name: `${brandName.value} Car Service Map`,
             url: buildCanonicalUrl(baseMapPath.value),
-            description: `Interactive map of nearby car service stations and auto repair specialists on ${brandName.value}.`,
+            description: `Interactive STO and auto repair map for nearby car service stations on ${brandName.value}.`,
         },
     };
 }
@@ -442,7 +442,7 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
         name: master.name,
         url: canonical,
         description,
-        image: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.jpg',
+        image: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.svg',
         telephone: master.phone ?? undefined,
         geo: {
             '@type': 'GeoCoordinates',
@@ -473,11 +473,11 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
     }
 
     return {
-        title: `${master.name} · ${brandName.value}`,
+        title: `${master.name} STO · ${brandName.value}`,
         description,
         canonical,
         robots: 'index, follow',
-        ogImage: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.jpg',
+        ogImage: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.svg',
         structuredData,
     };
 }
@@ -486,6 +486,37 @@ const pageSeo = computed<SeoPayload>(() => {
     if (selectedMaster.value?.slug) return buildSelectedMasterSeo(selectedMaster.value);
     return props.seo ?? buildGenericSeo();
 });
+
+const semanticHeading = computed(() => {
+    if (isMasterSeoContent.value && selectedMaster.value) {
+        return `${selectedMaster.value.name} STO profile`;
+    }
+
+    if (seoContent.value?.title) {
+        return seoContent.value.title;
+    }
+
+    return `${brandName.value} car service map and STO near you`;
+});
+
+const semanticSubheading = computed(() => {
+    if (isMasterSeoContent.value && selectedMaster.value) {
+        const city = normalizeMetaText(selectedMaster.value.city);
+        return city
+            ? `Services, reviews and location in ${city}`
+            : 'Services, reviews and location';
+    }
+
+    if (seoContent.value?.sections?.length) {
+        return seoContent.value.sections[0]?.heading ?? 'Compare nearby car service stations';
+    }
+
+    return 'Compare nearby car service stations, ratings and available STO profiles';
+});
+
+const semanticIntro = computed(
+    () => seoContent.value?.intro || pageSeo.value.description,
+);
 
 const structuredDataJson = computed(() =>
     pageSeo.value.structuredData
@@ -969,6 +1000,13 @@ onBeforeUnmount(() => {
     </Head>
 
     <div class="guest-map-page min-h-screen bg-slate-100" :style="themeVars">
+        <section class="sr-only" aria-label="Page summary">
+            <h1>{{ semanticHeading }}</h1>
+            <p>{{ semanticIntro }}</p>
+            <h2>{{ semanticSubheading }}</h2>
+            <p>{{ pageSeo.description }}</p>
+        </section>
+
         <div :class="mapViewportClasses">
             <div ref="mapEl" class="h-full w-full" />
 
@@ -1241,12 +1279,13 @@ onBeforeUnmount(() => {
                             class="mb-2 flex items-start justify-between gap-3"
                         >
                             <div>
-                                <h2
+                                <component
+                                    :is="isMasterSeoContent ? 'h1' : 'h2'"
                                     class="text-lg font-semibold"
                                     :class="'text-slate-900'"
                                 >
                                     {{ selectedMaster.name }}
-                                </h2>
+                                </component>
                                 <p
                                     class="text-sm"
                                     :class="'text-slate-600'"
@@ -1392,7 +1431,7 @@ onBeforeUnmount(() => {
                                     class="h-full w-full object-cover"
                                     loading="lazy"
                                     decoding="async"
-                                    alt=""
+                                    :alt="`${selectedMaster.name} photo ${idx + 1}`"
                                 />
                                 <span
                                     class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-semibold text-white opacity-0 transition duration-200 group-hover:bg-black/35 group-hover:opacity-100"
@@ -1487,7 +1526,7 @@ onBeforeUnmount(() => {
                 <img
                     :src="lightboxImage"
                     class="lightbox-image max-h-full max-w-full rounded-2xl object-contain"
-                    alt=""
+                    :alt="selectedMaster ? `${selectedMaster.name} full size photo` : 'Station photo'"
                 />
             </div>
         </Transition>

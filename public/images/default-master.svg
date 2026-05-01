@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Default station image">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="80" x2="560" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e0f2fe"/>
+      <stop offset="1" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="180" y1="140" x2="470" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" rx="72" fill="#f8fafc"/>
+  <rect x="44" y="44" width="552" height="552" rx="56" fill="url(#bg)" stroke="#cbd5e1" stroke-width="8"/>
+  <path d="M178 432h284a38 38 0 0 1 38 38v42H140v-42a38 38 0 0 1 38-38Z" fill="#0f172a" fill-opacity="0.08"/>
+  <path d="M318 126c-75.111 0-136 60.889-136 136 0 96.919 111.966 206.151 123.252 216.938a19.2 19.2 0 0 0 25.496 0C342.034 468.151 454 358.919 454 262c0-75.111-60.889-136-136-136Z" fill="url(#accent)"/>
+  <circle cx="318" cy="262" r="55" fill="#f8fafc"/>
+  <path d="M282 264h72M318 228v72" stroke="#0f172a" stroke-opacity="0.35" stroke-width="18" stroke-linecap="round"/>
+</svg>

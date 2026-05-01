@@ -188,7 +188,7 @@ class Master extends Model
     // Accessor: provide main_photo
     public function getMainPhotoAttribute(): ?string
     {
-        return $this->photo ?? '/images/default-master.jpg';
+        return $this->photo ?? '/images/default-master.svg';
     }
 
     public function getIsPremiumAttribute($value): bool

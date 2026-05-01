@@ -10,6 +10,7 @@ export type Master = {
     latitude: number;
     longitude: number;
     available?: boolean;
+    main_thumb_url?: string | null;
     main_photo?: string | null;
     [key: string]: unknown;
 };
@@ -153,7 +154,8 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
     const iconKeyById = new Map<number, string>();
 
     function deriveState(master: Master, selected: boolean): IconState {
-        const photo = options.photoUrl(master.main_photo) ?? '';
+        const photo =
+            options.photoUrl(master.main_thumb_url ?? master.main_photo) ?? '';
         return {
             available: !!master.available,
             selected,
@@ -171,7 +173,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         const nextKey = iconStateKey(state);
         if (iconKeyById.get(master.id) === nextKey) return false;
         iconKeyById.set(master.id, nextKey);
-        const photo = options.photoUrl(master.main_photo);
+        const photo = options.photoUrl(master.main_thumb_url ?? master.main_photo);
         marker.setIcon(buildMasterIcon(state, photo, master.name));
         return true;
     }

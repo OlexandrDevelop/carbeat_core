@@ -811,6 +811,7 @@
 </template>
 
 <script setup>
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
     Dialog,
     DialogPanel,
