@@ -21,7 +21,8 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/sitemap.xml', function () {
-    $sitemapPath = storage_path('app/public/sitemap.xml');
+    $brand = AppBrand::fromHost(request()->getHost());
+    $sitemapPath = storage_path("app/public/sitemap-{$brand->value}.xml");
 
     if (!file_exists($sitemapPath)) {
         abort(404, 'Sitemap not found');

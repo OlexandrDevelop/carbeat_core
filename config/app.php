@@ -53,6 +53,10 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'brand_urls' => [
+        'carbeat' => env('APP_URL_CARBEAT', env('APP_URL', 'https://carbeat.online')),
+        'floxcity' => env('APP_URL_FLOXCITY', 'https://flox.city'),
+    ],
 
     'claim_base_url' => env('CLAIM_BASE_URL', 'https://carbeat.online/claim'),
     'deep_links' => [
