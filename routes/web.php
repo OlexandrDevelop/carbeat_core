@@ -6,10 +6,19 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MasterStatusRequestWebController;
 use App\Http\Controllers\PublicGuestMapController;
 use App\Http\Controllers\PublicMasterController;
+use App\Http\Middleware\DetectApp;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Http\Request;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/sitemap.xml', function () {
     $sitemapPath = storage_path('app/public/sitemap.xml');
@@ -22,7 +31,17 @@ Route::get('/sitemap.xml', function () {
         'Content-Type' => 'application/xml; charset=utf-8',
         'Cache-Control' => 'public, max-age=300',
     ]);
-})->name('sitemap');
+})->withoutMiddleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+    SetLocale::class,
+    DetectApp::class,
+])->name('sitemap');
 
 Route::get('/robots.txt', function () {
     $content = implode("\n", [
@@ -35,7 +54,17 @@ Route::get('/robots.txt', function () {
     return response($content, 200, [
         'Content-Type' => 'text/plain; charset=utf-8',
     ]);
-})->name('robots');
+})->withoutMiddleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+    SetLocale::class,
+    DetectApp::class,
+])->name('robots');
 
 Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
 Route::get('/city/{citySlug}', [PublicGuestMapController::class, 'showCity'])->name('public.city.show');
