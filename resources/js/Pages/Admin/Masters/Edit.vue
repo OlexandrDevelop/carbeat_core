@@ -12,7 +12,7 @@
                 <div class="flex items-center gap-2">
                     <a
                         v-if="master?.slug"
-                        :href="`/sto/${master.slug}`"
+                        :href="publicProfileUrl(master.slug)"
                         target="_blank"
                         rel="noopener"
                         class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -410,13 +410,14 @@
 </template>
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 const props = defineProps<{ masterId: number }>();
+const page = usePage();
 
 const master = ref<any>(null);
 const saving = ref(false);
@@ -474,11 +475,18 @@ const premiumExpiresLabel = computed(() => {
     if (!master.value?.premium_until) return '—';
     return new Date(master.value.premium_until).toLocaleString();
 });
+const publicProfilePrefix = computed(() =>
+    (page.props as { brand?: string }).brand === 'floxcity' ? '/salon' : '/sto',
+);
 function openPreview(url: string) {
     previewUrl.value = url;
 }
 function closePreview() {
     previewUrl.value = null;
+}
+
+function publicProfileUrl(slug: string): string {
+    return `${publicProfilePrefix.value}/${encodeURIComponent(slug)}`;
 }
 
 let map: L.Map | null = null;

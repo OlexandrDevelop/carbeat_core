@@ -117,7 +117,7 @@ class SeoContentAdminService
                     "master:{$master->slug}",
                     'master',
                     $master->name,
-                    "/sto/{$master->slug}",
+                    $this->profilePath((string) $master->slug),
                     $default,
                 );
             });
@@ -265,5 +265,12 @@ class SeoContentAdminService
     private function brandName(): string
     {
         return $this->brand() === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+    }
+
+    private function profilePath(string $slug): string
+    {
+        return $this->brand() === AppBrand::FLOXCITY
+            ? "/salon/{$slug}"
+            : "/sto/{$slug}";
     }
 }

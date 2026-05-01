@@ -132,6 +132,7 @@ class PublicGuestMapController extends Controller
         return Inertia::render($page, [
             'apiBase' => '/api',
             'mapPath' => route('landing'),
+            'profilePathPrefix' => $this->brand() === AppBrand::FLOXCITY ? '/salon' : '/sto',
             'initialMapView' => $initialMapView,
             'initialSelectedMaster' => $initialSelectedMaster,
             'initialServiceId' => $initialServiceId,
@@ -264,7 +265,7 @@ class PublicGuestMapController extends Controller
             160,
         );
 
-        $canonical = route('public.sto.show', ['slug' => $selectedMaster['slug']]);
+        $canonical = $this->profileUrl((string) $selectedMaster['slug']);
         $faq = [
             [
                 'q' => "How to contact {$selectedMaster['name']}?",
@@ -472,7 +473,7 @@ class PublicGuestMapController extends Controller
             'breadcrumbs' => array_values(array_filter([
                 ['label' => 'Map', 'href' => route('landing')],
                 $citySlug ? ['label' => (string) $master['city'], 'href' => route('public.city.show', ['citySlug' => $citySlug])] : null,
-                ['label' => $master['name'], 'href' => route('public.sto.show', ['slug' => $master['slug']])],
+                ['label' => $master['name'], 'href' => $this->profileUrl((string) $master['slug'])],
             ])),
             'stats' => array_values(array_filter([
                 $master['address'] ? ['label' => 'Address', 'value' => $master['address']] : null,
@@ -487,7 +488,7 @@ class PublicGuestMapController extends Controller
                             'citySlug' => $citySlug,
                             'serviceSlug' => Str::slug((string) $service['name']),
                         ])
-                        : route('public.sto.show', ['slug' => $master['slug']]),
+                        : $this->profileUrl((string) $master['slug']),
                 ])
                 ->values()
                 ->all(),
@@ -640,7 +641,7 @@ class PublicGuestMapController extends Controller
                 ->map(fn (Master $master, int $index) => [
                     '@type' => 'ListItem',
                     'position' => $index + 1,
-                    'url' => route('public.sto.show', ['slug' => $master->slug]),
+                    'url' => $this->profileUrl((string) $master->slug),
                     'name' => $master->name,
                 ])
                 ->all(),
@@ -837,5 +838,19 @@ class PublicGuestMapController extends Controller
     private function brandName(): string
     {
         return $this->brand() === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+    }
+
+    private function profileUrl(string $slug, ?AppBrand $brand = null): string
+    {
+        return route($this->profileRouteName($brand), ['slug' => $slug]);
+    }
+
+    private function profileRouteName(?AppBrand $brand = null): string
+    {
+        $brand ??= $this->brand();
+
+        return $brand === AppBrand::FLOXCITY
+            ? 'public.salon.show'
+            : 'public.sto.show';
     }
 }

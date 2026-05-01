@@ -41,7 +41,7 @@ class GenerateSitemap extends Command
         Master::select(['slug', 'updated_at'])->chunk(100, function ($masters) use ($sitemap) {
             foreach ($masters as $master) {
                 $sitemap->add(
-                    Url::create($this->absoluteUrl("/sto/{$master->slug}"))
+                    Url::create($this->absoluteUrl($this->profilePath($master->slug)))
                         ->setLastModificationDate($master->updated_at)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
                         ->setPriority(0.8)
@@ -83,6 +83,13 @@ class GenerateSitemap extends Command
     private function absoluteUrl(string $path): string
     {
         return rtrim((string) config('app.url'), '/') . $path;
+    }
+
+    private function profilePath(string $slug): string
+    {
+        return appBrand() === AppBrand::FLOXCITY
+            ? "/salon/{$slug}"
+            : "/sto/{$slug}";
     }
 
     private function baseUrl(AppBrand $brand): string

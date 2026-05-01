@@ -107,6 +107,7 @@ const props = defineProps<{
     apiBase: string;
     flavor?: Flavor;
     mapPath?: string;
+    profilePathPrefix?: string;
     initialMapView?: { center: [number, number]; zoom: number } | null;
     initialServiceId?: number | null;
     initialSelectedMaster?: MasterDetails | null;
@@ -382,7 +383,8 @@ function currentOrigin(): string | null {
 }
 
 function buildMasterPath(slug?: string | null): string {
-    return slug ? `/sto/${encodeURIComponent(slug)}` : baseMapPath.value;
+    const prefix = props.profilePathPrefix ?? '/sto';
+    return slug ? `${prefix}/${encodeURIComponent(slug)}` : baseMapPath.value;
 }
 
 function buildCanonicalUrl(path: string): string {
@@ -1647,7 +1649,7 @@ onBeforeUnmount(() => {
                                 <a
                                     v-for="master in seoContent.topMasters"
                                     :key="master.slug"
-                                    :href="`/sto/${master.slug}`"
+                                    :href="buildMasterPath(master.slug)"
                                     class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
                                 >
                                     <div class="flex items-start justify-between gap-4">
