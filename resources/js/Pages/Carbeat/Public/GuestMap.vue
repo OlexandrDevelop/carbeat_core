@@ -525,6 +525,11 @@ const structuredDataJson = computed(() =>
         ? JSON.stringify(pageSeo.value.structuredData)
         : '',
 );
+const clarityScript = computed(() =>
+    `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "${
+        isFloxcity.value ? 'wntdc7yqgq' : 'wntbe61vi0'
+    }");`,
+);
 
 const mapViewportClasses = computed(() =>
     hasVisibleSeoContent.value
@@ -993,6 +998,11 @@ onBeforeUnmount(() => {
         <meta name="twitter:title" :content="pageSeo.title" />
         <meta name="twitter:description" :content="pageSeo.description" />
         <meta v-if="pageSeo.ogImage" name="twitter:image" :content="pageSeo.ogImage" />
+        <component
+            :is="'script'"
+            type="text/javascript"
+            v-text="clarityScript"
+        />
         <component
             :is="'script'"
             v-if="structuredDataJson"
