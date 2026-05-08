@@ -10,10 +10,10 @@
                 name="keywords"
                 content="майстер краси, манікюр, перукар, косметолог, масаж, салон краси, запис до майстра, floxcity, пошук майстра краси, Україна"
             />
-            <link rel="canonical" href="https://flox.city/" />
+            <link rel="canonical" href="https://flox.city/landing" />
             <meta name="robots" content="index, follow" />
             <meta property="og:type" content="website" />
-            <meta property="og:url" content="https://flox.city/" />
+            <meta property="og:url" content="https://flox.city/landing" />
             <meta
                 property="og:title"
                 content="Floxcity — Пошук майстрів краси та салонів в Україні"
@@ -29,7 +29,7 @@
             <meta property="og:site_name" content="Floxcity" />
             <meta property="og:locale" content="uk_UA" />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:url" content="https://flox.city/" />
+            <meta name="twitter:url" content="https://flox.city/landing" />
             <meta
                 name="twitter:title"
                 content="Floxcity — Пошук майстрів краси та салонів в Україні"
@@ -953,7 +953,7 @@ const jsonLd = computed(() =>
                 ratingValue: '4.8',
                 ratingCount: '123',
             },
-            url: 'https://flox.city/',
+            url: 'https://flox.city/landing',
             description:
                 'Безкоштовна платформа для пошуку майстрів краси, манікюру, перукарів, косметологів та салонів по всій Україні.',
         },
@@ -970,7 +970,7 @@ const jsonLd = computed(() =>
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Floxcity',
-            url: 'https://flox.city/',
+            url: 'https://flox.city/landing',
             contactPoint: {
                 '@type': 'ContactPoint',
                 email: 'admin@flox.city',

@@ -12,10 +12,10 @@
                 name="keywords"
                 content="автосервіс, СТО, ремонт авто, шиномонтаж, розвал-сход, заміна масла, запис на СТО, carbeat, пошук автосервісу, Україна"
             />
-            <link rel="canonical" href="https://carbeat.online/" />
+            <link rel="canonical" href="https://carbeat.online/landing" />
             <meta name="robots" content="index, follow" />
             <meta property="og:type" content="website" />
-            <meta property="og:url" content="https://carbeat.online/" />
+            <meta property="og:url" content="https://carbeat.online/landing" />
             <meta
                 property="og:title"
                 content="Carbeat — Пошук автосервісів та майстрів для ремонту авто"
@@ -31,7 +31,7 @@
             <meta property="og:site_name" content="Carbeat" />
             <meta property="og:locale" content="uk_UA" />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:url" content="https://carbeat.online/" />
+            <meta name="twitter:url" content="https://carbeat.online/landing" />
             <meta
                 name="twitter:title"
                 content="Carbeat — Пошук автосервісів та майстрів для ремонту авто"
@@ -956,7 +956,7 @@ const jsonLd = computed(() =>
                 ratingValue: '4.5',
                 ratingCount: '123',
             },
-            url: 'https://carbeat.online/',
+            url: 'https://carbeat.online/landing',
             description:
                 'Безкоштовна платформа для пошуку автосервісів (СТО) та майстрів для ремонту авто по всій Україні.',
         },
@@ -973,7 +973,7 @@ const jsonLd = computed(() =>
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Carbeat',
-            url: 'https://carbeat.online/',
+            url: 'https://carbeat.online/landing',
             contactPoint: {
                 '@type': 'ContactPoint',
                 email: 'admin@carbeat.online',

@@ -44,6 +44,25 @@ class LandingController extends Controller
             ],
         ];
 
+        $seo = match ($brand) {
+            AppBrand::FLOXCITY => [
+                'title' => 'Floxcity — Пошук майстрів краси та салонів в Україні',
+                'description' => 'Знайдіть майстра манікюру, перукаря, косметолога або масажиста поряд з вами. Відгуки, портфоліо, запис онлайн — безкоштовно в Floxcity.',
+                'canonical' => 'https://flox.city/landing',
+                'robots' => 'index, follow',
+                'ogImage' => 'https://flox.city/og-image.jpg',
+                'structuredData' => $structuredData,
+            ],
+            default => [
+                'title' => 'Carbeat — Пошук автосервісів та майстрів для ремонту авто',
+                'description' => 'Знайдіть перевірений автосервіс (СТО) або майстра для ремонту авто поряд з вами. Відгуки, послуги, контакти — все в безкоштовному додатку Carbeat.',
+                'canonical' => 'https://carbeat.online/landing',
+                'robots' => 'index, follow',
+                'ogImage' => 'https://carbeat.online/og-image.jpg',
+                'structuredData' => $structuredData,
+            ],
+        };
+
         $page = match ($brand) {
             AppBrand::FLOXCITY => 'Floxcity/Landing',
             default            => 'Carbeat/Landing',
@@ -56,6 +75,7 @@ class LandingController extends Controller
             'privacyUrl' => route('privacy'),
             'dataDeletionUrl' => route('data_deletion'),
             'playMarketUrl' => $brandData['playMarketUrl'],
+            'seo' => $seo,
             'structuredData' => $structuredData,
         ]);
     }
