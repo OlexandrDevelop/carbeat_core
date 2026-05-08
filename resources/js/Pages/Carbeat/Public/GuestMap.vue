@@ -1997,39 +1997,43 @@ onBeforeUnmount(() => {
 }
 
 :global(.master-marker.active-marker) {
-    width: 58px;
-    height: 74px;
-    border-radius: 9999px;
-    transform: translateY(-8px) scale(1.04);
+    width: 56px;
+    height: 72px;
+    transform: translateY(-8px) scale(1.02);
     box-shadow: none;
 }
 
-:global(.master-marker.active-marker::before) {
-    content: '';
+:global(.marker-pin-shape) {
     position: absolute;
-    left: 50%;
-    bottom: 3px;
-    width: 20px;
-    height: 24px;
-    background: rgba(255, 255, 255, 0.98);
-    clip-path: polygon(50% 100%, 0 0, 100% 0);
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
-    transform: translateX(-50%);
-    z-index: 0;
+    inset: 0;
+    width: 56px;
+    height: 72px;
+    overflow: visible;
+    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.22));
 }
 
-:global(.master-marker.active-marker .master-marker-face) {
+:global(.marker-pin-fill) {
+    fill: rgba(255, 255, 255, 0.98);
+}
+
+:global(.marker-pin-ring) {
+    fill: none;
+    stroke: rgba(var(--brand-primary-rgb), 0.22);
+    stroke-width: 3;
+}
+
+:global(.master-marker.active-marker .marker-pin-avatar) {
     position: absolute;
-    top: 0;
+    top: 8px;
     left: 50%;
-    width: 54px;
-    height: 54px;
+    width: 40px;
+    height: 40px;
     border-radius: 9999px;
     border-color: rgba(255, 255, 255, 0.98);
     transform: translateX(-50%);
     z-index: 1;
     box-shadow:
-        0 0 0 3px rgba(var(--brand-primary-rgb), 0.22),
+        0 0 0 2px rgba(var(--brand-primary-rgb), 0.28),
         0 8px 20px rgba(15, 23, 42, 0.22);
 }
 

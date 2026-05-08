@@ -95,15 +95,22 @@ function buildMasterIcon(
     const loadingMode = state.selected ? 'eager' : 'lazy';
     const fetchPriority = state.selected ? 'high' : 'low';
     const decodingMode = state.selected ? 'sync' : 'async';
-    const inner = showPhoto
+    const avatarInner = showPhoto
         ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
     const iconSize: [number, number] = state.selected ? [56, 72] : [44, 44];
     const iconAnchor: [number, number] = state.selected ? [28, 62] : [22, 22];
+    const inner = state.selected
+        ? `<svg class="marker-pin-shape" viewBox="0 0 56 72" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                <path class="marker-pin-fill" d="M28 70C28 70 50 45.5 50 27C50 14.85 40.15 5 28 5C15.85 5 6 14.85 6 27C6 45.5 28 70 28 70Z"/>
+                <circle class="marker-pin-ring" cx="28" cy="27" r="18.5"/>
+            </svg>
+            <div class="master-marker-face marker-pin-avatar">${avatarInner}</div>`
+        : `<div class="master-marker-face">${avatarInner}</div>`;
 
     const icon = L.divIcon({
         className: 'master-marker-wrapper',
-        html: `<div class="master-marker ${availabilityClass} ${activeClass}"><div class="master-marker-face">${inner}</div></div>`,
+        html: `<div class="master-marker ${availabilityClass} ${activeClass}">${inner}</div>`,
         iconSize,
         iconAnchor,
     });
