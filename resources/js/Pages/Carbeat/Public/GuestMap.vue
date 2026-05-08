@@ -16,6 +16,7 @@ import {
 } from '@headlessui/vue';
 import { Head } from '@inertiajs/vue3';
 import { io } from 'socket.io-client';
+import { resolveSocketPath, resolveSocketUrl } from '@/lib/socket-config';
 import {
     computed,
     nextTick,
@@ -952,9 +953,8 @@ onMounted(async () => {
         });
     }
 
-    const socketUrl =
-        import.meta.env.VITE_SOCKET_IO_URL || window.location.origin;
-    const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+    const socketUrl = resolveSocketUrl();
+    const socketPath = resolveSocketPath();
     socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         path: socketPath,

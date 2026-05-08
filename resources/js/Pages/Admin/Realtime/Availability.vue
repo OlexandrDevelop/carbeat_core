@@ -150,6 +150,7 @@
 
 <script setup lang="ts">
 import { io } from 'socket.io-client';
+import { resolveSocketPath, resolveSocketUrl } from '@/lib/socket-config';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 // UI state
@@ -248,8 +249,8 @@ function clearAll() {
 let socket: any = null;
 onMounted(() => {
     try {
-        const socketUrl = import.meta.env.VITE_SOCKET_IO_URL || '/';
-        const socketPath = import.meta.env.VITE_SOCKET_IO_PATH || '/socket.io/';
+        const socketUrl = resolveSocketUrl();
+        const socketPath = resolveSocketPath();
         socket = io(socketUrl, { path: socketPath });
         socket.on('connect', () => {
             connected.value = true;
