@@ -1942,14 +1942,26 @@ onBeforeUnmount(() => {
     width: 44px;
     height: 44px;
     border-radius: 9999px;
-    border: 2px solid rgba(255, 255, 255, 0.80);
-    overflow: hidden;
     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24);
     transform: translateZ(0);
     transition:
         transform 0.18s ease,
         box-shadow 0.18s ease,
         border-color 0.18s ease;
+}
+
+:global(.master-marker-face) {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+    background: #fff;
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        border-radius 0.18s ease;
 }
 
 :global(.master-marker::after) {
@@ -1968,22 +1980,35 @@ onBeforeUnmount(() => {
 }
 
 :global(.master-marker.available-marker) {
-    border-color: #34d399;
     box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.28), 0 4px 14px rgba(15, 23, 42, 0.24);
     animation: marker-pulse 1.8s infinite ease-in-out;
 }
 
+:global(.master-marker.available-marker .master-marker-face) {
+    border-color: #34d399;
+}
+
 :global(.master-marker.unavailable-marker) {
-    border-color: #f87171;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
+:global(.master-marker.unavailable-marker .master-marker-face) {
+    border-color: #f87171;
+}
+
 :global(.master-marker.active-marker) {
-    transform: translateY(-4px) scale(1.24);
-    border-color: rgba(255, 255, 255, 0.98);
+    width: 56px;
+    height: 56px;
+    border-radius: 18px 18px 18px 4px;
+    transform: translateY(-6px) rotate(-45deg) scale(1.02);
     box-shadow:
         0 0 0 4px rgba(var(--brand-primary-rgb), 0.22),
         0 10px 26px rgba(15, 23, 42, 0.30);
+}
+
+:global(.master-marker.active-marker .master-marker-face) {
+    border-color: rgba(255, 255, 255, 0.98);
+    transform: rotate(45deg);
 }
 
 :global(.master-marker.active-marker::after) {
@@ -1992,7 +2017,7 @@ onBeforeUnmount(() => {
     border-color: rgba(var(--brand-primary-rgb), 0.46);
 }
 
-:global(.master-marker:hover) {
+:global(.master-marker:not(.active-marker):hover) {
     transform: translateY(-2px) scale(1.1);
 }
 

@@ -98,12 +98,14 @@ function buildMasterIcon(
     const inner = showPhoto
         ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
+    const iconSize: [number, number] = state.selected ? [56, 56] : [44, 44];
+    const iconAnchor: [number, number] = state.selected ? [28, 50] : [22, 22];
 
     const icon = L.divIcon({
         className: 'master-marker-wrapper',
-        html: `<div class="master-marker ${availabilityClass} ${activeClass}">${inner}</div>`,
-        iconSize: [44, 44],
-        iconAnchor: [22, 22],
+        html: `<div class="master-marker ${availabilityClass} ${activeClass}"><div class="master-marker-face">${inner}</div></div>`,
+        iconSize,
+        iconAnchor,
     });
 
     if (sharedKey) sharedIconCache.set(sharedKey, icon);
