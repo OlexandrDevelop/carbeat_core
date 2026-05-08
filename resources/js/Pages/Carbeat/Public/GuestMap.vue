@@ -1998,23 +1998,53 @@ onBeforeUnmount(() => {
 
 :global(.master-marker.active-marker) {
     width: 56px;
-    height: 56px;
-    border-radius: 18px 18px 18px 4px;
-    transform: translateY(-6px) rotate(-45deg) scale(1.02);
+    height: 72px;
+    border-radius: 9999px;
+    transform: translateY(-8px) scale(1.04);
     box-shadow:
         0 0 0 4px rgba(var(--brand-primary-rgb), 0.22),
         0 10px 26px rgba(15, 23, 42, 0.30);
 }
 
+:global(.master-marker.active-marker::before) {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 7px;
+    width: 22px;
+    height: 22px;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(229, 231, 235, 0.96));
+    border-radius: 4px 4px 12px 4px;
+    border: 2px solid rgba(255, 255, 255, 0.98);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    transform: translateX(-50%) rotate(45deg);
+    z-index: 0;
+}
+
 :global(.master-marker.active-marker .master-marker-face) {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    border-radius: 9999px;
     border-color: rgba(255, 255, 255, 0.98);
-    transform: rotate(45deg);
+    transform: translateX(-50%);
+    z-index: 1;
+    box-shadow:
+        0 0 0 3px rgba(var(--brand-primary-rgb), 0.18),
+        0 8px 20px rgba(15, 23, 42, 0.22);
 }
 
 :global(.master-marker.active-marker::after) {
     opacity: 1;
     transform: scale(1);
     border-color: rgba(var(--brand-primary-rgb), 0.46);
+    inset: -4px auto auto 50%;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
 }
 
 :global(.master-marker:not(.active-marker):hover) {

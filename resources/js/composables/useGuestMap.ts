@@ -98,8 +98,8 @@ function buildMasterIcon(
     const inner = showPhoto
         ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
-    const iconSize: [number, number] = state.selected ? [56, 56] : [44, 44];
-    const iconAnchor: [number, number] = state.selected ? [28, 50] : [22, 22];
+    const iconSize: [number, number] = state.selected ? [56, 72] : [44, 44];
+    const iconAnchor: [number, number] = state.selected ? [28, 62] : [22, 22];
 
     const icon = L.divIcon({
         className: 'master-marker-wrapper',
