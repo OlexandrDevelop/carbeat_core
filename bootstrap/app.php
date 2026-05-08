@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active.subscription' => \App\Http\Middleware\EnsureActiveSubscription::class,
             'plan.feature' => \App\Http\Middleware\EnsurePlanAllowsFeature::class,
             'admin.brand' => AdminBrand::class,
+            'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

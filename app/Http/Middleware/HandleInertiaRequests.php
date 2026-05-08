@@ -38,7 +38,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'ziggy' => fn () => [
-                ...(new Ziggy)->toArray(),
+                ...(new Ziggy($this->ziggyGroup($request)))->toArray(),
                 'location' => $request->url(),
             ],
             'locale' => App::getLocale(),
@@ -47,10 +47,14 @@ class HandleInertiaRequests extends Middleware
                     'messages' => trans('messages'),
                 ];
             },
-            'csrf_token' => csrf_token(),
             'brand' => config('app.client') instanceof AppBrand
                 ? config('app.client')->value
                 : AppBrand::CARBEAT->value,
         ];
+    }
+
+    private function ziggyGroup(Request $request): string
+    {
+        return $request->routeIs('admin.*') ? 'admin' : 'public';
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Services\Import\ImportServiceFactory;
 use App\Http\Services\Import\MechanicAdvisorImportService;
 use App\Http\Services\Import\RatelistImportService;
 use App\Models\Master;
+use App\Support\AdminAccess;
 use App\Observers\MasterObserver;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\URL;
@@ -60,6 +61,14 @@ class AppServiceProvider extends ServiceProvider
         // Authorization: allow master owners to update their profiles
         Gate::define('update', function (User $user, Master $master): bool {
             return $master->user_id === $user->id;
+        });
+
+        Gate::define('viewPulse', function (?User $user): bool {
+            return AdminAccess::allows($user);
+        });
+
+        Gate::define('viewHorizon', function (?User $user): bool {
+            return AdminAccess::allows($user);
         });
     }
 }

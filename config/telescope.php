@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', true),
+    'enabled' => env('TELESCOPE_ENABLED', env('APP_ENV') === 'local'),
 
     /*
     |--------------------------------------------------------------------------
@@ -93,6 +93,8 @@ return [
 
     'middleware' => [
         'web',
+        'auth',
+        'admin.access',
         Authorize::class,
     ],
 

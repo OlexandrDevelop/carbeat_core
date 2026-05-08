@@ -72,7 +72,6 @@
     <body class="antialiased">
         @inertia
 
-        @routes
         @vite(['resources/js/app.ts', "resources/js/Pages/{$page['component']}.vue"])
     </body>
 </html>

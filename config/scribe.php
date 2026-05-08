@@ -66,7 +66,7 @@ return [
 
     'laravel' => [
         // Whether to automatically create a docs route for you to view your generated docs. You can still set up routing manually.
-        'add_routes' => true,
+        'add_routes' => env('SCRIBE_ENABLED', env('APP_ENV') === 'local'),
 
         // URL path to use for the docs endpoint (if `add_routes` is true).
         // By default, `/docs` opens the HTML page, `/docs.postman` opens the Postman collection, and `/docs.openapi` the OpenAPI spec.
@@ -78,7 +78,7 @@ return [
         'assets_directory' => null,
 
         // Middleware to attach to the docs endpoint (if `add_routes` is true).
-        'middleware' => [],
+        'middleware' => ['web', 'auth', 'admin.access'],
     ],
 
     'external' => [
