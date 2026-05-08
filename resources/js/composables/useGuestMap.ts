@@ -266,7 +266,8 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         if (!map || !cluster) return;
 
         const incoming = new Set<number>();
-        const toAdd: L.Marker[] = [];
+        const priorityToAdd: L.Marker[] = [];
+        const deferredToAdd: L.Marker[] = [];
         const toRemove: L.Marker[] = [];
         let shouldRefreshClusters = false;
 
@@ -297,7 +298,9 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             }
 
             const state = deriveState(master, master.id === selectedId);
-            const photo = options.photoUrl(master.main_photo);
+            const photo = options.photoUrl(
+                master.main_thumb_url ?? master.main_photo,
+            );
             const marker = L.marker([master.latitude, master.longitude], {
                 icon: buildMasterIcon(state, photo, master.name),
                 keyboard: false,
@@ -318,7 +321,11 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
                 master.id;
             iconKeyById.set(master.id, iconStateKey(state));
             markersById.set(master.id, marker);
-            toAdd.push(marker);
+            if (master.id === selectedId) {
+                priorityToAdd.push(marker);
+            } else {
+                deferredToAdd.push(marker);
+            }
         }
 
         markersById.forEach((marker, id) => {
@@ -331,9 +338,23 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         });
 
         if (toRemove.length) cluster.removeLayers(toRemove);
-        if (toAdd.length) cluster.addLayers(toAdd);
-        if (shouldRefreshClusters || toAdd.length || toRemove.length) {
+        if (priorityToAdd.length) cluster.addLayers(priorityToAdd);
+        if (shouldRefreshClusters || priorityToAdd.length || toRemove.length) {
             cluster.refreshClusters?.();
+        }
+
+        if (deferredToAdd.length) {
+            const enqueueDeferred = () => {
+                if (!cluster) return;
+                cluster.addLayers(deferredToAdd);
+                cluster.refreshClusters?.();
+            };
+
+            if (typeof window !== 'undefined') {
+                window.setTimeout(enqueueDeferred, 0);
+            } else {
+                enqueueDeferred();
+            }
         }
     }
 
