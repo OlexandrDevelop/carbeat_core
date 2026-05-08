@@ -944,14 +944,15 @@ onMounted(async () => {
         zoom: initialZoom,
     });
 
-    await Promise.all([loadServices(), loadMasters()]);
-
     if (props.initialSelectedMaster?.id) {
+        guestMap.syncMasters([{ ...props.initialSelectedMaster }]);
         guestMap.setSelected(props.initialSelectedMaster.id, {
             reveal: true,
             offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
         });
     }
+
+    await Promise.all([loadServices(), loadMasters()]);
 
     const socketUrl = resolveSocketUrl();
     const socketPath = resolveSocketPath();

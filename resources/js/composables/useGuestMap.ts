@@ -92,8 +92,11 @@ function buildMasterIcon(
         ? 'available-marker'
         : 'unavailable-marker';
     const activeClass = state.selected ? 'active-marker' : '';
+    const loadingMode = state.selected ? 'eager' : 'lazy';
+    const fetchPriority = state.selected ? 'high' : 'low';
+    const decodingMode = state.selected ? 'sync' : 'async';
     const inner = showPhoto
-        ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="lazy" decoding="async" class="marker-avatar-img" />`
+        ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
 
     const icon = L.divIcon({
@@ -351,7 +354,13 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             };
 
             if (typeof window !== 'undefined') {
-                window.setTimeout(enqueueDeferred, 0);
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(() => {
+                        window.setTimeout(enqueueDeferred, priorityToAdd.length ? 180 : 0);
+                    });
+                } else {
+                    window.setTimeout(enqueueDeferred, priorityToAdd.length ? 180 : 0);
+                }
             } else {
                 enqueueDeferred();
             }
