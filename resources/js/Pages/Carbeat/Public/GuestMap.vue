@@ -944,6 +944,9 @@ onMounted(async () => {
         zoom: initialZoom,
     });
 
+    void loadServices();
+    void loadMasters();
+
     if (props.initialSelectedMaster?.id) {
         guestMap.syncMasters([{ ...props.initialSelectedMaster }]);
         guestMap.setSelected(props.initialSelectedMaster.id, {
@@ -951,8 +954,6 @@ onMounted(async () => {
             offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
         });
     }
-
-    await Promise.all([loadServices(), loadMasters()]);
 
     const socketUrl = resolveSocketUrl();
     const socketPath = resolveSocketPath();
