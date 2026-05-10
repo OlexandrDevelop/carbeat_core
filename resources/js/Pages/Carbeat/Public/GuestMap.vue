@@ -2001,6 +2001,7 @@ onBeforeUnmount(() => {
     height: 72px;
     transform: translateY(-8px) scale(1.02);
     box-shadow: none;
+    animation: none;
 }
 
 :global(.marker-pin-shape) {
