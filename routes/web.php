@@ -44,6 +44,60 @@ Route::get('/sitemap.xml', function () {
     DetectApp::class,
 ])->name('sitemap');
 
+Route::get('/sitemap-clean.xml', function () {
+    if (AppBrand::fromHost(request()->getHost()) !== AppBrand::CARBEAT) {
+        abort(404, 'Clean sitemap is only available for Carbeat');
+    }
+
+    $sitemapPath = storage_path('app/public/sitemap-clean.xml');
+
+    if (!file_exists($sitemapPath)) {
+        abort(404, 'Clean sitemap not found');
+    }
+
+    return response(file_get_contents($sitemapPath), 200, [
+        'Content-Type' => 'application/xml; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
+})->withoutMiddleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+    SetLocale::class,
+    DetectApp::class,
+])->name('sitemap.clean');
+
+Route::get('/sitemap-sto.xml', function () {
+    if (AppBrand::fromHost(request()->getHost()) !== AppBrand::CARBEAT) {
+        abort(404, 'STO sitemap is only available for Carbeat');
+    }
+
+    $sitemapPath = storage_path('app/public/sitemap-carbeat.xml');
+
+    if (!file_exists($sitemapPath)) {
+        abort(404, 'STO sitemap not found');
+    }
+
+    return response(file_get_contents($sitemapPath), 200, [
+        'Content-Type' => 'application/xml; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=300',
+    ]);
+})->withoutMiddleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+    SetLocale::class,
+    DetectApp::class,
+])->name('sitemap.sto');
+
 Route::get('/robots.txt', function () {
     $content = implode("\n", [
         'User-agent: *',

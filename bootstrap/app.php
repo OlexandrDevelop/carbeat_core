@@ -87,6 +87,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->onSuccess(fn () => Log::info('Sitemap generated successfully'))
             ->onFailure(fn () => Log::error('Failed to generate sitemap'));
 
+        $schedule->command('sitemap:generate-clean')
+            ->daily()
+            ->at('00:10')
+            ->onSuccess(fn () => Log::info('Clean sitemap generated successfully'))
+            ->onFailure(fn () => Log::error('Failed to generate clean sitemap'));
+
         $schedule->command('subscriptions:sync')
             ->twiceDaily(0, 12)
             ->runInBackground();
