@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use App\Enums\AppBrand;
 
 class DetectApp
@@ -22,6 +23,10 @@ class DetectApp
             $brand = AppBrand::fromHost($request->getHost());
         }
         config(['app.client' => $brand]);
+
+        // Ensure Laravel generates URLs for the actual incoming domain,
+        // not the hardcoded APP_URL. Matters when multiple domains hit the same container.
+        URL::forceRootUrl($request->getSchemeAndHttpHost());
 
         // Optionally load brand-specific config if present: config/brand/{brand}.php
         $brandConfigPath = config_path('brand/' . $brand->value . '.php');

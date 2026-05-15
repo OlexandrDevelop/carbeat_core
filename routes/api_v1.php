@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\UserStatusController;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\MasterCrmController;
 use App\Http\Controllers\Api\V1\MasterStatusRequestController;
 
 /*
@@ -134,6 +135,12 @@ Route::middleware('auth:api')->post('/master/update', [MasterController::class, 
 Route::middleware('auth:api')->post('/devices/tokens', [DeviceTokenController::class, 'store']);
 Route::post('/request-status', [MasterStatusRequestController::class, 'store']);
 Route::middleware('auth:api')->post('/status-requests/{masterStatusRequest}/respond', [MasterStatusRequestController::class, 'respond']);
+
+// Master CRM
+Route::middleware('auth:api')->prefix('crm')->group(function () {
+    Route::get('/snapshot', [MasterCrmController::class, 'snapshot']);
+    Route::post('/sync', [MasterCrmController::class, 'sync']);
+});
 
 
 Route::group(['middleware' => 'auth:api'], function () {

@@ -63,9 +63,29 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // ModelNotFoundException → clean 404 for API (no internal model class name exposed)
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['error' => 'not_found'], 404);
+            }
+        });
+
+        // HTTP exceptions (validation, auth, etc.) → structured JSON for API
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => $e->getMessage()], $e->getStatusCode());
+                $message = $e->getMessage();
+                // Avoid exposing empty or default framework messages
+                if (empty($message)) {
+                    $message = match ($e->getStatusCode()) {
+                        401 => 'Unauthorized',
+                        403 => 'Forbidden',
+                        404 => 'Not found',
+                        422 => 'Unprocessable content',
+                        429 => 'Too many requests',
+                        default => 'Server error',
+                    };
+                }
+                return response()->json(['message' => $message], $e->getStatusCode());
             }
 
             $brand = config('app.client') instanceof \App\Enums\AppBrand
@@ -76,6 +96,18 @@ return Application::configure(basePath: dirname(__DIR__))
             return \Inertia\Inertia::render($errorPage, ['status' => $e->getStatusCode()])
                 ->toResponse($request)
                 ->setStatusCode($e->getStatusCode());
+        });
+
+        // Catch-all: any unhandled Throwable on API routes → generic 500, never expose stack traces
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                Log::error('Unhandled API exception', [
+                    'exception' => get_class($e),
+                    'message'   => $e->getMessage(),
+                    'url'       => $request->fullUrl(),
+                ]);
+                return response()->json(['error' => 'server_error'], 500);
+            }
         });
 
         Integration::handles($exceptions);
