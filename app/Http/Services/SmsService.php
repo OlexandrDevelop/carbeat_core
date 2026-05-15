@@ -11,15 +11,25 @@ class SmsService
     public function generateAndSendCode(string $phone, int $length = 4, ?string $appHash = null): string
     {
         $code = str_pad(strval(random_int(0, pow(10, $length) - 1)), $length, '0', STR_PAD_LEFT);
-        // Cache for 5 minutes by requirement
         Cache::put('sms_code_'.$phone, $code, now()->addMinutes(5));
 
-        $res = TurboSMS::sendMessages($phone, $this->buildOtpMessage($code, $appHash));
-        $telegramService = new TelegramService();
+        try {
+            $res = TurboSMS::sendMessages($phone, $this->buildOtpMessage($code, $appHash));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('TurboSMS send failed', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \RuntimeException('sms_send_failed', 503, $e);
+        }
 
-        // Create formatted message for Telegram
-        $message = $this->formatSmsResultForTelegram($phone, $code, $res);
-        $telegramService->send($message);
+        try {
+            $telegramService = new TelegramService();
+            $message = $this->formatSmsResultForTelegram($phone, $code, $res);
+            $telegramService->send($message);
+        } catch (\Throwable) {
+            // Telegram notification failure must not affect SMS flow
+        }
 
         return $code;
     }

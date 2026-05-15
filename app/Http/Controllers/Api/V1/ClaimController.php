@@ -31,12 +31,18 @@ class ClaimController extends Controller
 
             return response()->json($result);
         } catch (Exception $e) {
-            $statusCode = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 400;
+            $code = $e->getCode();
+            if ($code === 409) {
+                return response()->json([
+                    'error'   => 'already_claimed',
+                    'message' => 'Цей профіль вже зайнятий іншим користувачем.',
+                ], 409);
+            }
 
             return response()->json([
-                'status' => 'already_claimed',
-                'message' => $e->getMessage(),
-            ], $statusCode);
+                'error'   => 'sms_failed',
+                'message' => 'Не вдалося надіслати SMS. Спробуйте ще раз.',
+            ], 400);
         }
     }
 

@@ -22,6 +22,9 @@ class ServiceService
     public function getServicesForMaster(int $masterId): Collection|array|LengthAwarePaginator
     {
         $master = Master::find($masterId);
+        if (! $master) {
+            return collect();
+        }
 
         return $master->services()->with('translations')->get();
     }

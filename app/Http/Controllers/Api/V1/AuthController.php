@@ -19,7 +19,15 @@ class AuthController extends Controller
     {
         $phone = $request->input('phone');
         $appHash = $request->input('app_hash'); // optional Android SMS Retriever app signature
-        $smsService->generateAndSendCode($phone, 4, $appHash);
+
+        try {
+            $smsService->generateAndSendCode($phone, 4, $appHash);
+        } catch (\Throwable) {
+            return response()->json([
+                'error'   => 'sms_send_failed',
+                'message' => 'Не вдалося надіслати SMS. Перевірте номер телефону та спробуйте ще раз.',
+            ], 503);
+        }
 
         // Check whether user+master already exist
         $needsRegistration = true;
