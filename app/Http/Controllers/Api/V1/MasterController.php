@@ -65,7 +65,7 @@ class MasterController extends Controller
      * @throws Exception
      */
     // Inject RealtimePublisher for publishing events
-    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService, RealtimePublisher $realtimePublisher): JsonResponse
+    public function verifyAndRegister(AddMasterRequest $request, MasterService $masterService, SmsService $smsService, UserService $userService, AppointmentRedisService $appointmentRedisService, TokenService $tokenService, RealtimePublisher $realtimePublisher, \App\Http\Services\MasterCrmService $crmService): JsonResponse
     {
         $data = $request->validated();
 
@@ -74,6 +74,8 @@ class MasterController extends Controller
         }
 
         $master = $masterService->createOrUpdate($data);
+
+        $crmService->ensureDefaultBay($master);
 
         $user = $userService->createOrUpdateFromMaster($master);
 

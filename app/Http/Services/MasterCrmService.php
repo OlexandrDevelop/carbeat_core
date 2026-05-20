@@ -12,6 +12,7 @@ use App\Models\MasterBay;
 use App\Models\MasterServiceCatalogItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class MasterCrmService
 {
@@ -102,7 +103,7 @@ class MasterCrmService
                 'unreadCount' => $t->unread_count,
                 'hasPhotoRequest' => (bool) $t->has_photo_request,
             ])->values()->all(),
-            'messagesByThreadId' => $messages->map(fn ($msgs) => $msgs->map(fn ($m) => [
+            'messagesByThreadId' => (object) $messages->map(fn ($msgs) => $msgs->map(fn ($m) => [
                 'id' => $m->uuid,
                 'threadId' => $m->thread_uuid,
                 'direction' => $m->direction,
@@ -113,6 +114,30 @@ class MasterCrmService
             'garageSettings' => $garageSettings,
             'lastSyncAt' => now()->toIso8601String(),
         ];
+    }
+
+    public function ensureDefaultBay(Master $master): void
+    {
+        $hasBay = MasterBay::withoutGlobalScope('app')
+            ->where('master_id', $master->id)
+            ->exists();
+
+        if ($hasBay) {
+            return;
+        }
+
+        $title = $master->app === 'floxcity' ? 'Крісло 1' : 'Бокс 1';
+
+        MasterBay::withoutGlobalScopes()->create([
+            'uuid'            => Str::uuid()->toString(),
+            'master_id'       => $master->id,
+            'title'           => $title,
+            'technician_name' => $master->name ?? '',
+            'is_active'       => true,
+            'display_order'   => 0,
+            'status'          => 'free',
+            'app'             => $master->app ?? 'carbeat',
+        ]);
     }
 
     public function applyChanges(Master $master, array $changes, string $businessDay): void

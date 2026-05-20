@@ -63,6 +63,13 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // AuthenticationException → 401 for API (must be before the catch-all \Throwable handler)
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+        });
+
         // ModelNotFoundException → clean 404 for API (no internal model class name exposed)
         $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
