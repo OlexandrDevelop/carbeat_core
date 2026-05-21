@@ -149,8 +149,8 @@
 </template>
 
 <script setup lang="ts">
-import { io } from 'socket.io-client';
 import { resolveSocketPath, resolveSocketUrl } from '@/lib/socket-config';
+import { io } from 'socket.io-client';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 // UI state

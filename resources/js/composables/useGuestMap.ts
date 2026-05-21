@@ -38,6 +38,25 @@ interface IconState {
     photoKey: string;
 }
 
+// viewBox "0 0 744.09 1052.4" — same SVG geometry as the Flutter mobile pin
+// Circle center (373, 370), radius 250 — evenodd rule creates a transparent hole for the photo
+const PIN_SVG_PATH =
+    'M373.3 58.058 C189.87 58.316 41.25 207.1 41.25 390.59 ' +
+    'c0 121.52 65.173 227.8 162.48 285.82 ' +
+    '94.942 70.715 159.22 180.26 169.37 305.13 ' +
+    'l0.19675 0.33729 0.0843-0.14058 0.0562 0.14058 ' +
+    '0.19675-0.33729 ' +
+    'c10.16-124.88 74.43-234.42 169.38-305.13 ' +
+    '97.312-58.012 162.48-164.3 162.48-285.82 ' +
+    '0-183.49-148.62-332.27-332.05-332.53 ' +
+    '-0.0469-0.000063-0.0937 0.000045-0.14053 0z ' +
+    'M373 120 a250 250 0 1 1 0 500 a250 250 0 1 1 0 -500 z';
+
+// SVG geometry fractions (matching Flutter constants)
+const PIN_CX_F = 373.0 / 744.09; // 0.5013
+const PIN_CY_F = 370.0 / 1052.4; // 0.3516
+const PIN_R_F = 250.0 / 744.09; // 0.3361
+
 const SVG_FALLBACK = `<div class="marker-avatar-fallback" aria-hidden="true">
     <svg class="marker-avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M14.3 3.8a1 1 0 0 1 1.4 0l4.5 4.5a1 1 0 0 1 0 1.4l-2.1 2.1-5.9-5.9 2.1-2.1Z" fill="currentColor"/>
@@ -78,41 +97,53 @@ function buildMasterIcon(
     name: string,
 ): L.DivIcon {
     const showPhoto = state.photoKey !== '' && !!photo;
-    // Master photos are unique per marker, so they bypass the shared cache.
+    // Master photos are unique per marker; only fallback icons share the cache.
     const sharedKey = showPhoto
         ? null
-        : `${state.available ? 'a' : 'u'}-${state.selected ? 's' : 'n'}-fallback`;
+        : `pin-${state.available ? 'a' : 'u'}-${state.selected ? 's' : 'n'}-fallback`;
 
     if (sharedKey) {
         const cached = sharedIconCache.get(sharedKey);
         if (cached) return cached;
     }
 
-    const availabilityClass = state.available
-        ? 'available-marker'
-        : 'unavailable-marker';
-    const activeClass = state.selected ? 'active-marker' : '';
+    const colorClass = state.selected
+        ? 'pin-active'
+        : state.available
+          ? 'pin-available'
+          : 'pin-unavailable';
+
     const loadingMode = state.selected ? 'eager' : 'lazy';
     const fetchPriority = state.selected ? 'high' : 'low';
     const decodingMode = state.selected ? 'sync' : 'async';
     const avatarInner = showPhoto
         ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
-    const iconSize: [number, number] = state.selected ? [56, 72] : [44, 44];
-    const iconAnchor: [number, number] = state.selected ? [28, 62] : [22, 22];
-    const inner = state.selected
-        ? `<svg class="marker-pin-shape" viewBox="0 0 56 72" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                <path class="marker-pin-fill" d="M28 70C28 70 50 45.5 50 27C50 14.85 40.15 5 28 5C15.85 5 6 14.85 6 27C6 45.5 28 70 28 70Z"/>
-                <circle class="marker-pin-ring" cx="28" cy="27" r="18.5"/>
-            </svg>
-            <div class="master-marker-face marker-pin-avatar">${avatarInner}</div>`
-        : `<div class="master-marker-face">${avatarInner}</div>`;
+
+    // Pin dimensions matching Flutter: width × (1052.4/744.09) aspect ratio
+    const pinW = state.selected ? 52 : 40;
+    const pinH = Math.round(pinW * (1052.4 / 744.09)); // 74 or 57
+
+    // Photo circle position derived from SVG geometry fractions
+    const cx = PIN_CX_F * pinW;
+    const cy = PIN_CY_F * pinH;
+    const r = PIN_R_F * pinW;
+    const bgL = Math.round((cx - r) * 10) / 10;
+    const bgT = Math.round((cy - r) * 10) / 10;
+    const bgD = Math.round(r * 2 * 10) / 10;
+
+    const inner = `
+        <div class="marker-bg" style="left:${bgL}px;top:${bgT}px;width:${bgD}px;height:${bgD}px">${avatarInner}</div>
+        <svg class="marker-pin-svg" viewBox="0 0 744.09 1052.4" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path class="marker-pin-path" fill-rule="evenodd" d="${PIN_SVG_PATH}"/>
+        </svg>`;
 
     const icon = L.divIcon({
         className: 'master-marker-wrapper',
-        html: `<div class="master-marker ${availabilityClass} ${activeClass}">${inner}</div>`,
-        iconSize,
-        iconAnchor,
+        html: `<div class="master-marker ${colorClass}">${inner}</div>`,
+        iconSize: [pinW, pinH],
+        // Anchor at the pin tip — bottom center
+        iconAnchor: [pinW / 2, pinH],
     });
 
     if (sharedKey) sharedIconCache.set(sharedKey, icon);
@@ -120,12 +151,32 @@ function buildMasterIcon(
 }
 
 function buildClusterIcon(count: number, hasAvailable: boolean): L.DivIcon {
-    const sizeBucket = count < 10 ? 'sm' : count < 100 ? 'md' : 'lg';
+    // Bucket sizes mirror Flutter ClusterCircle
+    const sizeBucket =
+        count < 10
+            ? 'sm'
+            : count < 100
+              ? 'md'
+              : count < 1000
+                ? 'lg'
+                : count < 10000
+                  ? 'xl'
+                  : 'xxl';
+    const px =
+        count < 10
+            ? 52
+            : count < 100
+              ? 60
+              : count < 1000
+                ? 72
+                : count < 10000
+                  ? 88
+                  : 104;
     return L.divIcon({
-        className: `cluster-marker cluster-${sizeBucket} ${hasAvailable ? 'cluster-has-available' : ''}`,
+        className: `cluster-marker cluster-${sizeBucket} ${hasAvailable ? 'cluster-has-available' : 'cluster-all-unavailable'}`,
         html: `<div class="cluster-inner">${count}</div>`,
-        iconSize: [42, 42],
-        iconAnchor: [21, 21],
+        iconSize: [px, px],
+        iconAnchor: [px / 2, px / 2],
     });
 }
 
@@ -185,7 +236,9 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         const nextKey = iconStateKey(state);
         if (iconKeyById.get(master.id) === nextKey) return false;
         iconKeyById.set(master.id, nextKey);
-        const photo = options.photoUrl(master.main_thumb_url ?? master.main_photo);
+        const photo = options.photoUrl(
+            master.main_thumb_url ?? master.main_photo,
+        );
         marker.setIcon(buildMasterIcon(state, photo, master.name));
         return true;
     }
@@ -365,10 +418,16 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             if (typeof window !== 'undefined') {
                 if (typeof window.requestIdleCallback === 'function') {
                     window.requestIdleCallback(() => {
-                        window.setTimeout(enqueueDeferred, priorityToAdd.length ? 180 : 0);
+                        window.setTimeout(
+                            enqueueDeferred,
+                            priorityToAdd.length ? 180 : 0,
+                        );
                     });
                 } else {
-                    window.setTimeout(enqueueDeferred, priorityToAdd.length ? 180 : 0);
+                    window.setTimeout(
+                        enqueueDeferred,
+                        priorityToAdd.length ? 180 : 0,
+                    );
                 }
             } else {
                 enqueueDeferred();
@@ -401,7 +460,10 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
                     if (!map) return;
 
                     const targetZoom = Math.max(map.getZoom(), 15);
-                    let targetLatLng = L.latLng(master.latitude, master.longitude);
+                    let targetLatLng = L.latLng(
+                        master.latitude,
+                        master.longitude,
+                    );
 
                     if (options.offsetY) {
                         const projected = map.project(targetLatLng, targetZoom);

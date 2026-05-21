@@ -1,12 +1,17 @@
 <template>
     <div class="space-y-8 p-6">
-        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div
+            class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between"
+        >
             <div>
                 <h1 class="text-2xl font-semibold">Smart Random Status</h1>
                 <p class="text-sm text-gray-600">
-                    Controls fake green statuses for imported STOs without exposing fake-vs-real to the client API.
+                    Controls fake green statuses for imported STOs without
+                    exposing fake-vs-real to the client API.
                 </p>
-                <p class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                <p
+                    class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500"
+                >
                     Flavor: {{ settings.app || 'carbeat' }}
                 </p>
             </div>
@@ -32,12 +37,18 @@
                         <button
                             type="button"
                             class="relative inline-flex h-7 w-14 items-center rounded-full transition"
-                            :class="form.enabled ? 'bg-green-600' : 'bg-gray-300'"
+                            :class="
+                                form.enabled ? 'bg-green-600' : 'bg-gray-300'
+                            "
                             @click="form.enabled = !form.enabled"
                         >
                             <span
                                 class="inline-block h-5 w-5 transform rounded-full bg-white transition"
-                                :class="form.enabled ? 'translate-x-8' : 'translate-x-1'"
+                                :class="
+                                    form.enabled
+                                        ? 'translate-x-8'
+                                        : 'translate-x-1'
+                                "
                             />
                         </button>
                     </div>
@@ -47,10 +58,13 @@
                             <div>
                                 <h2 class="font-semibold">Percentage</h2>
                                 <p class="text-sm text-gray-500">
-                                    Target visible green density across the current brand.
+                                    Target visible green density across the
+                                    current brand.
                                 </p>
                             </div>
-                            <span class="text-lg font-semibold">{{ form.percentage }}%</span>
+                            <span class="text-lg font-semibold"
+                                >{{ form.percentage }}%</span
+                            >
                         </div>
                         <input
                             v-model.number="form.percentage"
@@ -75,7 +89,11 @@
                         </button>
                         <span
                             v-if="message.text"
-                            :class="message.type === 'error' ? 'text-red-700' : 'text-green-700'"
+                            :class="
+                                message.type === 'error'
+                                    ? 'text-red-700'
+                                    : 'text-green-700'
+                            "
                             class="text-sm"
                         >
                             {{ message.text }}
@@ -89,13 +107,17 @@
                         <div class="flex justify-between gap-4">
                             <dt>Global fallback window</dt>
                             <dd class="font-medium">
-                                {{ settings.global_window.start }} - {{ settings.global_window.end }}
+                                {{ settings.global_window.start }} -
+                                {{ settings.global_window.end }}
                             </dd>
                         </div>
                         <div class="flex justify-between gap-4">
                             <dt>Rotation interval</dt>
                             <dd class="font-medium">
-                                {{ settings.rotation_window_minutes.min }}-{{ settings.rotation_window_minutes.max }} min
+                                {{ settings.rotation_window_minutes.min }}-{{
+                                    settings.rotation_window_minutes.max
+                                }}
+                                min
                             </dd>
                         </div>
                         <div class="flex justify-between gap-4">
@@ -110,19 +132,27 @@
         <section class="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
             <article class="rounded border bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Total STOs</p>
-                <p class="mt-2 text-3xl font-semibold">{{ stats.total_stos }}</p>
+                <p class="mt-2 text-3xl font-semibold">
+                    {{ stats.total_stos }}
+                </p>
             </article>
             <article class="rounded border bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Green (Fake)</p>
-                <p class="mt-2 text-3xl font-semibold text-green-600">{{ stats.fake_green }}</p>
+                <p class="mt-2 text-3xl font-semibold text-green-600">
+                    {{ stats.fake_green }}
+                </p>
             </article>
             <article class="rounded border bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Green (Real/Manual)</p>
-                <p class="mt-2 text-3xl font-semibold text-emerald-700">{{ stats.real_green }}</p>
+                <p class="mt-2 text-3xl font-semibold text-emerald-700">
+                    {{ stats.real_green }}
+                </p>
             </article>
             <article class="rounded border bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">System</p>
-                <p class="mt-2 text-3xl font-semibold">{{ form.enabled ? 'On' : 'Off' }}</p>
+                <p class="mt-2 text-3xl font-semibold">
+                    {{ form.enabled ? 'On' : 'Off' }}
+                </p>
             </article>
         </section>
 
@@ -131,15 +161,21 @@
                 <div>
                     <h2 class="font-semibold">Fake Green STOs</h2>
                     <p class="text-sm text-gray-500">
-                        Current random green statuses for this brand. Turning one off removes the fake green marker immediately.
+                        Current random green statuses for this brand. Turning
+                        one off removes the fake green marker immediately.
                     </p>
                 </div>
-                <span class="rounded bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+                <span
+                    class="rounded bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+                >
                     {{ fakeMasters.length }} active
                 </span>
             </div>
 
-            <div v-if="fakeMasters.length === 0" class="mt-6 rounded border border-dashed p-8 text-center text-sm text-gray-500">
+            <div
+                v-if="fakeMasters.length === 0"
+                class="mt-6 rounded border border-dashed p-8 text-center text-sm text-gray-500"
+            >
                 No STOs are currently under fake green status.
             </div>
 
@@ -147,26 +183,58 @@
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left font-medium text-gray-600">STO</th>
-                            <th class="px-4 py-3 text-left font-medium text-gray-600">Address</th>
-                            <th class="px-4 py-3 text-left font-medium text-gray-600">Phone</th>
-                            <th class="px-4 py-3 text-left font-medium text-gray-600">Updated</th>
-                            <th class="px-4 py-3 text-right font-medium text-gray-600">Action</th>
+                            <th
+                                class="px-4 py-3 text-left font-medium text-gray-600"
+                            >
+                                STO
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-medium text-gray-600"
+                            >
+                                Address
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-medium text-gray-600"
+                            >
+                                Phone
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-medium text-gray-600"
+                            >
+                                Updated
+                            </th>
+                            <th
+                                class="px-4 py-3 text-right font-medium text-gray-600"
+                            >
+                                Action
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
                         <tr v-for="master in fakeMasters" :key="master.id">
-                            <td class="px-4 py-3 font-medium text-gray-900">{{ master.name }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ master.address || '—' }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ master.phone || '—' }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ formatDate(master.last_status_update) }}</td>
+                            <td class="px-4 py-3 font-medium text-gray-900">
+                                {{ master.name }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ master.address || '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ master.phone || '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ formatDate(master.last_status_update) }}
+                            </td>
                             <td class="px-4 py-3 text-right">
                                 <button
                                     @click="turnOff(master.id)"
                                     :disabled="turningOffId === master.id"
                                     class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
                                 >
-                                    {{ turningOffId === master.id ? 'Turning Off...' : 'Turn Off' }}
+                                    {{
+                                        turningOffId === master.id
+                                            ? 'Turning Off...'
+                                            : 'Turn Off'
+                                    }}
                                 </button>
                             </td>
                         </tr>
@@ -230,7 +298,11 @@ const load = async () => {
         const { data } = await axios.get('/admin-api/smart-random-status');
         applyPayload(data);
     } catch (error) {
-        showMessage('error', error?.response?.data?.message || 'Failed to load smart random status data');
+        showMessage(
+            'error',
+            error?.response?.data?.message ||
+                'Failed to load smart random status data',
+        );
     } finally {
         loading.value = false;
     }
@@ -241,11 +313,18 @@ const save = async () => {
 
     saving.value = true;
     try {
-        const { data } = await axios.put('/admin-api/smart-random-status', form.value);
+        const { data } = await axios.put(
+            '/admin-api/smart-random-status',
+            form.value,
+        );
         applyPayload(data);
         showMessage('success', 'Smart random status settings saved');
     } catch (error) {
-        showMessage('error', error?.response?.data?.message || 'Failed to save smart random status settings');
+        showMessage(
+            'error',
+            error?.response?.data?.message ||
+                'Failed to save smart random status settings',
+        );
     } finally {
         saving.value = false;
     }
@@ -256,12 +335,18 @@ const turnOff = async (masterId) => {
 
     turningOffId.value = masterId;
     try {
-        const { data } = await axios.post(`/admin-api/smart-random-status/${masterId}/turn-off`);
+        const { data } = await axios.post(
+            `/admin-api/smart-random-status/${masterId}/turn-off`,
+        );
         stats.value = data.stats;
         fakeMasters.value = data.fake_green_masters;
         showMessage('success', 'Fake green status turned off');
     } catch (error) {
-        showMessage('error', error?.response?.data?.message || 'Failed to turn off fake green status');
+        showMessage(
+            'error',
+            error?.response?.data?.message ||
+                'Failed to turn off fake green status',
+        );
     } finally {
         turningOffId.value = null;
     }

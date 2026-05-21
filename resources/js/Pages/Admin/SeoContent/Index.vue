@@ -1,11 +1,14 @@
 <template>
     <div class="space-y-6 p-6">
-        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div
+            class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+        >
             <div>
                 <h1 class="text-2xl font-semibold">SEO Content</h1>
                 <p class="mt-1 text-sm text-gray-600">
-                    Generated SEO texts are shown here. You can override any title,
-                    description, intro, sections or FAQ without code changes.
+                    Generated SEO texts are shown here. You can override any
+                    title, description, intro, sections or FAQ without code
+                    changes.
                 </p>
             </div>
             <a
@@ -54,15 +57,22 @@
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <div class="text-sm font-semibold text-gray-900">
+                                <div
+                                    class="text-sm font-semibold text-gray-900"
+                                >
                                     {{ entry.label }}
                                 </div>
-                                <div class="mt-1 text-xs uppercase tracking-wide text-gray-500">
+                                <div
+                                    class="mt-1 text-xs uppercase tracking-wide text-gray-500"
+                                >
                                     {{ entry.type }}
                                 </div>
                             </div>
                             <span
-                                v-if="entry.override && Object.keys(entry.override).length"
+                                v-if="
+                                    entry.override &&
+                                    Object.keys(entry.override).length
+                                "
                                 class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
                             >
                                 override
@@ -91,7 +101,10 @@
                 <div class="grid gap-6 xl:grid-cols-2">
                     <div class="space-y-5">
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Title override</label>
+                            <label
+                                class="mb-1 block text-sm font-medium text-gray-700"
+                                >Title override</label
+                            >
                             <input
                                 v-model="form.title"
                                 type="text"
@@ -100,7 +113,10 @@
                             />
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Meta description override</label>
+                            <label
+                                class="mb-1 block text-sm font-medium text-gray-700"
+                                >Meta description override</label
+                            >
                             <textarea
                                 v-model="form.description"
                                 rows="4"
@@ -109,7 +125,10 @@
                             />
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Intro override</label>
+                            <label
+                                class="mb-1 block text-sm font-medium text-gray-700"
+                                >Intro override</label
+                            >
                             <textarea
                                 v-model="form.intro"
                                 rows="5"
@@ -118,7 +137,10 @@
                             />
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Sections JSON override</label>
+                            <label
+                                class="mb-1 block text-sm font-medium text-gray-700"
+                                >Sections JSON override</label
+                            >
                             <textarea
                                 v-model="form.sectionsJson"
                                 rows="10"
@@ -126,7 +148,10 @@
                             />
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">FAQ JSON override</label>
+                            <label
+                                class="mb-1 block text-sm font-medium text-gray-700"
+                                >FAQ JSON override</label
+                            >
                             <textarea
                                 v-model="form.faqJson"
                                 rows="10"
@@ -154,7 +179,11 @@
                             <span
                                 v-if="message"
                                 class="text-sm"
-                                :class="messageType === 'error' ? 'text-red-700' : 'text-green-700'"
+                                :class="
+                                    messageType === 'error'
+                                        ? 'text-red-700'
+                                        : 'text-green-700'
+                                "
                             >
                                 {{ message }}
                             </span>
@@ -163,22 +192,38 @@
 
                     <div class="space-y-5">
                         <div class="rounded-xl border bg-gray-50 p-4">
-                            <h2 class="text-sm font-semibold text-gray-900">Current final preview</h2>
+                            <h2 class="text-sm font-semibold text-gray-900">
+                                Current final preview
+                            </h2>
                             <div class="mt-4 space-y-4">
                                 <div>
-                                    <div class="text-xs uppercase tracking-wide text-gray-500">Title</div>
-                                    <div class="mt-1 text-sm font-semibold text-gray-900">
+                                    <div
+                                        class="text-xs uppercase tracking-wide text-gray-500"
+                                    >
+                                        Title
+                                    </div>
+                                    <div
+                                        class="mt-1 text-sm font-semibold text-gray-900"
+                                    >
                                         {{ finalPreview.title }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-xs uppercase tracking-wide text-gray-500">Description</div>
+                                    <div
+                                        class="text-xs uppercase tracking-wide text-gray-500"
+                                    >
+                                        Description
+                                    </div>
                                     <div class="mt-1 text-sm text-gray-700">
                                         {{ finalPreview.description }}
                                     </div>
                                 </div>
                                 <div v-if="finalPreview.intro">
-                                    <div class="text-xs uppercase tracking-wide text-gray-500">Intro</div>
+                                    <div
+                                        class="text-xs uppercase tracking-wide text-gray-500"
+                                    >
+                                        Intro
+                                    </div>
                                     <div class="mt-1 text-sm text-gray-700">
                                         {{ finalPreview.intro }}
                                     </div>
@@ -187,13 +232,23 @@
                         </div>
 
                         <div class="rounded-xl border bg-gray-50 p-4">
-                            <h2 class="text-sm font-semibold text-gray-900">Default sections</h2>
-                            <pre class="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-gray-700">{{ pretty(selected.default.sections) }}</pre>
+                            <h2 class="text-sm font-semibold text-gray-900">
+                                Default sections
+                            </h2>
+                            <pre
+                                class="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-gray-700"
+                                >{{ pretty(selected.default.sections) }}</pre
+                            >
                         </div>
 
                         <div class="rounded-xl border bg-gray-50 p-4">
-                            <h2 class="text-sm font-semibold text-gray-900">Default FAQ</h2>
-                            <pre class="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-gray-700">{{ pretty(selected.default.faq) }}</pre>
+                            <h2 class="text-sm font-semibold text-gray-900">
+                                Default FAQ
+                            </h2>
+                            <pre
+                                class="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-gray-700"
+                                >{{ pretty(selected.default.faq) }}</pre
+                            >
                         </div>
                     </div>
                 </div>
@@ -291,7 +346,9 @@ async function load(): Promise<void> {
     }
 
     if (selected.value) {
-        const refreshed = entries.value.find((entry) => entry.key === selected.value?.key);
+        const refreshed = entries.value.find(
+            (entry) => entry.key === selected.value?.key,
+        );
         if (refreshed) {
             selectEntry(refreshed);
         }

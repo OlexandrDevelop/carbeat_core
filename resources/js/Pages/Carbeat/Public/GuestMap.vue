@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createCachedApi } from '@/composables/useCachedApi';
 import { useGuestMap, type Master } from '@/composables/useGuestMap';
+import { resolveSocketPath, resolveSocketUrl } from '@/lib/socket-config';
 import {
     SERVICE_LABELS,
     detectLanguageByRegion,
@@ -16,7 +17,6 @@ import {
 } from '@headlessui/vue';
 import { Head } from '@inertiajs/vue3';
 import { io } from 'socket.io-client';
-import { resolveSocketPath, resolveSocketUrl } from '@/lib/socket-config';
 import {
     computed,
     nextTick,
@@ -45,7 +45,10 @@ interface MasterDetails extends Master {
         user?: { name?: string };
     }>;
     photos?: Array<{ id: number; url: string }>;
-    working_hours?: Array<Record<string, unknown>> | Record<string, unknown> | null;
+    working_hours?:
+        | Array<Record<string, unknown>>
+        | Record<string, unknown>
+        | null;
     is_claimed?: boolean;
     claim_link?: string | null;
 }
@@ -124,8 +127,12 @@ const mapEl = ref<HTMLElement | null>(null);
 const services = ref<Service[]>([]);
 const selectedServiceId = ref<number | null>(props.initialServiceId ?? null);
 const availableOnly = ref(false);
-const selectedMaster = ref<MasterDetails | null>(props.initialSelectedMaster ?? null);
-const selectedMasterId = ref<number | null>(props.initialSelectedMaster?.id ?? null);
+const selectedMaster = ref<MasterDetails | null>(
+    props.initialSelectedMaster ?? null,
+);
+const selectedMasterId = ref<number | null>(
+    props.initialSelectedMaster?.id ?? null,
+);
 const currentMasters = ref<MasterDetails[]>(
     props.initialSelectedMaster ? [{ ...props.initialSelectedMaster }] : [],
 );
@@ -445,7 +452,10 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
         name: master.name,
         url: canonical,
         description,
-        image: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.svg',
+        image:
+            photoUrl(master.main_photo) ??
+            props.seo?.ogImage ??
+            '/og-image.svg',
         telephone: master.phone ?? undefined,
         geo: {
             '@type': 'GeoCoordinates',
@@ -480,13 +490,17 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
         description,
         canonical,
         robots: 'index, follow',
-        ogImage: photoUrl(master.main_photo) ?? props.seo?.ogImage ?? '/og-image.svg',
+        ogImage:
+            photoUrl(master.main_photo) ??
+            props.seo?.ogImage ??
+            '/og-image.svg',
         structuredData,
     };
 }
 
 const pageSeo = computed<SeoPayload>(() => {
-    if (selectedMaster.value?.slug) return buildSelectedMasterSeo(selectedMaster.value);
+    if (selectedMaster.value?.slug)
+        return buildSelectedMasterSeo(selectedMaster.value);
     return props.seo ?? buildGenericSeo();
 });
 
@@ -511,7 +525,10 @@ const semanticSubheading = computed(() => {
     }
 
     if (seoContent.value?.sections?.length) {
-        return seoContent.value.sections[0]?.heading ?? 'Compare nearby car service stations';
+        return (
+            seoContent.value.sections[0]?.heading ??
+            'Compare nearby car service stations'
+        );
     }
 
     return 'Compare nearby car service stations, ratings and available STO profiles';
@@ -526,10 +543,11 @@ const structuredDataJson = computed(() =>
         ? JSON.stringify(pageSeo.value.structuredData)
         : '',
 );
-const clarityScript = computed(() =>
-    `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "${
-        isFloxcity.value ? 'wntdc7yqgq' : 'wntbe61vi0'
-    }");`,
+const clarityScript = computed(
+    () =>
+        `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "${
+            isFloxcity.value ? 'wntdc7yqgq' : 'wntbe61vi0'
+        }");`,
 );
 
 const mapViewportClasses = computed(() =>
@@ -933,7 +951,10 @@ onMounted(async () => {
         typeof props.initialSelectedMaster?.longitude === 'number' &&
         Number.isFinite(props.initialSelectedMaster.longitude);
     const initialCenter = hasInitialCoordinates
-        ? [props.initialSelectedMaster!.latitude, props.initialSelectedMaster!.longitude]
+        ? [
+              props.initialSelectedMaster!.latitude,
+              props.initialSelectedMaster!.longitude,
+          ]
         : (props.initialMapView?.center ?? [50.4501, 30.5234]);
     const initialZoom = props.initialSelectedMaster
         ? 14
@@ -995,11 +1016,19 @@ onBeforeUnmount(() => {
         <meta property="og:title" :content="pageSeo.title" />
         <meta property="og:description" :content="pageSeo.description" />
         <meta property="og:site_name" :content="brandName" />
-        <meta v-if="pageSeo.ogImage" property="og:image" :content="pageSeo.ogImage" />
+        <meta
+            v-if="pageSeo.ogImage"
+            property="og:image"
+            :content="pageSeo.ogImage"
+        />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="pageSeo.title" />
         <meta name="twitter:description" :content="pageSeo.description" />
-        <meta v-if="pageSeo.ogImage" name="twitter:image" :content="pageSeo.ogImage" />
+        <meta
+            v-if="pageSeo.ogImage"
+            name="twitter:image"
+            :content="pageSeo.ogImage"
+        />
         <component
             :is="'script'"
             type="text/javascript"
@@ -1030,521 +1059,548 @@ onBeforeUnmount(() => {
                     :style="{ top: 'max(0.75rem, env(safe-area-inset-top))' }"
                 >
                     <div class="glass-panel rounded-2xl p-3">
-                    <div class="mb-2 flex items-center justify-between gap-2">
-                        <span
-                            class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                            :class="
-                                isFloxcity
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-sky-100 text-sky-700'
-                            "
-                        >
-                            {{ isFloxcity ? 'Floxcity' : 'Carbeat' }}
-                        </span>
-                        <a
-                            :href="mobileAppUrl"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="app-download-cta rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
-                        >
-                            {{ t('appDownloadCta') }}
-                        </a>
                         <div
-                            class="inline-flex items-center gap-1 rounded-lg p-0.5"
-                            :class="isFloxcity ? 'bg-emerald-50' : 'bg-sky-50'"
+                            class="mb-2 flex items-center justify-between gap-2"
                         >
-                            <button
-                                type="button"
-                                class="rounded-md px-2 py-1 text-xs font-semibold"
-                                :class="
-                                    currentLang === 'en'
-                                        ? 'bg-white text-slate-900'
-                                        : 'bg-white/70 text-slate-600'
-                                "
-                                @click="setLanguage('en')"
-                            >
-                                EN
-                            </button>
-                            <button
-                                type="button"
-                                class="rounded-md px-2 py-1 text-xs font-semibold"
-                                :class="
-                                    currentLang === 'uk'
-                                        ? 'bg-white text-slate-900'
-                                        : 'bg-white/70 text-slate-600'
-                                "
-                                @click="setLanguage('uk')"
-                            >
-                                UK
-                            </button>
-                            <button
-                                type="button"
-                                class="rounded-md px-2 py-1 text-xs font-semibold"
-                                :class="
-                                    currentLang === 'de'
-                                        ? 'bg-white text-slate-900'
-                                        : 'bg-white/70 text-slate-600'
-                                "
-                                @click="setLanguage('de')"
-                            >
-                                DE
-                            </button>
-                        </div>
-                    </div>
-                    <div
-                        class="grid grid-cols-[1fr_auto] gap-2 md:grid-cols-[1fr_auto_auto]"
-                    >
-                        <Listbox
-                            class="col-span-2 md:col-span-1"
-                            :model-value="selectedServiceId"
-                            @update:model-value="
-                                (value: number | null) =>
-                                    (selectedServiceId = value)
-                            "
-                        >
-                            <div class="relative">
-                                <ListboxButton
-                                    class="glass-input flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium"
-                                >
-                                    <span class="truncate">{{
-                                        selectedServiceLabel
-                                    }}</span>
-                                    <svg
-                                        class="h-3 w-3 shrink-0 opacity-80 transition-transform duration-150"
-                                        viewBox="0 0 20 20"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2.5"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <polyline points="5 8 10 13 15 8" />
-                                    </svg>
-                                </ListboxButton>
-                                <Transition
-                                    enter-active-class="transition duration-150 ease-out"
-                                    enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
-                                    enter-to-class="opacity-100 translate-y-0 scale-100"
-                                    leave-active-class="transition duration-100 ease-in"
-                                    leave-from-class="opacity-100"
-                                    leave-to-class="opacity-0"
-                                >
-                                    <ListboxOptions
-                                        class="listbox-options absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl py-1 text-sm focus:outline-none"
-                                    >
-                                        <ListboxOption
-                                            v-slot="{ active, selected }"
-                                            :value="null"
-                                            as="template"
-                                        >
-                                            <li
-                                                class="listbox-option"
-                                                :class="{
-                                                    'is-active': active,
-                                                    'is-selected': selected,
-                                                }"
-                                            >
-                                                <span class="truncate">{{
-                                                    t('allServices')
-                                                }}</span>
-                                                <svg
-                                                    v-if="selected"
-                                                    class="h-3.5 w-3.5 shrink-0"
-                                                    viewBox="0 0 20 20"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.5"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                >
-                                                    <polyline
-                                                        points="5 10 9 14 15 6"
-                                                    />
-                                                </svg>
-                                            </li>
-                                        </ListboxOption>
-                                        <ListboxOption
-                                            v-for="service in serviceOptions"
-                                            :key="service.id"
-                                            v-slot="{ active, selected }"
-                                            :value="service.id"
-                                            as="template"
-                                        >
-                                            <li
-                                                class="listbox-option"
-                                                :class="{
-                                                    'is-active': active,
-                                                    'is-selected': selected,
-                                                }"
-                                            >
-                                                <span class="truncate">{{
-                                                    service.label
-                                                }}</span>
-                                                <svg
-                                                    v-if="selected"
-                                                    class="h-3.5 w-3.5 shrink-0"
-                                                    viewBox="0 0 20 20"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.5"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                >
-                                                    <polyline
-                                                        points="5 10 9 14 15 6"
-                                                    />
-                                                </svg>
-                                            </li>
-                                        </ListboxOption>
-                                    </ListboxOptions>
-                                </Transition>
-                            </div>
-                        </Listbox>
-
-                        <label
-                            class="glass-chip inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm"
-                        >
-                            <input
-                                v-model="availableOnly"
-                                type="checkbox"
-                                class="h-4 w-4 rounded border-white/40"
-                            />
-                            {{ t('availableOnly') }}
-                        </label>
-
-                        <button
-                            type="button"
-                            class="glass-button min-h-10 rounded-xl px-3 py-2 text-sm"
-                            @click="useMyLocation"
-                        >
-                            {{ t('myGeo') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                v-if="loading"
-                class="lg-loading-pill pointer-events-auto absolute right-3 top-20 rounded-xl px-3 py-2 text-xs"
-            >
-                {{ t('loading') }}
-            </div>
-
-            <Transition name="status-beacon">
-                <div
-                    v-if="statusBeacon"
-                    class="pointer-events-auto absolute left-3 right-3 top-24 z-[700] md:left-auto md:right-5 md:w-[420px]"
-                    :style="{
-                        top: 'max(6rem, calc(env(safe-area-inset-top) + 5.25rem))',
-                    }"
-                >
-                    <div class="status-beacon rounded-2xl p-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-start gap-3">
-                                <div
-                                    class="status-beacon-dot mt-1 h-2.5 w-2.5 rounded-full"
-                                />
-                                <div>
-                                    <div
-                                        class="text-xs font-semibold uppercase tracking-wide"
-                                        :class="isFloxcity ? 'text-emerald-700' : 'text-sky-700'"
-                                    >
-                                        Status update
-                                    </div>
-                                    <div
-                                        class="mt-0.5 text-sm"
-                                        :class="'text-slate-800'"
-                                    >
-                                        {{ statusBeacon.masterName }} is
-                                        available now.
-                                    </div>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                class="rounded-md px-2 py-1 text-xs font-semibold"
+                            <span
+                                class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
                                 :class="
                                     isFloxcity
-                                        ? 'bg-emerald-50 text-slate-800 hover:bg-emerald-100'
-                                        : 'bg-sky-50 text-slate-800 hover:bg-sky-100'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-sky-100 text-sky-700'
                                 "
-                                @click="closeStatusBeacon"
                             >
-                                ✕
+                                {{ isFloxcity ? 'Floxcity' : 'Carbeat' }}
+                            </span>
+                            <a
+                                :href="mobileAppUrl"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="app-download-cta rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+                            >
+                                {{ t('appDownloadCta') }}
+                            </a>
+                            <div
+                                class="inline-flex items-center gap-1 rounded-lg p-0.5"
+                                :class="
+                                    isFloxcity ? 'bg-emerald-50' : 'bg-sky-50'
+                                "
+                            >
+                                <button
+                                    type="button"
+                                    class="rounded-md px-2 py-1 text-xs font-semibold"
+                                    :class="
+                                        currentLang === 'en'
+                                            ? 'bg-white text-slate-900'
+                                            : 'bg-white/70 text-slate-600'
+                                    "
+                                    @click="setLanguage('en')"
+                                >
+                                    EN
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-md px-2 py-1 text-xs font-semibold"
+                                    :class="
+                                        currentLang === 'uk'
+                                            ? 'bg-white text-slate-900'
+                                            : 'bg-white/70 text-slate-600'
+                                    "
+                                    @click="setLanguage('uk')"
+                                >
+                                    UK
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-md px-2 py-1 text-xs font-semibold"
+                                    :class="
+                                        currentLang === 'de'
+                                            ? 'bg-white text-slate-900'
+                                            : 'bg-white/70 text-slate-600'
+                                    "
+                                    @click="setLanguage('de')"
+                                >
+                                    DE
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            class="grid grid-cols-[1fr_auto] gap-2 md:grid-cols-[1fr_auto_auto]"
+                        >
+                            <Listbox
+                                class="col-span-2 md:col-span-1"
+                                :model-value="selectedServiceId"
+                                @update:model-value="
+                                    (value: number | null) =>
+                                        (selectedServiceId = value)
+                                "
+                            >
+                                <div class="relative">
+                                    <ListboxButton
+                                        class="glass-input flex min-h-10 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium"
+                                    >
+                                        <span class="truncate">{{
+                                            selectedServiceLabel
+                                        }}</span>
+                                        <svg
+                                            class="h-3 w-3 shrink-0 opacity-80 transition-transform duration-150"
+                                            viewBox="0 0 20 20"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <polyline points="5 8 10 13 15 8" />
+                                        </svg>
+                                    </ListboxButton>
+                                    <Transition
+                                        enter-active-class="transition duration-150 ease-out"
+                                        enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
+                                        enter-to-class="opacity-100 translate-y-0 scale-100"
+                                        leave-active-class="transition duration-100 ease-in"
+                                        leave-from-class="opacity-100"
+                                        leave-to-class="opacity-0"
+                                    >
+                                        <ListboxOptions
+                                            class="listbox-options absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl py-1 text-sm focus:outline-none"
+                                        >
+                                            <ListboxOption
+                                                v-slot="{ active, selected }"
+                                                :value="null"
+                                                as="template"
+                                            >
+                                                <li
+                                                    class="listbox-option"
+                                                    :class="{
+                                                        'is-active': active,
+                                                        'is-selected': selected,
+                                                    }"
+                                                >
+                                                    <span class="truncate">{{
+                                                        t('allServices')
+                                                    }}</span>
+                                                    <svg
+                                                        v-if="selected"
+                                                        class="h-3.5 w-3.5 shrink-0"
+                                                        viewBox="0 0 20 20"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2.5"
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                    >
+                                                        <polyline
+                                                            points="5 10 9 14 15 6"
+                                                        />
+                                                    </svg>
+                                                </li>
+                                            </ListboxOption>
+                                            <ListboxOption
+                                                v-for="service in serviceOptions"
+                                                :key="service.id"
+                                                v-slot="{ active, selected }"
+                                                :value="service.id"
+                                                as="template"
+                                            >
+                                                <li
+                                                    class="listbox-option"
+                                                    :class="{
+                                                        'is-active': active,
+                                                        'is-selected': selected,
+                                                    }"
+                                                >
+                                                    <span class="truncate">{{
+                                                        service.label
+                                                    }}</span>
+                                                    <svg
+                                                        v-if="selected"
+                                                        class="h-3.5 w-3.5 shrink-0"
+                                                        viewBox="0 0 20 20"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2.5"
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                    >
+                                                        <polyline
+                                                            points="5 10 9 14 15 6"
+                                                        />
+                                                    </svg>
+                                                </li>
+                                            </ListboxOption>
+                                        </ListboxOptions>
+                                    </Transition>
+                                </div>
+                            </Listbox>
+
+                            <label
+                                class="glass-chip inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                            >
+                                <input
+                                    v-model="availableOnly"
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-white/40"
+                                />
+                                {{ t('availableOnly') }}
+                            </label>
+
+                            <button
+                                type="button"
+                                class="glass-button min-h-10 rounded-xl px-3 py-2 text-sm"
+                                @click="useMyLocation"
+                            >
+                                {{ t('myGeo') }}
                             </button>
                         </div>
                     </div>
                 </div>
-            </Transition>
 
-            <Transition name="master-card" mode="out-in">
                 <div
-                    v-if="selectedMaster"
-                    :key="selectedMaster.id"
-                    class="pointer-events-auto absolute bottom-3 left-3 right-3 md:bottom-5 md:left-5 md:right-auto md:w-[460px]"
-                    :style="{
-                        bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-                    }"
+                    v-if="loading"
+                    class="lg-loading-pill pointer-events-auto absolute right-3 top-20 rounded-xl px-3 py-2 text-xs"
                 >
+                    {{ t('loading') }}
+                </div>
+
+                <Transition name="status-beacon">
                     <div
-                        class="glass-panel max-h-[72vh] overflow-auto rounded-2xl p-4 md:max-h-[78vh]"
+                        v-if="statusBeacon"
+                        class="pointer-events-auto absolute left-3 right-3 top-24 z-[700] md:left-auto md:right-5 md:w-[420px]"
+                        :style="{
+                            top: 'max(6rem, calc(env(safe-area-inset-top) + 5.25rem))',
+                        }"
                     >
-                        <div
-                            class="mb-2 flex items-start justify-between gap-3"
-                        >
-                            <div>
-                                <component
-                                    :is="isMasterSeoContent ? 'h1' : 'h2'"
-                                    class="text-lg font-semibold"
-                                    :class="'text-slate-900'"
-                                >
-                                    {{ selectedMaster.name }}
-                                </component>
-                                <p
-                                    class="text-sm"
-                                    :class="'text-slate-600'"
-                                >
-                                    {{ selectedMaster.address }}
-                                </p>
-                                <div class="mt-1 flex items-center gap-2">
-                                    <div class="flex items-center">
-                                        <span
-                                            v-for="index in 5"
-                                            :key="index"
-                                            class="text-sm"
+                        <div class="status-beacon rounded-2xl p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        class="status-beacon-dot mt-1 h-2.5 w-2.5 rounded-full"
+                                    />
+                                    <div>
+                                        <div
+                                            class="text-xs font-semibold uppercase tracking-wide"
                                             :class="
-                                                index <=
-                                                Math.round(
-                                                    selectedMaster.rating ?? 0,
-                                                )
-                                                    ? 'text-yellow-500'
-                                                    : 'text-slate-300'
+                                                isFloxcity
+                                                    ? 'text-emerald-700'
+                                                    : 'text-sky-700'
                                             "
                                         >
-                                            ★
+                                            Status update
+                                        </div>
+                                        <div
+                                            class="mt-0.5 text-sm"
+                                            :class="'text-slate-800'"
+                                        >
+                                            {{ statusBeacon.masterName }} is
+                                            available now.
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="rounded-md px-2 py-1 text-xs font-semibold"
+                                    :class="
+                                        isFloxcity
+                                            ? 'bg-emerald-50 text-slate-800 hover:bg-emerald-100'
+                                            : 'bg-sky-50 text-slate-800 hover:bg-sky-100'
+                                    "
+                                    @click="closeStatusBeacon"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
+
+                <Transition name="master-card" mode="out-in">
+                    <div
+                        v-if="selectedMaster"
+                        :key="selectedMaster.id"
+                        class="pointer-events-auto absolute bottom-3 left-3 right-3 md:bottom-5 md:left-5 md:right-auto md:w-[460px]"
+                        :style="{
+                            bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+                        }"
+                    >
+                        <div
+                            class="glass-panel max-h-[72vh] overflow-auto rounded-2xl p-4 md:max-h-[78vh]"
+                        >
+                            <div
+                                class="mb-2 flex items-start justify-between gap-3"
+                            >
+                                <div>
+                                    <component
+                                        :is="isMasterSeoContent ? 'h1' : 'h2'"
+                                        class="text-lg font-semibold"
+                                        :class="'text-slate-900'"
+                                    >
+                                        {{ selectedMaster.name }}
+                                    </component>
+                                    <p
+                                        class="text-sm"
+                                        :class="'text-slate-600'"
+                                    >
+                                        {{ selectedMaster.address }}
+                                    </p>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <div class="flex items-center">
+                                            <span
+                                                v-for="index in 5"
+                                                :key="index"
+                                                class="text-sm"
+                                                :class="
+                                                    index <=
+                                                    Math.round(
+                                                        selectedMaster.rating ??
+                                                            0,
+                                                    )
+                                                        ? 'text-yellow-500'
+                                                        : 'text-slate-300'
+                                                "
+                                            >
+                                                ★
+                                            </span>
+                                        </div>
+                                        <span
+                                            class="text-sm font-medium"
+                                            :class="'text-slate-800'"
+                                        >
+                                            {{
+                                                (
+                                                    selectedMaster.rating ?? 0
+                                                ).toFixed(1)
+                                            }}
                                         </span>
                                     </div>
+                                </div>
+                                <button
+                                    class="lg-close rounded-lg px-2 py-1"
+                                    :class="'text-slate-800'"
+                                    @click="closeDetails"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div
+                                class="mb-3 grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap"
+                            >
+                                <a
+                                    v-if="selectedMaster.phone"
+                                    :href="`tel:${selectedMaster.phone}`"
+                                    class="lg-action-btn lg-action-call rounded-xl px-3 py-2 font-medium text-white"
+                                >
+                                    {{ t('call') }}
+                                </a>
+                                <a
+                                    :href="`https://www.google.com/maps/search/?api=1&query=${selectedMaster.latitude},${selectedMaster.longitude}`"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="lg-action-btn rounded-xl px-3 py-2 font-medium text-white"
+                                >
+                                    {{ t('route') }}
+                                </a>
+                                <button
+                                    v-if="
+                                        !selectedMaster.is_claimed &&
+                                        selectedMaster.claim_link
+                                    "
+                                    type="button"
+                                    class="lg-action-btn lg-action-claim rounded-xl px-3 py-2 font-medium text-white"
+                                    @click="claimProfile"
+                                >
+                                    {{ t('claim') }}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="lg-action-btn rounded-xl px-3 py-2 font-medium text-white"
+                                    :class="
+                                        canRequestMasterStatus
+                                            ? 'lg-action-status'
+                                            : 'lg-action-disabled'
+                                    "
+                                    :disabled="
+                                        !canRequestMasterStatus ||
+                                        isSendingStatusRequest
+                                    "
+                                    @click="requestMasterStatus"
+                                >
+                                    {{
+                                        isSendingStatusRequest
+                                            ? t('sending')
+                                            : t('askStatus')
+                                    }}
+                                </button>
+                            </div>
+
+                            <div
+                                v-if="statusRequestMessage"
+                                class="mb-3 rounded-lg px-3 py-2 text-sm"
+                                :class="
+                                    isFloxcity
+                                        ? 'bg-emerald-50 text-slate-800'
+                                        : 'bg-sky-50 text-slate-800'
+                                "
+                            >
+                                {{ statusRequestMessage }}
+                            </div>
+
+                            <div
+                                v-if="primaryService"
+                                class="mb-3 rounded-xl p-3"
+                                :class="'bg-white/70'"
+                            >
+                                <div
+                                    class="text-xs uppercase tracking-wide"
+                                    :class="'text-slate-500'"
+                                >
+                                    {{ t('mainService') }}
+                                </div>
+                                <div
+                                    class="mt-1 text-sm font-semibold"
+                                    :class="'text-slate-900'"
+                                >
+                                    {{
+                                        SERVICE_LABELS[primaryService.name]?.[
+                                            currentLang
+                                        ] ?? primaryService.name
+                                    }}
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="hasAnyMasterImage"
+                                class="grid grid-cols-3 gap-2 md:grid-cols-4"
+                            >
+                                <button
+                                    v-for="(
+                                        photo, idx
+                                    ) in selectedMasterPhotos.slice(0, 8)"
+                                    :key="idx"
+                                    type="button"
+                                    class="gallery-thumb group relative aspect-square overflow-hidden rounded-lg"
+                                    @click="openLightbox(photo)"
+                                >
+                                    <img
+                                        :src="photoUrl(photo) || ''"
+                                        class="h-full w-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                        :alt="`${selectedMaster.name} photo ${idx + 1}`"
+                                    />
                                     <span
-                                        class="text-sm font-medium"
-                                        :class="'text-slate-800'"
+                                        class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-semibold text-white opacity-0 transition duration-200 group-hover:bg-black/35 group-hover:opacity-100"
+                                    >
+                                        {{ t('profile') }}
+                                    </span>
+                                </button>
+                            </div>
+
+                            <div v-if="extraServices.length" class="mt-3">
+                                <div
+                                    class="mb-2 text-sm font-semibold"
+                                    :class="'text-slate-900'"
+                                >
+                                    {{ t('extraServices') }}
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <span
+                                        v-for="service in extraServices"
+                                        :key="service.id"
+                                        class="rounded-full px-3 py-1 text-sm"
+                                        :class="
+                                            isFloxcity
+                                                ? 'bg-emerald-50 text-slate-800'
+                                                : 'bg-sky-50 text-slate-800'
+                                        "
                                     >
                                         {{
-                                            (
-                                                selectedMaster.rating ?? 0
-                                            ).toFixed(1)
+                                            SERVICE_LABELS[service.name]?.[
+                                                currentLang
+                                            ] ?? service.name
                                         }}
                                     </span>
                                 </div>
                             </div>
-                            <button
-                                class="lg-close rounded-lg px-2 py-1"
-                                :class="'text-slate-800'"
-                                @click="closeDetails"
-                            >
-                                ✕
-                            </button>
-                        </div>
 
-                        <div
-                            class="mb-3 grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap"
-                        >
-                            <a
-                                v-if="selectedMaster.phone"
-                                :href="`tel:${selectedMaster.phone}`"
-                                class="lg-action-btn lg-action-call rounded-xl px-3 py-2 font-medium text-white"
-                            >
-                                {{ t('call') }}
-                            </a>
-                            <a
-                                :href="`https://www.google.com/maps/search/?api=1&query=${selectedMaster.latitude},${selectedMaster.longitude}`"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="lg-action-btn rounded-xl px-3 py-2 font-medium text-white"
-                            >
-                                {{ t('route') }}
-                            </a>
-                            <button
-                                v-if="
-                                    !selectedMaster.is_claimed &&
-                                    selectedMaster.claim_link
-                                "
-                                type="button"
-                                class="lg-action-btn lg-action-claim rounded-xl px-3 py-2 font-medium text-white"
-                                @click="claimProfile"
-                            >
-                                {{ t('claim') }}
-                            </button>
-                            <button
-                                type="button"
-                                class="lg-action-btn rounded-xl px-3 py-2 font-medium text-white"
-                                :class="
-                                    canRequestMasterStatus
-                                        ? 'lg-action-status'
-                                        : 'lg-action-disabled'
-                                "
-                                :disabled="
-                                    !canRequestMasterStatus ||
-                                    isSendingStatusRequest
-                                "
-                                @click="requestMasterStatus"
-                            >
-                                {{
-                                    isSendingStatusRequest
-                                        ? t('sending')
-                                        : t('askStatus')
-                                }}
-                            </button>
-                        </div>
-
-                        <div
-                            v-if="statusRequestMessage"
-                            class="mb-3 rounded-lg px-3 py-2 text-sm"
-                            :class="isFloxcity ? 'bg-emerald-50 text-slate-800' : 'bg-sky-50 text-slate-800'"
-                        >
-                            {{ statusRequestMessage }}
-                        </div>
-
-                        <div
-                            v-if="primaryService"
-                            class="mb-3 rounded-xl p-3"
-                            :class="'bg-white/70'"
-                        >
-                            <div
-                                class="text-xs uppercase tracking-wide"
-                                :class="'text-slate-500'"
-                            >
-                                {{ t('mainService') }}
-                            </div>
-                            <div
-                                class="mt-1 text-sm font-semibold"
-                                :class="'text-slate-900'"
-                            >
-                                {{
-                                    SERVICE_LABELS[primaryService.name]?.[
-                                        currentLang
-                                    ] ?? primaryService.name
-                                }}
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="hasAnyMasterImage"
-                            class="grid grid-cols-3 gap-2 md:grid-cols-4"
-                        >
-                            <button
-                                v-for="(
-                                    photo, idx
-                                ) in selectedMasterPhotos.slice(0, 8)"
-                                :key="idx"
-                                type="button"
-                                class="gallery-thumb group relative aspect-square overflow-hidden rounded-lg"
-                                @click="openLightbox(photo)"
-                            >
-                                <img
-                                    :src="photoUrl(photo) || ''"
-                                    class="h-full w-full object-cover"
-                                    loading="lazy"
-                                    decoding="async"
-                                    :alt="`${selectedMaster.name} photo ${idx + 1}`"
-                                />
-                                <span
-                                    class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-semibold text-white opacity-0 transition duration-200 group-hover:bg-black/35 group-hover:opacity-100"
-                                >
-                                    {{ t('profile') }}
-                                </span>
-                            </button>
-                        </div>
-
-                        <div v-if="extraServices.length" class="mt-3">
-                            <div
-                                class="mb-2 text-sm font-semibold"
-                                :class="'text-slate-900'"
-                            >
-                                {{ t('extraServices') }}
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                <span
-                                    v-for="service in extraServices"
-                                    :key="service.id"
-                                    class="rounded-full px-3 py-1 text-sm"
-                                    :class="isFloxcity ? 'bg-emerald-50 text-slate-800' : 'bg-sky-50 text-slate-800'"
-                                >
-                                    {{
-                                        SERVICE_LABELS[service.name]?.[
-                                            currentLang
-                                        ] ?? service.name
-                                    }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <div
-                                class="mb-2 text-sm font-semibold"
-                                :class="'text-slate-900'"
-                            >
-                                {{ t('reviews') }}
-                            </div>
-                            <div
-                                v-if="selectedMaster.reviews?.length"
-                                class="space-y-2"
-                            >
+                            <div class="mt-4">
                                 <div
-                                    v-for="review in selectedMaster.reviews"
-                                    :key="review.id"
-                                    class="rounded-lg p-3 text-sm"
-                                    :class="'bg-white/70'"
+                                    class="mb-2 text-sm font-semibold"
+                                    :class="'text-slate-900'"
+                                >
+                                    {{ t('reviews') }}
+                                </div>
+                                <div
+                                    v-if="selectedMaster.reviews?.length"
+                                    class="space-y-2"
                                 >
                                     <div
-                                        class="font-medium"
-                                        :class="'text-slate-900'"
+                                        v-for="review in selectedMaster.reviews"
+                                        :key="review.id"
+                                        class="rounded-lg p-3 text-sm"
+                                        :class="'bg-white/70'"
                                     >
-                                        {{
-                                            review.user?.name || t('anonymous')
-                                        }}
-                                    </div>
-                                    <div :class="isFloxcity ? 'text-yellow-500' : 'text-yellow-300'">
-                                        ★ {{ review.rating }}
-                                    </div>
-                                    <div :class="'text-slate-700'">
-                                        {{ review.review || '—' }}
+                                        <div
+                                            class="font-medium"
+                                            :class="'text-slate-900'"
+                                        >
+                                            {{
+                                                review.user?.name ||
+                                                t('anonymous')
+                                            }}
+                                        </div>
+                                        <div
+                                            :class="
+                                                isFloxcity
+                                                    ? 'text-yellow-500'
+                                                    : 'text-yellow-300'
+                                            "
+                                        >
+                                            ★ {{ review.rating }}
+                                        </div>
+                                        <div :class="'text-slate-700'">
+                                            {{ review.review || '—' }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div
-                                v-else
-                                class="text-sm"
-                                :class="'text-slate-500'"
-                            >
-                                {{ t('noReviews') }}
+                                <div
+                                    v-else
+                                    class="text-sm"
+                                    :class="'text-slate-500'"
+                                >
+                                    {{ t('noReviews') }}
+                                </div>
                             </div>
                         </div>
                     </div>
+                </Transition>
+            </div>
+
+            <Transition name="lightbox-fade">
+                <div
+                    v-if="lightboxImage"
+                    class="lightbox-backdrop absolute inset-0 z-[999] flex items-center justify-center p-3 md:p-8"
+                    @click.self="closeLightbox"
+                >
+                    <button
+                        type="button"
+                        class="lightbox-close absolute right-4 top-4 rounded-full px-4 py-2 text-sm font-semibold text-white"
+                        @click="closeLightbox"
+                    >
+                        ✕ Close
+                    </button>
+                    <img
+                        :src="lightboxImage"
+                        class="lightbox-image max-h-full max-w-full rounded-2xl object-contain"
+                        :alt="
+                            selectedMaster
+                                ? `${selectedMaster.name} full size photo`
+                                : 'Station photo'
+                        "
+                    />
                 </div>
             </Transition>
-        </div>
-
-        <Transition name="lightbox-fade">
-            <div
-                v-if="lightboxImage"
-                class="lightbox-backdrop absolute inset-0 z-[999] flex items-center justify-center p-3 md:p-8"
-                @click.self="closeLightbox"
-            >
-                <button
-                    type="button"
-                    class="lightbox-close absolute right-4 top-4 rounded-full px-4 py-2 text-sm font-semibold text-white"
-                    @click="closeLightbox"
-                >
-                    ✕ Close
-                </button>
-                <img
-                    :src="lightboxImage"
-                    class="lightbox-image max-h-full max-w-full rounded-2xl object-contain"
-                    :alt="selectedMaster ? `${selectedMaster.name} full size photo` : 'Station photo'"
-                />
-            </div>
-        </Transition>
-
         </div>
 
         <section
@@ -1576,7 +1632,9 @@ onBeforeUnmount(() => {
                     </template>
                 </nav>
 
-                <div class="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                <div
+                    class="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]"
+                >
                     <div>
                         <h1
                             v-if="!isMasterSeoContent"
@@ -1593,7 +1651,9 @@ onBeforeUnmount(() => {
                         </p>
 
                         <div
-                            v-if="seoContent.stats.length && !isMasterSeoContent"
+                            v-if="
+                                seoContent.stats.length && !isMasterSeoContent
+                            "
                             class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
                         >
                             <div
@@ -1601,10 +1661,14 @@ onBeforeUnmount(() => {
                                 :key="stat.label"
                                 class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
                             >
-                                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <div
+                                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                >
                                     {{ stat.label }}
                                 </div>
-                                <div class="mt-1 text-lg font-semibold text-slate-900">
+                                <div
+                                    class="mt-1 text-lg font-semibold text-slate-900"
+                                >
                                     {{ stat.value }}
                                 </div>
                             </div>
@@ -1618,17 +1682,24 @@ onBeforeUnmount(() => {
                                 v-for="section in seoContent.sections"
                                 :key="section.heading"
                             >
-                                <h2 class="text-lg font-semibold text-slate-900">
+                                <h2
+                                    class="text-lg font-semibold text-slate-900"
+                                >
                                     {{ section.heading }}
                                 </h2>
-                                <p class="mt-2 text-base leading-7 text-slate-600">
+                                <p
+                                    class="mt-2 text-base leading-7 text-slate-600"
+                                >
                                     {{ section.body }}
                                 </p>
                             </section>
                         </div>
 
                         <div
-                            v-if="seoContent.serviceLinks.length && !isMasterSeoContent"
+                            v-if="
+                                seoContent.serviceLinks.length &&
+                                !isMasterSeoContent
+                            "
                             class="mt-8"
                         >
                             <h2 class="text-lg font-semibold text-slate-900">
@@ -1664,9 +1735,13 @@ onBeforeUnmount(() => {
                                     :href="buildMasterPath(master.slug)"
                                     class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
                                 >
-                                    <div class="flex items-start justify-between gap-4">
+                                    <div
+                                        class="flex items-start justify-between gap-4"
+                                    >
                                         <div>
-                                            <div class="text-base font-semibold text-slate-900">
+                                            <div
+                                                class="text-base font-semibold text-slate-900"
+                                            >
                                                 {{ master.name }}
                                             </div>
                                             <div
@@ -1680,7 +1755,10 @@ onBeforeUnmount(() => {
                                             v-if="master.rating"
                                             class="rounded-full bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-700"
                                         >
-                                            ★ {{ Number(master.rating).toFixed(1) }}
+                                            ★
+                                            {{
+                                                Number(master.rating).toFixed(1)
+                                            }}
                                         </div>
                                     </div>
                                     <div
@@ -1732,10 +1810,14 @@ onBeforeUnmount(() => {
                                     v-for="item in seoContent.faq"
                                     :key="item.q"
                                 >
-                                    <h3 class="text-sm font-semibold text-slate-900">
+                                    <h3
+                                        class="text-sm font-semibold text-slate-900"
+                                    >
                                         {{ item.q }}
                                     </h3>
-                                    <p class="mt-1 text-sm leading-6 text-slate-600">
+                                    <p
+                                        class="mt-1 text-sm leading-6 text-slate-600"
+                                    >
                                         {{ item.a }}
                                     </p>
                                 </div>
@@ -1747,7 +1829,6 @@ onBeforeUnmount(() => {
         </section>
     </div>
 </template>
-
 
 <style scoped>
 .glass-panel {
@@ -1768,7 +1849,9 @@ onBeforeUnmount(() => {
     box-shadow: var(--surface-shadow);
     backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
 }
 
 .glass-button:hover,
@@ -1802,7 +1885,9 @@ onBeforeUnmount(() => {
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    transition: opacity 0.12s ease, transform 0.10s ease;
+    transition:
+        opacity 0.12s ease,
+        transform 0.1s ease;
 }
 
 .lg-action-btn:hover {
@@ -1838,11 +1923,13 @@ onBeforeUnmount(() => {
 }
 
 .lg-close {
-    background: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.14);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
 }
 
 .lg-close:hover {
@@ -1895,7 +1982,7 @@ onBeforeUnmount(() => {
     border-radius: 0.5rem;
     color: var(--panel-text);
     cursor: pointer;
-    transition: background 0.10s ease;
+    transition: background 0.1s ease;
 }
 
 .listbox-option.is-active {
@@ -1931,6 +2018,7 @@ onBeforeUnmount(() => {
     scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
+/* ── Map marker: pin shape matching Flutter mobile ── */
 :global(.master-marker-wrapper) {
     background: transparent;
     border: none;
@@ -1939,111 +2027,23 @@ onBeforeUnmount(() => {
 
 :global(.master-marker) {
     position: relative;
-    width: 44px;
-    height: 44px;
-    border-radius: 9999px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24);
-    transform: translateZ(0);
-    transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease;
-}
-
-:global(.master-marker-face) {
-    position: relative;
+    /* width/height driven by Leaflet iconSize; we fill 100% */
     width: 100%;
     height: 100%;
-    border-radius: inherit;
-    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:global(.master-marker:not(.pin-active):hover) {
+    transform: translateY(-2px) scale(1.08);
+}
+
+/* Photo layer (behind the SVG overlay) */
+:global(.marker-bg) {
+    position: absolute;
+    border-radius: 50%;
     overflow: hidden;
     background: #fff;
-    transition:
-        transform 0.18s ease,
-        border-color 0.18s ease,
-        border-radius 0.18s ease;
-}
-
-:global(.master-marker::after) {
-    content: '';
-    position: absolute;
-    inset: -7px;
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    opacity: 0;
-    transform: scale(0.9);
-    transition:
-        opacity 0.18s ease,
-        transform 0.18s ease,
-        border-color 0.18s ease;
-    pointer-events: none;
-}
-
-:global(.master-marker.available-marker) {
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.28), 0 4px 14px rgba(15, 23, 42, 0.24);
-    animation: marker-pulse 1.8s infinite ease-in-out;
-}
-
-:global(.master-marker.available-marker .master-marker-face) {
-    border-color: #34d399;
-}
-
-:global(.master-marker.unavailable-marker) {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-:global(.master-marker.unavailable-marker .master-marker-face) {
-    border-color: #f87171;
-}
-
-:global(.master-marker.active-marker) {
-    width: 56px;
-    height: 72px;
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: none;
-    animation: none;
-}
-
-:global(.marker-pin-shape) {
-    position: absolute;
-    inset: 0;
-    width: 56px;
-    height: 72px;
-    overflow: visible;
-    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.22));
-}
-
-:global(.marker-pin-fill) {
-    fill: rgba(255, 255, 255, 0.98);
-}
-
-:global(.marker-pin-ring) {
-    fill: none;
-    stroke: rgba(var(--brand-primary-rgb), 0.22);
-    stroke-width: 3;
-}
-
-:global(.master-marker.active-marker .marker-pin-avatar) {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    width: 40px;
-    height: 40px;
-    border-radius: 9999px;
-    border-color: rgba(255, 255, 255, 0.98);
-    transform: translateX(-50%);
-    z-index: 1;
-    box-shadow:
-        0 0 0 2px rgba(var(--brand-primary-rgb), 0.28),
-        0 8px 20px rgba(15, 23, 42, 0.22);
-}
-
-:global(.master-marker.active-marker::after) {
-    display: none;
-}
-
-:global(.master-marker:not(.active-marker):hover) {
-    transform: translateY(-2px) scale(1.1);
+    z-index: 0;
 }
 
 :global(.marker-avatar-img),
@@ -2064,63 +2064,101 @@ onBeforeUnmount(() => {
 }
 
 :global(.marker-avatar-icon) {
-    width: 22px;
-    height: 22px;
+    width: 55%;
+    height: 55%;
+}
+
+/* Pin SVG — evenodd hole reveals the photo underneath */
+:global(.marker-pin-svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.22));
+    z-index: 1;
+    pointer-events: none;
+}
+
+:global(.master-marker.pin-active .marker-pin-svg) {
+    filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.28));
+}
+
+/* Pin fill colors — mirrors Flutter Styles */
+:global(.pin-available .marker-pin-path) {
+    fill: var(--brand-primary);
+}
+
+:global(.pin-unavailable .marker-pin-path) {
+    fill: #9ca3af;
+}
+
+:global(.pin-active .marker-pin-path) {
+    fill: #f97316;
+}
+
+/* ── Cluster: radial gradient circle matching Flutter ClusterCircle ── */
+:global(.cluster-marker) {
+    background: transparent !important;
+    border: none !important;
 }
 
 :global(.cluster-marker .cluster-inner) {
-    width: 44px;
-    height: 44px;
-    border-radius: 9999px;
+    /* size set by bucket classes below */
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
     display: grid;
     place-items: center;
     color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    background: var(--cluster-bg);
-    border: 2px solid rgba(255, 255, 255, 0.65);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    background: radial-gradient(
+        circle,
+        var(--brand-primary) 40%,
+        transparent 100%
+    );
     transition: transform 0.14s ease;
 }
 
+:global(.cluster-marker.cluster-all-unavailable .cluster-inner) {
+    background: radial-gradient(circle, #9ca3af 40%, transparent 100%);
+}
+
 :global(.cluster-marker.cluster-md .cluster-inner) {
-    width: 50px;
-    height: 50px;
-    font-size: 14px;
+    width: 60px;
+    height: 60px;
+    font-size: 15px;
 }
 
 :global(.cluster-marker.cluster-lg .cluster-inner) {
-    width: 56px;
-    height: 56px;
-    font-size: 15px;
+    width: 72px;
+    height: 72px;
+    font-size: 16px;
+}
+
+:global(.cluster-marker.cluster-xl .cluster-inner) {
+    width: 88px;
+    height: 88px;
+    font-size: 17px;
+}
+
+:global(.cluster-marker.cluster-xxl .cluster-inner) {
+    width: 104px;
+    height: 104px;
+    font-size: 18px;
 }
 
 :global(.cluster-marker .cluster-inner:hover) {
     transform: scale(1.08);
 }
 
-:global(.cluster-marker.cluster-has-available .cluster-inner) {
-    border-color: #34d399;
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.32), 0 2px 8px rgba(0, 0, 0, 0.45);
-    animation: marker-pulse 1.8s infinite ease-in-out;
-}
-
-@keyframes marker-pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.60), 0 2px 8px rgba(0, 0, 0, 0.45);
-    }
-    65% {
-        box-shadow: 0 0 0 12px rgba(52, 211, 153, 0), 0 2px 8px rgba(0, 0, 0, 0.45);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0), 0 2px 8px rgba(0, 0, 0, 0.45);
-    }
-}
-
 @keyframes app-cta-pulse {
     0% {
         box-shadow:
-            0 0 0 0 rgba(var(--brand-primary-rgb), 0.60),
+            0 0 0 0 rgba(var(--brand-primary-rgb), 0.6),
             0 0 16px rgba(var(--brand-primary-rgb), 0.38);
     }
     50% {
@@ -2137,7 +2175,9 @@ onBeforeUnmount(() => {
 
 .master-card-enter-active,
 .master-card-leave-active {
-    transition: opacity 0.18s ease, transform 0.18s ease;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
 }
 
 .master-card-enter-from,
@@ -2172,7 +2212,7 @@ onBeforeUnmount(() => {
 }
 
 .lightbox-image {
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .lightbox-fade-enter-active,
@@ -2200,7 +2240,9 @@ onBeforeUnmount(() => {
 
 .status-beacon-enter-active,
 .status-beacon-leave-active {
-    transition: opacity 0.18s ease, transform 0.18s ease;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
 }
 
 .status-beacon-enter-from,
@@ -2211,7 +2253,7 @@ onBeforeUnmount(() => {
 
 @keyframes status-beacon-ping {
     0% {
-        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.60);
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
     }
     72% {
         box-shadow: 0 0 0 10px rgba(52, 211, 153, 0);
@@ -2230,5 +2272,4 @@ onBeforeUnmount(() => {
         max-height: 55vh;
     }
 }
-
 </style>

@@ -247,7 +247,8 @@ function claimProfile() {
             <div class="mx-auto max-w-lg">
                 <!-- Top bar -->
                 <div class="mb-8 flex items-center justify-between">
-                    <span class="text-lg font-bold tracking-tight text-slate-900"
+                    <span
+                        class="text-lg font-bold tracking-tight text-slate-900"
                         >Carbeat</span
                     >
                     <span
@@ -475,9 +476,10 @@ function claimProfile() {
                             <span class="text-[15px] text-slate-500"
                                 >Послуги</span
                             >
-                            <span class="text-[15px] font-medium text-slate-900">{{
-                                services.length
-                            }}</span>
+                            <span
+                                class="text-[15px] font-medium text-slate-900"
+                                >{{ services.length }}</span
+                            >
                         </div>
                         <div
                             v-if="master.city"
@@ -486,9 +488,10 @@ function claimProfile() {
                             <span class="text-[15px] text-slate-500"
                                 >Місто</span
                             >
-                            <span class="text-[15px] font-medium text-slate-900">{{
-                                master.city
-                            }}</span>
+                            <span
+                                class="text-[15px] font-medium text-slate-900"
+                                >{{ master.city }}</span
+                            >
                         </div>
                     </div>
                 </section>
@@ -511,9 +514,10 @@ function claimProfile() {
                             <span class="text-[15px] text-slate-500">{{
                                 item.day
                             }}</span>
-                            <span class="text-[15px] font-medium text-slate-900">{{
-                                item.value
-                            }}</span>
+                            <span
+                                class="text-[15px] font-medium text-slate-900"
+                                >{{ item.value }}</span
+                            >
                         </div>
                     </div>
                 </section>
