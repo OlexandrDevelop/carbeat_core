@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Traits\AppScoped;
 
 /**
  * @property string $plain_token Plain, unhashed refresh token for API responses.
@@ -30,13 +31,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class RefreshToken extends Model
 {
-    use HasFactory;
+    use HasFactory, AppScoped;
 
     protected $fillable = [
         'user_id',
         'token',
         'expires_at',
         'revoked',
+        'app',
     ];
 
     protected $casts = [

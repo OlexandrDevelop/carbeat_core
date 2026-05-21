@@ -42,9 +42,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
         ]);
+        $middleware->api(prepend: [
+            DetectApp::class,
+        ]);
         $middleware->api(append: [
             SetLocale::class,
-            DetectApp::class,
             TrackMobileActivity::class,
         ]);
 

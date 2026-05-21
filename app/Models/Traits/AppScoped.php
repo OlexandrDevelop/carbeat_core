@@ -11,8 +11,11 @@ trait AppScoped
     {
         static::addGlobalScope('app', function (Builder $builder) {
             $brand = config('app.client');
-            // Support both enum and string stored in config
+            
+            // If brand is not set, we might be in a CLI or early boot process.
+            // But for safety, we fallback to CARBEAT only if brand is truly null.
             $brandValue = $brand instanceof AppBrand ? $brand->value : ($brand ?: AppBrand::CARBEAT->value);
+            
             $builder->where($builder->getModel()->getTable() . '.app', $brandValue);
         });
 
