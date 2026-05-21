@@ -147,6 +147,7 @@ class SmartRandomStatusService
             'status_expires_at' => $expiresAt,
             'is_fake_online' => false,
             'last_status_update' => null,
+            'available' => ($status === 'green'),
         ])->save();
     }
 
@@ -313,6 +314,7 @@ class SmartRandomStatusService
             'is_fake_online' => true,
             'last_status_update' => $now,
             'updated_at' => $now,
+            'available' => true,
         ]);
 
         foreach ($masters as $master) {
@@ -337,6 +339,7 @@ class SmartRandomStatusService
             'is_fake_online' => false,
             'last_status_update' => $now,
             'updated_at' => $now,
+            'available' => false,
         ]);
 
         foreach ($masters as $master) {

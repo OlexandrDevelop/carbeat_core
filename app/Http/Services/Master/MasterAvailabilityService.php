@@ -63,6 +63,8 @@ class MasterAvailabilityService
             $calculated['expires_at'],
             $flavor
         );
+
+        \App\Models\Master::whereKey($masterId)->update(['available' => true]);
     }
 
     /**
@@ -74,6 +76,7 @@ class MasterAvailabilityService
     public function setUnavailable(int $masterId, ?string $flavor = null): void
     {
         $this->appointmentRedisService->setUnavailableFlag($masterId, $flavor);
+        \App\Models\Master::whereKey($masterId)->update(['available' => false]);
     }
 
     /**
