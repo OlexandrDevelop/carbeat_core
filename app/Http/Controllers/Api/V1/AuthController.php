@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\UserResource;
 use App\Http\Services\SmsService;
 use App\Http\Services\TokenService;
 use App\Http\Services\UserService;
+use App\Models\Master;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,12 +30,13 @@ class AuthController extends Controller
             ], 503);
         }
 
-        // Check whether user+master already exist
-        $needsRegistration = true;
+        // If a master with this phone already exists in the current app,
+        // OTP login should claim/link it instead of starting registration.
         $user = User::where('phone', $phone)->first();
-        if ($user && $user->master) {
-            $needsRegistration = false;
-        }
+        $needsRegistration = ! (
+            ($user && $user->master()->exists())
+            || Master::where('contact_phone', $phone)->exists()
+        );
 
         return response()->json([
             'message' => 'OTP sent',

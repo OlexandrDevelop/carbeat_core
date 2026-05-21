@@ -62,7 +62,11 @@ class UserService
     public function attachUserToMasterByPhone(string $phone, User $user): void
     {
         Master::where('contact_phone', $phone)
-            ->where('user_id', 1)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', 1)
+                    ->orWhere('user_id', $user->id);
+            })
             ->update(['user_id' => $user->id]);
     }
 }
