@@ -9,7 +9,6 @@ set -e
 DEPLOY_OK=1
 DEPLOY_ERROR_MSG=""
 
-# Send message to Telegram with retry
 send_telegram() {
   if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
     return 0
@@ -25,9 +24,6 @@ send_telegram() {
   done
   echo "[entrypoint] Telegram notify failed after 5 attempts"
 }
-
-# Trap unexpected errors (commands without || true)
-trap 'DEPLOY_OK=0; DEPLOY_ERROR_MSG=$(printf "Unexpected error at step:\n\`%s\`" "$BASH_COMMAND")' ERR
 
 # If DB variables are present, wait until the database is reachable (max 60s)
 if [ -n "$DB_HOST" ]; then
