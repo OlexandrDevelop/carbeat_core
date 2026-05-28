@@ -189,6 +189,58 @@ Translations are in `resources/lang/en.json` and `resources/lang/uk.json`. The `
 | Every 15 min | `masters:generate-thumbnails` |
 | Every 15 min | `smart-random-statuses:sync` |
 
+## CI/CD & Deployment
+
+### Overview
+
+Pushes to `main` trigger an automated deploy via GitHub Actions → Easypanel webhook → Docker rebuild. Two Telegram notifications are sent: one from GitHub Actions on webhook failure, and one from the container entrypoint on startup (success or migration failure).
+
+### GitHub Actions
+
+Workflow: `.github/workflows/deploy.yml`
+
+- Triggers on push to `main`
+- Calls the Easypanel deploy webhook (`GET` request) to rebuild and restart the `carbeat_app` service
+- Sends a Telegram failure notification if the webhook call itself fails
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|---|---|
+| `EASYPANEL_DEPLOY_WEBHOOK` | Easypanel one-click deploy webhook URL for `carbeat_app` |
+| `TELEGRAM_TOKEN` | Telegram Bot API token |
+| `TELEGRAM_CHAT_ID` | Telegram chat/group ID to receive notifications |
+
+### Easypanel
+
+Hosted on a self-managed VPS. Two services run from this repo:
+- **`carbeat_app`** — main PHP-Nginx container, built from `Dockerfile.prod`, triggered by the GitHub Actions webhook
+- **`carbeat_worker`** — queue worker service, configured with its own auto-deploy in Easypanel
+
+Easypanel builds from the `main` branch using `Dockerfile.prod`.
+
+### Container Entrypoint (`docker/entrypoint.prod.sh`)
+
+Runs on every container start (POSIX `sh`, Alpine/busybox):
+
+1. Waits up to 60s for the database to be reachable
+2. Runs `php artisan migrate --force` — failure is captured but does **not** abort the script
+3. Warms up Laravel caches (`config:cache`, `route:cache`, `view:cache`)
+4. Fixes storage permissions
+5. Generates sitemap
+6. Sends a single Telegram notification: ✅ success or ❌ failure with the last 15 lines of migration output
+7. Hands off to supervisord
+
+Migration output is logged to `/tmp/migrate.log`. The script uses `set -e` with `|| true` on non-critical steps to prevent silent exits. All `sh`-compatibility constraints apply — no `bash`-only features (`trap ERR`, `[[`, etc.).
+
+### Telegram Notifications
+
+| Event | Sender | Message |
+|---|---|---|
+| Container started successfully | `entrypoint.prod.sh` | ✅ Deployment finished on PRODUCTION at `<timestamp>` |
+| Migration failed on start | `entrypoint.prod.sh` | ❌ Deploy FAILED on PRODUCTION with error excerpt |
+| GitHub Actions webhook call failed | `deploy.yml` | ❌ GitHub Actions deploy FAILED with branch/commit/actor |
+
 ## Key Conventions
 
 ### AppScoped Models
