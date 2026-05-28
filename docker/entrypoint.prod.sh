@@ -41,8 +41,10 @@ if [ -n "$DB_HOST" ]; then
   done
 fi
 
-# Run migrations (do not fail container if there are no migrations to run)
-php /app/artisan migrate --force || true
+# Run migrations — container keeps starting even on failure, but notify Telegram
+if ! php /app/artisan migrate --force 2>&1; then
+  send_telegram "❌ *Migration FAILED on PRODUCTION*\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nCheck container logs for details."
+fi
 
 # Warm up caches
 php /app/artisan config:cache || true
