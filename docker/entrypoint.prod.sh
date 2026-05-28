@@ -42,11 +42,11 @@ fi
 php /app/artisan migrate --force || true
 
 # Warm up caches
-php /app/artisan config:cache
-php /app/artisan route:cache
-php /app/artisan view:cache
-php /app/artisan optimize:clear
-php /app/artisan storage:link
+php /app/artisan config:cache || true
+php /app/artisan route:cache || true
+php /app/artisan view:cache || true
+php /app/artisan optimize:clear || true
+php /app/artisan storage:link || true
 
 # Ensure storage and cache are writable
 mkdir -p /app/storage /app/bootstrap/cache /app/storage/app/public
