@@ -16,3 +16,4 @@ jobs:
             --fail \
             && echo "Deploy triggered successfully" \
             || echo "Deploy trigger failed"
+ 
