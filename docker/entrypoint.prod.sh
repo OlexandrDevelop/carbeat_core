@@ -14,11 +14,16 @@ send_telegram() {
   fi
 
   local text="$1"
-  # Use simple curl call to Telegram Bot API
-  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" \
-    --data-urlencode "text=${text}" \
-    -d "parse_mode=Markdown" >/dev/null || true
+  # Retry up to 5 times with 3s delay to handle network not being ready yet
+  for i in $(seq 1 5); do
+    curl -s --max-time 10 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+      -d "chat_id=${TELEGRAM_CHAT_ID}" \
+      --data-urlencode "text=${text}" \
+      -d "parse_mode=Markdown" >/dev/null && return 0
+    echo "[entrypoint] Telegram notify attempt $i failed, retrying in 3s..."
+    sleep 3
+  done
+  echo "[entrypoint] Telegram notify failed after 5 attempts, continuing anyway"
 }
 
 # If DB variables are present, wait until the database is reachable (max 60s)
