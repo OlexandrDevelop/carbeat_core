@@ -6,6 +6,9 @@
 
 set -e
 
+# Send error to Telegram on unexpected exit
+trap 'send_telegram "❌ *PRODUCTION deploy FAILED*\nStep: \`$BASH_COMMAND\`\nTime: $(date +%Y-%m-%d\ %H:%M:%S)"' ERR
+
 # Function to post message to Telegram
 send_telegram() {
   # Requires TELEGRAM_TOKEN and TELEGRAM_CHAT_ID env vars
