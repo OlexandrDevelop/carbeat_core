@@ -6,23 +6,15 @@
 
 set -e
 
-DEPLOY_OK=1
-DEPLOY_ERROR_MSG=""
+DEPLOY_FAILED=0
 
 send_telegram() {
-  if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-    return 0
-  fi
-  local text="$1"
-  for i in $(seq 1 5); do
-    curl -s --max-time 10 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-      -d "chat_id=${TELEGRAM_CHAT_ID}" \
-      --data-urlencode "text=${text}" \
-      -d "parse_mode=Markdown" >/dev/null && return 0
-    echo "[entrypoint] Telegram attempt $i failed, retrying in 3s..."
-    sleep 3
-  done
-  echo "[entrypoint] Telegram notify failed after 5 attempts"
+  [ -z "$TELEGRAM_TOKEN" ] && return 0
+  [ -z "$TELEGRAM_CHAT_ID" ] && return 0
+  curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+    -d "chat_id=${TELEGRAM_CHAT_ID}" \
+    --data-urlencode "text=$1" \
+    >/dev/null 2>&1 || true
 }
 
 # If DB variables are present, wait until the database is reachable (max 60s)
@@ -37,12 +29,8 @@ if [ -n "$DB_HOST" ]; then
   done
 fi
 
-# Run migrations — capture output for error details
-MIGRATE_OUT=$(php /app/artisan migrate --force 2>&1) || {
-  DEPLOY_OK=0
-  SHORT_ERR=$(echo "$MIGRATE_OUT" | tail -15 | cut -c1-600)
-  DEPLOY_ERROR_MSG=$(printf "Migration failed:\n\`\`\`\n%s\n\`\`\`" "$SHORT_ERR")
-}
+# Run migrations — log output for error details
+php /app/artisan migrate --force >/tmp/migrate.log 2>&1 || DEPLOY_FAILED=1
 
 # Warm up caches
 php /app/artisan config:cache || true
@@ -63,13 +51,13 @@ php /app/artisan sitemap:generate || true
 rm -f /app/public/sitemap.xml || true
 
 # Send single final notification
-if [ "$DEPLOY_OK" = "1" ]; then
-  send_telegram "✅ *Deploy SUCCESS* on PRODUCTION
-Time: $(date '+%Y-%m-%d %H:%M:%S')"
+if [ "$DEPLOY_FAILED" = "1" ]; then
+  ERR=$(tail -15 /tmp/migrate.log | cut -c1-600)
+  MSG=$(printf "❌ Deploy FAILED on PRODUCTION\nTime: %s\n\nMigration error:\n%s" \
+    "$(date '+%Y-%m-%d %H:%M:%S')" "$ERR")
+  send_telegram "$MSG"
 else
-  send_telegram "❌ *Deploy FAILED* on PRODUCTION
-Time: $(date '+%Y-%m-%d %H:%M:%S')
-${DEPLOY_ERROR_MSG}"
+  send_telegram "✅ Deployment finished on PRODUCTION at $(date '+%Y-%m-%d %H:%M:%S')"
 fi
 
 # Hand over to the original entrypoint (keeps supervisor & nginx/php-fpm)
