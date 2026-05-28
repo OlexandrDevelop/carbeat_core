@@ -6,28 +6,28 @@
 
 set -e
 
-# Send error to Telegram on unexpected exit
-trap 'send_telegram "❌ *PRODUCTION deploy FAILED*\nStep: \`$BASH_COMMAND\`\nTime: $(date +%Y-%m-%d\ %H:%M:%S)"' ERR
+DEPLOY_OK=1
+DEPLOY_ERROR_MSG=""
 
-# Function to post message to Telegram
+# Send message to Telegram with retry
 send_telegram() {
-  # Requires TELEGRAM_TOKEN and TELEGRAM_CHAT_ID env vars
   if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
     return 0
   fi
-
   local text="$1"
-  # Retry up to 5 times with 3s delay to handle network not being ready yet
   for i in $(seq 1 5); do
     curl -s --max-time 10 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
       -d "chat_id=${TELEGRAM_CHAT_ID}" \
       --data-urlencode "text=${text}" \
       -d "parse_mode=Markdown" >/dev/null && return 0
-    echo "[entrypoint] Telegram notify attempt $i failed, retrying in 3s..."
+    echo "[entrypoint] Telegram attempt $i failed, retrying in 3s..."
     sleep 3
   done
-  echo "[entrypoint] Telegram notify failed after 5 attempts, continuing anyway"
+  echo "[entrypoint] Telegram notify failed after 5 attempts"
 }
+
+# Trap unexpected errors (commands without || true)
+trap 'DEPLOY_OK=0; DEPLOY_ERROR_MSG="Unexpected error at step: \`${BASH_COMMAND}\`"' ERR
 
 # If DB variables are present, wait until the database is reachable (max 60s)
 if [ -n "$DB_HOST" ]; then
@@ -41,10 +41,12 @@ if [ -n "$DB_HOST" ]; then
   done
 fi
 
-# Run migrations — container keeps starting even on failure, but notify Telegram
-if ! php /app/artisan migrate --force 2>&1; then
-  send_telegram "❌ *Migration FAILED on PRODUCTION*\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nCheck container logs for details."
-fi
+# Run migrations — capture output for error details
+MIGRATE_OUT=$(php /app/artisan migrate --force 2>&1) || {
+  DEPLOY_OK=0
+  SHORT_ERR=$(echo "$MIGRATE_OUT" | tail -15 | cut -c1-600)
+  DEPLOY_ERROR_MSG="Migration failed:\n\`\`\`\n${SHORT_ERR}\n\`\`\`"
+}
 
 # Warm up caches
 php /app/artisan config:cache || true
@@ -58,15 +60,21 @@ mkdir -p /app/storage /app/bootstrap/cache /app/storage/app/public
 chown -R application:application /app/storage /app/bootstrap/cache || true
 chmod -R ug+rwX /app/storage /app/bootstrap/cache || true
 
-# Generate sitemap on each production deploy so new canonical /sto URLs are published immediately.
+# Generate sitemap
 php /app/artisan sitemap:generate || true
 
-# Remove public sitemap file/symlink so /sitemap.xml is always served by Laravel
-# with application/xml; charset=utf-8 instead of nginx static text/xml defaults.
+# Remove public sitemap symlink
 rm -f /app/public/sitemap.xml || true
 
-# Notify Telegram that deployment finished
-send_telegram "✅ Deployment finished on PRODUCTION at $(date '+%Y-%m-%d %H:%M:%S')"
+# Send single final notification
+if [ "$DEPLOY_OK" = "1" ]; then
+  send_telegram "✅ *Deploy SUCCESS* on PRODUCTION
+Time: $(date '+%Y-%m-%d %H:%M:%S')"
+else
+  send_telegram "❌ *Deploy FAILED* on PRODUCTION
+Time: $(date '+%Y-%m-%d %H:%M:%S')
+${DEPLOY_ERROR_MSG}"
+fi
 
 # Hand over to the original entrypoint (keeps supervisor & nginx/php-fpm)
 exec /opt/docker/bin/entrypoint.sh supervisord -c /opt/docker/etc/supervisor.conf
