@@ -8,9 +8,6 @@ set -e
 
 DEPLOY_FAILED=0
 
-# Debug: log that entrypoint started
-echo "[entrypoint] STARTED at $(date)" >> /tmp/entrypoint_debug.log
-
 send_telegram() {
   [ -z "$TELEGRAM_TOKEN" ] && return 0
   [ -z "$TELEGRAM_CHAT_ID" ] && return 0
