@@ -27,7 +27,7 @@ send_telegram() {
 }
 
 # Trap unexpected errors (commands without || true)
-trap 'DEPLOY_OK=0; DEPLOY_ERROR_MSG="Unexpected error at step: \`${BASH_COMMAND}\`"' ERR
+trap 'DEPLOY_OK=0; DEPLOY_ERROR_MSG=$(printf "Unexpected error at step:\n\`%s\`" "$BASH_COMMAND")' ERR
 
 # If DB variables are present, wait until the database is reachable (max 60s)
 if [ -n "$DB_HOST" ]; then
@@ -45,7 +45,7 @@ fi
 MIGRATE_OUT=$(php /app/artisan migrate --force 2>&1) || {
   DEPLOY_OK=0
   SHORT_ERR=$(echo "$MIGRATE_OUT" | tail -15 | cut -c1-600)
-  DEPLOY_ERROR_MSG="Migration failed:\n\`\`\`\n${SHORT_ERR}\n\`\`\`"
+  DEPLOY_ERROR_MSG=$(printf "Migration failed:\n\`\`\`\n%s\n\`\`\`" "$SHORT_ERR")
 }
 
 # Warm up caches
