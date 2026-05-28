@@ -206,3 +206,4 @@ Mobile API uses `auth:api` (JWT). The web admin uses `auth` (session). Sanctum (
 ### Firebase Credentials
 
 Per-brand FCM credential JSON files are referenced by `FCM_TOKEN_PATH_CARBEAT` and `FCM_TOKEN_PATH_FLOXCITY` env vars, stored in `keys/` (gitignored).
+
