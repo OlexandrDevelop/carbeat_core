@@ -10,6 +10,17 @@ import {
     type UiTextKey,
 } from '@/shared/guest-map-display-labels';
 import {
+    formatNextEventLabel,
+    formatOpenLabel,
+    formatWorkingHours,
+    getShortDayLabel,
+    getWorkStatus,
+    scheduleAfterEnter,
+    scheduleAfterLeave,
+    scheduleEnter,
+    scheduleLeave,
+} from '@/shared/workingHours';
+import {
     Listbox,
     ListboxButton,
     ListboxOption,
@@ -657,6 +668,14 @@ async function loadServices(): Promise<void> {
     }
 }
 
+const selectedMasterSchedule = computed(() =>
+    formatWorkingHours(selectedMaster.value?.working_hours as any),
+);
+const selectedMasterWorkStatus = computed(() =>
+    getWorkStatus(selectedMaster.value?.working_hours as any),
+);
+const scheduleOpen = ref(false);
+
 async function loadMasters(): Promise<void> {
     const view = guestMap.getView();
     if (!view) return;
@@ -718,6 +737,7 @@ async function loadMasters(): Promise<void> {
 
 async function openMaster(masterId: number): Promise<void> {
     selectedMasterId.value = masterId;
+    scheduleOpen.value = false;
     const summary = currentMasters.value.find(
         (master) => master.id === masterId,
     );
@@ -1522,6 +1542,74 @@ onBeforeUnmount(() => {
                                         }}
                                     </span>
                                 </div>
+                            </div>
+
+                            <div
+                                v-if="selectedMasterWorkStatus || selectedMasterSchedule.length"
+                                class="mt-3"
+                            >
+                                <!-- Status badge -->
+                                <button
+                                    v-if="selectedMasterWorkStatus"
+                                    type="button"
+                                    class="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-left transition-colors duration-150 hover:brightness-95 active:brightness-90"
+                                    :class="[
+                                        'bg-white/70',
+                                        selectedMasterSchedule.length ? 'rounded-b-none' : '',
+                                    ]"
+                                    @click="scheduleOpen = !scheduleOpen"
+                                >
+                                    <span
+                                        class="h-2 w-2 flex-shrink-0 rounded-full transition-colors duration-300"
+                                        :class="selectedMasterWorkStatus.isOpen ? 'bg-emerald-500' : 'bg-red-500'"
+                                    />
+                                    <span
+                                        class="font-semibold"
+                                        :class="selectedMasterWorkStatus.isOpen ? 'text-emerald-700' : 'text-red-600'"
+                                    >
+                                        {{ formatOpenLabel(currentLang, selectedMasterWorkStatus.isOpen) }}
+                                    </span>
+                                    <span :class="'text-slate-500'">
+                                        · {{ formatNextEventLabel(currentLang, selectedMasterWorkStatus) }}
+                                    </span>
+                                    <svg
+                                        class="ml-auto h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-transform duration-300"
+                                        :style="{ transform: scheduleOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+                                        viewBox="0 0 12 12" fill="none"
+                                    >
+                                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Expandable schedule -->
+                                <Transition
+                                    :css="false"
+                                    @enter="scheduleEnter"
+                                    @after-enter="scheduleAfterEnter"
+                                    @leave="scheduleLeave"
+                                    @after-leave="scheduleAfterLeave"
+                                >
+                                    <div
+                                        v-if="selectedMasterSchedule.length && (!selectedMasterWorkStatus || scheduleOpen)"
+                                        class="space-y-px rounded-xl"
+                                        :class="selectedMasterWorkStatus ? 'rounded-t-none' : ''"
+                                    >
+                                        <div
+                                            v-for="item in selectedMasterSchedule"
+                                            :key="item.dayKey"
+                                            class="flex items-center justify-between px-3 py-2 text-sm bg-white/70"
+                                        >
+                                            <span :class="'text-slate-500'">{{
+                                                getShortDayLabel(currentLang, item.dayKey)
+                                            }}</span>
+                                            <span
+                                                class="font-medium"
+                                                :class="item.value ? 'text-slate-900' : 'text-slate-400'"
+                                                >{{ item.value ?? 'Вихідний' }}</span
+                                            >
+                                        </div>
+                                    </div>
+                                </Transition>
                             </div>
 
                             <div class="mt-4">

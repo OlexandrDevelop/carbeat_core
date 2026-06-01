@@ -76,6 +76,7 @@ class MasterResource extends JsonResource
         $phoneVerifiedAt = $this->getResourceProperty('phone_verified_at');
         $slug = $this->getResourceProperty('slug');
         $userId = $this->getResourceProperty('user_id');
+        $workingHours = $this->getResourceProperty('working_hours');
 
         return [
             'id' => (int) $id,
@@ -105,6 +106,7 @@ class MasterResource extends JsonResource
             'is_claimed' => (bool) $isClaimed,
             'phone_verified_at' => $this->formatDateTime($phoneVerifiedAt),
             'slug' => (string) $slug,
+            'working_hours' => $workingHours ?: null,
             // Include services only for single master endpoint (when Eloquent relation is loaded)
             'services' => $this->when(
                 ($this->resource instanceof \Illuminate\Database\Eloquent\Model)

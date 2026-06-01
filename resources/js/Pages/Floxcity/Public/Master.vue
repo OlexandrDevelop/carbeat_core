@@ -5,6 +5,18 @@ import {
     type Lang,
 } from '@/shared/guest-map-display-labels';
 import { dayLabel, masterText } from '@/shared/public-master-display-labels';
+import {
+    formatNextEventLabel,
+    formatOpenLabel,
+    formatWorkingHours,
+    getShortDayLabel,
+    getWorkStatus,
+    scheduleAfterEnter,
+    scheduleAfterLeave,
+    scheduleEnter,
+    scheduleLeave,
+    type WorkingHoursData,
+} from '@/shared/workingHours';
 import { Head } from '@inertiajs/vue3';
 import QrcodeVue from 'qrcode.vue';
 import { computed, onMounted, ref } from 'vue';
@@ -20,10 +32,7 @@ type GalleryItem = {
     url: string;
 };
 
-type WorkingHours = Record<
-    string,
-    { from: string; to: string } | string | null | undefined
->;
+type WorkingHours = WorkingHoursData;
 
 interface MasterPayload {
     id: number;
@@ -104,6 +113,8 @@ const gallery = computed(() => props.master.gallery ?? []);
 const workingSchedule = computed(() =>
     formatWorkingHours(props.master.working_hours),
 );
+const workStatus = computed(() => getWorkStatus(props.master.working_hours));
+const scheduleOpen = ref(false);
 const canClaim = computed(
     () => !props.master.is_claimed && !!props.master.claim_link,
 );
@@ -143,37 +154,6 @@ const masterInitials = computed(() => {
 
 function serviceLabel(serviceName: string): string {
     return SERVICE_LABELS[serviceName]?.[currentLang.value] ?? serviceName;
-}
-
-function formatWorkingHours(
-    hours: WorkingHours | null,
-): Array<{ day: string; value: string }> {
-    if (!hours || typeof hours !== 'object') {
-        return [];
-    }
-
-    const order = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-    return order
-        .filter((key) => key in hours)
-        .map((key) => {
-            const label = dayLabel(currentLang.value, key);
-            const value = hours[key];
-
-            if (!value) {
-                return { day: label, value: t('dayOff') };
-            }
-
-            if (typeof value === 'string') {
-                return { day: label, value };
-            }
-
-            if (typeof value === 'object' && 'from' in value && 'to' in value) {
-                return { day: label, value: `${value.from} – ${value.to}` };
-            }
-
-            return { day: label, value: '—' };
-        });
 }
 
 function t(key: Parameters<typeof masterText>[1]): string {
@@ -536,29 +516,72 @@ function claimProfile() {
                 </section>
 
                 <!-- Schedule -->
-                <section v-if="workingSchedule.length">
+                <section v-if="workStatus || workingSchedule.length">
                     <h3
                         class="mb-3 text-[13px] font-bold uppercase tracking-wider text-slate-500"
                     >
                         {{ t('workSchedule') }}
                     </h3>
-                    <div
-                        class="space-y-px overflow-hidden rounded-2xl bg-slate-200"
+
+                    <!-- Status badge (clickable) -->
+                    <button
+                        v-if="workStatus"
+                        type="button"
+                        class="flex w-full items-center gap-2.5 rounded-2xl bg-slate-50 px-4 py-3 text-left transition-colors duration-150 hover:bg-slate-100 active:bg-slate-200"
+                        :class="workingSchedule.length ? 'rounded-b-none' : ''"
+                        @click="scheduleOpen = !scheduleOpen"
+                    >
+                        <span
+                            class="mt-px h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                            :class="workStatus.isOpen ? 'bg-emerald-500' : 'bg-red-500'"
+                        />
+                        <span
+                            class="text-[15px] font-semibold"
+                            :class="workStatus.isOpen ? 'text-emerald-700' : 'text-red-600'"
+                        >
+                            {{ formatOpenLabel(currentLang, workStatus.isOpen) }}
+                        </span>
+                        <span class="text-[15px] text-slate-500">
+                            · {{ formatNextEventLabel(currentLang, workStatus) }}
+                        </span>
+                        <svg
+                            class="ml-auto h-4 w-4 flex-shrink-0 text-slate-400 transition-transform duration-300"
+                            :style="{ transform: scheduleOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+                            viewBox="0 0 12 12" fill="none"
+                        >
+                            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+
+                    <!-- Expandable schedule rows -->
+                    <Transition
+                        :css="false"
+                        @enter="scheduleEnter"
+                        @after-enter="scheduleAfterEnter"
+                        @leave="scheduleLeave"
+                        @after-leave="scheduleAfterLeave"
                     >
                         <div
-                            v-for="item in workingSchedule"
-                            :key="item.day"
-                            class="flex items-center justify-between bg-slate-50 p-4"
+                            v-if="workingSchedule.length && (!workStatus || scheduleOpen)"
+                            class="space-y-px overflow-hidden"
+                            :class="workStatus ? 'rounded-b-2xl bg-slate-200' : 'rounded-2xl bg-slate-200'"
                         >
-                            <span class="text-[15px] text-slate-500">{{
-                                item.day
-                            }}</span>
-                            <span
-                                class="text-[15px] font-medium text-slate-900"
-                                >{{ item.value }}</span
+                            <div
+                                v-for="item in workingSchedule"
+                                :key="item.dayKey"
+                                class="flex items-center justify-between bg-slate-50 p-4"
                             >
+                                <span class="text-[15px] text-slate-500">{{
+                                    getShortDayLabel(currentLang, item.dayKey)
+                                }}</span>
+                                <span
+                                    class="text-[15px] font-medium"
+                                    :class="item.value ? 'text-slate-900' : 'text-slate-400'"
+                                    >{{ item.value ?? t('dayOff') }}</span
+                                >
+                            </div>
                         </div>
-                    </div>
+                    </Transition>
                 </section>
 
                 <!-- Gallery -->
