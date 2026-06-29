@@ -54,7 +54,7 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
     'brand_urls' => [
-        'carbeat' => env('APP_URL_CARBEAT', env('APP_URL', 'https://carbeat.online')),
+        'carbeat' => env('APP_URL_CARBEAT', env('APP_URL', 'https://carbeat.uno')),
         'floxcity' => env('APP_URL_FLOXCITY', 'https://flox.city'),
     ],
 
