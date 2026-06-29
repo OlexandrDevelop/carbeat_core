@@ -18,7 +18,7 @@ RUN docker-php-source extract \
 #composer
 WORKDIR /app
 COPY composer.json composer.lock /app/
-RUN composer install --no-interaction --no-scripts --no-suggest --optimize-autoloader
+RUN composer install --no-interaction --no-scripts --optimize-autoloader
 COPY . /app
 
 #npm
