@@ -18,7 +18,8 @@ export type UiTextKey =
     | 'noReviews'
     | 'anonymous'
     | 'statusSent'
-    | 'statusError';
+    | 'statusError'
+    | 'geoError';
 
 export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
     en: {
@@ -34,12 +35,14 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         askStatus: 'Ask if available now',
         sending: 'Sending...',
         mainService: 'Main service',
-        extraServices: 'Additional services',
+        extraServices: 'Additional:',
         reviews: 'Reviews',
         noReviews: 'No reviews yet',
         anonymous: 'Anonymous',
         statusSent: 'Request sent to master.',
         statusError: 'Failed to send request.',
+        geoError:
+            "Couldn't get your location. Check location permissions in your browser.",
     },
     uk: {
         allServices: 'Всі послуги',
@@ -54,12 +57,14 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         askStatus: 'Запитати доступність',
         sending: 'Надсилаємо...',
         mainService: 'Основна послуга',
-        extraServices: 'Додаткові послуги',
+        extraServices: 'Додатково:',
         reviews: 'Відгуки',
         noReviews: 'Поки що немає відгуків',
         anonymous: 'Анонім',
         statusSent: 'Запит відправлено майстру.',
         statusError: 'Не вдалося відправити запит.',
+        geoError:
+            'Не вдалося визначити ваше місцезнаходження. Перевірте дозвіл на геолокацію в браузері.',
     },
     de: {
         allServices: 'Alle Leistungen',
@@ -74,12 +79,14 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         askStatus: 'Verfügbarkeit anfragen',
         sending: 'Wird gesendet...',
         mainService: 'Hauptleistung',
-        extraServices: 'Zusätzliche Leistungen',
+        extraServices: 'Extra:',
         reviews: 'Bewertungen',
         noReviews: 'Noch keine Bewertungen',
         anonymous: 'Anonym',
         statusSent: 'Anfrage wurde gesendet.',
         statusError: 'Anfrage konnte nicht gesendet werden.',
+        geoError:
+            'Standort konnte nicht ermittelt werden. Bitte Standortberechtigung im Browser prüfen.',
     },
 };
 

@@ -30,6 +30,8 @@ class ImportController extends Controller
         $currentBrand = config('app.client');
         $flavor = $currentBrand instanceof AppBrand ? $currentBrand->value : 'carbeat';
 
+        [$fromPage, $toPage] = $this->parsePageRange($validated['pages'] ?? null);
+
         $jobs = [];
         foreach ((array) $validated['urls'] as $url) {
             $jobId = Str::uuid()->toString();
@@ -52,7 +54,8 @@ class ImportController extends Controller
                 $jobId,
                 (int) $validated['service_id'],
                 (string) $url,
-                $validated['pages'] ?? null,
+                $fromPage,
+                $toPage,
                 $flavor, // Pass flavor to job
             ));
 
@@ -63,6 +66,27 @@ class ImportController extends Controller
         }
 
         return new ImportStartResponse(['jobs' => $jobs])->response();
+    }
+
+    /**
+     * Parse the "pages" form field into a [fromPage, toPage] pair.
+     * Accepts a plain count ("10" => [1, 10]), a range ("5-10" => [5, 10]), or empty ([null, null]).
+     *
+     * @return array{0:?int,1:?int}
+     */
+    private function parsePageRange(?string $pages): array
+    {
+        if (! $pages) {
+            return [null, null];
+        }
+        if (preg_match('/^(\d+)-(\d+)$/', $pages, $m)) {
+            return [(int) $m[1], (int) $m[2]];
+        }
+        if (ctype_digit($pages)) {
+            return [1, (int) $pages];
+        }
+
+        return [null, null];
     }
 
     /**
@@ -82,6 +106,7 @@ class ImportController extends Controller
     public function stop(string $jobId): JsonResponse
     {
         Cache::store('redis')->put("import_stop_{$jobId}", true, now()->addHour());
+
         return response()->json(['status' => 'ok']);
     }
 }

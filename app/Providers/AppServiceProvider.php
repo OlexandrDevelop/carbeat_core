@@ -6,14 +6,15 @@ use App\Http\Services\Import\AutoWerkstattImportService;
 use App\Http\Services\Import\ImportServiceFactory;
 use App\Http\Services\Import\MechanicAdvisorImportService;
 use App\Http\Services\Import\RatelistImportService;
+use App\Http\Services\Import\VseStoImportService;
 use App\Models\Master;
-use App\Support\AdminAccess;
+use App\Models\User;
 use App\Observers\MasterObserver;
+use App\Support\AdminAccess;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
-use Illuminate\Support\Facades\Gate;
-use App\Models\User;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(RatelistImportService::class),
                 $app->make(MechanicAdvisorImportService::class),
                 $app->make(AutoWerkstattImportService::class),
+                $app->make(VseStoImportService::class),
             );
         });
     }

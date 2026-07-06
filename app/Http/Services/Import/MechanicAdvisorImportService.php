@@ -19,6 +19,7 @@ use Symfony\Component\DomCrawler\Crawler;
 class MechanicAdvisorImportService implements ImportServiceInterface
 {
     private const XPATH_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
     private const XPATH_LOWER = 'abcdefghijklmnopqrstuvwxyz';
 
     private const URL = 'mechanicadvisor';
@@ -34,19 +35,18 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         return str_contains($url, 'mechanicadvisor.com');
     }
 
-    public function getDetailLinks(string $listUrl, ?int $maxPages = null): array
+    public function getDetailLinks(string $listUrl, ?int $maxPages = null, ?int $fromPage = null): array
     {
-        return $this->extractDetailLinks($listUrl, $maxPages);
+        return $this->extractDetailLinks($listUrl, $maxPages, $fromPage);
     }
-
 
     /**
      * Import masters from a RateList rating page.
      *
-     * @param int $serviceId Service id to assign (0 to auto-detect per item)
-     * @param string $listUrl Full URL to the list page (e.g. https://ratelist.top/l/kyiv/rating-435)
-     * @param int|null $limit Optional max items to import
-     * @param callable|null $onProgress Optional callback reporting progress
+     * @param  int  $serviceId  Service id to assign (0 to auto-detect per item)
+     * @param  string  $listUrl  Full URL to the list page (e.g. https://ratelist.top/l/kyiv/rating-435)
+     * @param  int|null  $limit  Optional max items to import
+     * @param  callable|null  $onProgress  Optional callback reporting progress
      * @return array{imported:int, skipped:int}
      */
     public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null): array
@@ -77,9 +77,10 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                         $onProgress([
                             'imported' => $imported,
                             'skipped' => $skipped,
-                            'processed' => $imported + $skipped
+                            'processed' => $imported + $skipped,
                         ]);
                     }
+
                     continue;
                 }
                 // Coordinates are required by DB schema; skip if missing
@@ -90,9 +91,10 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                         $onProgress([
                             'imported' => $imported,
                             'skipped' => $skipped,
-                            'processed' => $imported + $skipped
+                            'processed' => $imported + $skipped,
                         ]);
                     }
+
                     continue;
                 }
 
@@ -104,9 +106,10 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                         $onProgress([
                             'imported' => $imported,
                             'skipped' => $skipped,
-                            'processed' => $imported + $skipped
+                            'processed' => $imported + $skipped,
                         ]);
                     }
+
                     continue;
                 }
 
@@ -118,8 +121,12 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 if (! empty($dto['services'])) {
                     foreach ($dto['services'] as $serviceName) {
                         $normalized = ServiceNameMapper::toCanonical($serviceName);
-                        if ($normalized === '') { continue; }
-                        if (isset($seenNormalized[$normalized])) { continue; }
+                        if ($normalized === '') {
+                            continue;
+                        }
+                        if (isset($seenNormalized[$normalized])) {
+                            continue;
+                        }
                         $seenNormalized[$normalized] = true;
                         $serviceModels[] = Service::firstOrCreate(['name' => $normalized], ['name' => $normalized]);
                     }
@@ -149,33 +156,43 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                     $master = $this->masterService->importFromExternal($detectedServiceId, $payload, $this->clientService);
                     // Attach services via pivot
                     if (! empty($serviceModels)) {
-                        $ids = array_map(fn($s) => $s->id, $serviceModels);
+                        $ids = array_map(fn ($s) => $s->id, $serviceModels);
                         $master->services()->syncWithoutDetaching($ids);
                     }
                     // Save gallery photos if any (dedupe by content hash per master)
                     if (! empty($dto['gallery'])) {
                         foreach ($dto['gallery'] as $imgUrl) {
                             $base64 = $this->photoHelper->downloadAndConvertToBase64($imgUrl);
-                            if (! $base64) { continue; }
+                            if (! $base64) {
+                                continue;
+                            }
                             $decoded = $this->photoHelper->base64ToDecoded($base64);
-                            if (! $decoded) { continue; }
+                            if (! $decoded) {
+                                continue;
+                            }
                             $hash = sha1($decoded['decoded']);
                             // Skip if this master already has an image with same hash (stored in filename)
                             $exists = MasterGallery::where('master_id', $master->id)
                                 ->where('photo', 'like', "%$hash%")
                                 ->exists();
-                            if ($exists) { continue; }
+                            if ($exists) {
+                                continue;
+                            }
 
                             // Use hash in filename but place under flavor-specific directory to ensure isolation
-                            $fl = !empty($master->app) ? (string) $master->app : null;
+                            $fl = ! empty($master->app) ? (string) $master->app : null;
                             // Resolve runtime config fallback if needed
                             if (empty($fl)) {
                                 $cfg = config('app.client');
-                                if ($cfg instanceof \App\Enums\AppBrand) $fl = $cfg->value;
-                                elseif (is_string($cfg) && $cfg !== '') $fl = $cfg;
-                                else $fl = 'carbeat';
+                                if ($cfg instanceof \App\Enums\AppBrand) {
+                                    $fl = $cfg->value;
+                                } elseif (is_string($cfg) && $cfg !== '') {
+                                    $fl = $cfg;
+                                } else {
+                                    $fl = 'carbeat';
+                                }
                             }
-                            $path = 'images/' . $fl . '/' . $hash . '.' . strtolower($decoded['extension']);
+                            $path = 'images/'.$fl.'/'.$hash.'.'.strtolower($decoded['extension']);
                             if (! \Storage::disk('public')->exists($path)) {
                                 \Storage::disk('public')->put($path, $decoded['decoded']);
                             }
@@ -196,7 +213,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                         $onProgress([
                             'imported' => $imported,
                             'skipped' => $skipped,
-                            'processed' => $imported + $skipped
+                            'processed' => $imported + $skipped,
                         ]);
                     }
                 } catch (\Exception $e) {
@@ -204,14 +221,14 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                     Log::error('Failed to import master', [
                         'url' => $detailUrl,
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString(),
                     ]);
                     $skipped++;
                     if ($onProgress) {
                         $onProgress([
                             'imported' => $imported,
                             'skipped' => $skipped,
-                            'processed' => $imported + $skipped
+                            'processed' => $imported + $skipped,
                         ]);
                     }
                 }
@@ -219,14 +236,14 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 Log::error('Failed to scrape master', [
                     'url' => $detailUrl,
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]);
                 $skipped++;
                 if ($onProgress) {
                     $onProgress([
                         'imported' => $imported,
                         'skipped' => $skipped,
-                        'processed' => $imported + $skipped
+                        'processed' => $imported + $skipped,
                     ]);
                 }
             }
@@ -237,52 +254,67 @@ class MechanicAdvisorImportService implements ImportServiceInterface
 
     /**
      * Extract business detail links from a listing page.
+     *
      * @return array<int,string>
      */
-    private function extractDetailLinks(string $listUrl, ?int $maxPages = null): array
+    private function extractDetailLinks(string $listUrl, ?int $maxPages = null, ?int $fromPage = null): array
     {
         $allUrls = [];
 
         // Determine total pages from first page
         $baseUrl = $this->stripPageParam($listUrl);
         $firstResp = Http::withHeaders($this->defaultHeaders())->retry(2, 200)->get($this->withPage($baseUrl, 1));
-        if (! $firstResp->successful()) { return $allUrls; }
+        if (! $firstResp->successful()) {
+            return $allUrls;
+        }
         $firstCrawler = new Crawler($firstResp->body(), $baseUrl);
         $totalPages = $this->extractTotalPages($firstCrawler) ?: 1;
         if ($maxPages && $maxPages > 0) {
             $totalPages = min($totalPages, $maxPages);
         }
 
-        for ($page = 1; $page <= $totalPages; $page++) {
+        for ($page = $fromPage ?: 1; $page <= $totalPages; $page++) {
             $pageUrl = $this->withPage($baseUrl, $page);
             $resp = $page === 1 ? $firstResp : Http::withHeaders($this->defaultHeaders())->retry(2, 200)->get($pageUrl);
-            if (! $resp->successful()) { continue; }
+            if (! $resp->successful()) {
+                continue;
+            }
             $crawler = new Crawler($resp->body(), $pageUrl);
 
             $urls = [];
             // Primary: compose from list item ids
             $crawler->filter('li.company_card[data-id]')->each(function (Crawler $li) use (&$urls) {
                 $id = trim($li->attr('data-id') ?? '');
-                if ($id !== '' && ctype_digit($id)) { $urls[] = 'https://ratelist.top/' . $id; }
+                if ($id !== '' && ctype_digit($id)) {
+                    $urls[] = 'https://ratelist.top/'.$id;
+                }
             });
             // Fallback: explicit hidden link attribute
             if (empty($urls)) {
                 $crawler->filter('a[data-hidden-link]')->each(function (Crawler $a) use (&$urls, $pageUrl) {
                     $href = trim($a->attr('data-hidden-link') ?? '');
-                    if ($href !== '') { $urls[] = $this->absoluteUrl($href, $pageUrl); }
+                    if ($href !== '') {
+                        $urls[] = $this->absoluteUrl($href, $pageUrl);
+                    }
                 });
             }
             // Final fallback: any anchors that look like detail pages with numeric path
             if (empty($urls)) {
                 $crawler->filter('a')->each(function (Crawler $a) use (&$urls, $pageUrl) {
                     $href = $a->attr('href') ?? '';
-                    if (! $href) { return; }
+                    if (! $href) {
+                        return;
+                    }
                     $abs = $this->absoluteUrl($href, $pageUrl);
-                    if (preg_match('#^https?://'.self::URL.'\.com/\d{4,}$#', $abs)) { $urls[] = $abs; }
+                    if (preg_match('#^https?://'.self::URL.'\.com/\d{4,}$#', $abs)) {
+                        $urls[] = $abs;
+                    }
                 });
             }
 
-            foreach ($urls as $u) { $allUrls[] = $u; }
+            foreach ($urls as $u) {
+                $allUrls[] = $u;
+            }
         }
 
         return array_values(array_unique($allUrls));
@@ -294,8 +326,11 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         // Look for pagination block
         $crawler->filter('.pagination.pagination_js a[data-ci-pagination-page]')->each(function (Crawler $a) use (&$maxPage) {
             $num = (int) ($a->attr('data-ci-pagination-page') ?? 0);
-            if ($num > $maxPage) { $maxPage = $num; }
+            if ($num > $maxPage) {
+                $maxPage = $num;
+            }
         });
+
         return $maxPage > 0 ? $maxPage : 1;
     }
 
@@ -311,7 +346,8 @@ class MechanicAdvisorImportService implements ImportServiceInterface
             unset($query['page']);
         }
         $qs = http_build_query($query);
-        return $scheme . '://' . $host . $path . ($qs ? ('?' . $qs) : '');
+
+        return $scheme.'://'.$host.$path.($qs ? ('?'.$qs) : '');
     }
 
     private function withPage(string $baseUrl, int $page): string
@@ -321,15 +357,20 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         $host = $parts['host'] ?? '';
         $path = $parts['path'] ?? '';
         $query = [];
-        if (! empty($parts['query'])) { parse_str($parts['query'], $query); }
+        if (! empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+        }
         $query['p'] = $page;
         $qs = http_build_query($query);
-        return $scheme . '://' . $host . $path . '?' . $qs;
+
+        return $scheme.'://'.$host.$path.'?'.$qs;
     }
 
     /**
      * Scrape a business detail page into a DTO.
+     *
      * @return array<string,mixed>
+     *
      * @throws ConnectionException
      */
     private function scrapeDetail(string $detailUrl): array
@@ -347,8 +388,9 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         $mainPhoto = $this->getMainPhoto($imageUrls);
         $reviews = $this->getReviews($crawler);
         $workingHours = $this->getWorkingHours($crawler);
-        $placeId = 'mechadvisor:' . md5($detailUrl);
+        $placeId = 'mechadvisor:'.md5($detailUrl);
         $gallery = array_slice($imageUrls, 1, 12);
+
         return [
             'name' => $name,
             'phone' => $phone,
@@ -368,12 +410,14 @@ class MechanicAdvisorImportService implements ImportServiceInterface
     private function firstText(Crawler $crawler, string $selector): ?string
     {
         $node = $crawler->filter($selector)->first();
+
         return $node->count() ? trim($node->text('')) : null;
     }
 
     private function firstAttr(Crawler $crawler, string $selector, string $attr): ?string
     {
         $node = $crawler->filter($selector)->first();
+
         return $node->count() ? ($node->attr($attr) ?? null) : null;
     }
 
@@ -382,13 +426,15 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         if (str_starts_with($href, 'http://') || str_starts_with($href, 'https://')) {
             return $href;
         }
-        $baseHost = parse_url($base, PHP_URL_SCHEME) . '://' . parse_url($base, PHP_URL_HOST);
+        $baseHost = parse_url($base, PHP_URL_SCHEME).'://'.parse_url($base, PHP_URL_HOST);
         if (! str_starts_with($href, '/')) {
             $path = parse_url($base, PHP_URL_PATH) ?? '/';
             $dir = rtrim(dirname($path), '/');
-            return $baseHost . $dir . '/' . $href;
+
+            return $baseHost.$dir.'/'.$href;
         }
-        return $baseHost . $href;
+
+        return $baseHost.$href;
     }
 
     private function defaultHeaders(): array
@@ -408,6 +454,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 ?? $this->firstAttr($crawler, 'meta[name="twitter:title"]', 'content')
                 ?? $this->firstAttr($crawler, 'meta[name="title"]', 'content');
         }
+
         return $this->normalizeWhitespace($text);
     }
 
@@ -429,6 +476,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 $tel = $match[0];
             }
         }
+
         return $this->normalizeWhitespace($tel);
     }
 
@@ -443,6 +491,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 $address = $match[0];
             }
         }
+
         return $this->normalizeWhitespace($address);
     }
 
@@ -454,6 +503,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         if (! $desc) {
             $desc = $this->firstAttr($crawler, 'meta[name="description"]', 'content');
         }
+
         return $this->normalizeWhitespace($desc);
     }
 
@@ -468,6 +518,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                     $services[] = $text;
                 }
             });
+
         return array_values(array_unique($services));
     }
 
@@ -479,10 +530,13 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         $crawler->filterXPath(sprintf('//h2[%s]/following-sibling::*[(self::div or self::section)][1]//img', $condition))
             ->each(function (Crawler $img) use (&$urls, $base) {
                 $src = $img->attr('src') ?? '';
-                if ($src === '') { return; }
+                if ($src === '') {
+                    return;
+                }
                 $urls[] = $base ? $this->absoluteUrl($src, $base) : trim($src);
             });
         $urls = array_values(array_filter(array_unique($urls)));
+
         return $urls;
     }
 
@@ -494,6 +548,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 return $clean;
             }
         }
+
         return null;
     }
 
@@ -507,7 +562,9 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                 $title = $this->normalizeWhitespace($this->firstText($reviewNode, 'h4'));
                 $body = $this->normalizeWhitespace($this->firstText($reviewNode, 'p'));
                 $date = $this->normalizeWhitespace($this->firstText($reviewNode, '.text-sm.text-gray-500'));
-                if (! $author && ! $body) { return; }
+                if (! $author && ! $body) {
+                    return;
+                }
                 $reviews[] = array_filter([
                     'author_name' => $author,
                     'author_text' => $body,
@@ -515,6 +572,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
                     'relative_time_description' => $date,
                 ]);
             });
+
         return $reviews;
     }
 
@@ -525,13 +583,16 @@ class MechanicAdvisorImportService implements ImportServiceInterface
         $crawler->filterXPath(sprintf('//h3[%s]/following-sibling::div[contains(@class,"flex") and contains(@class,"justify-between")]', $condition))
             ->each(function (Crawler $line) use (&$hours) {
                 $dayNode = $line->filter('p');
-                if ($dayNode->count() < 2) { return; }
+                if ($dayNode->count() < 2) {
+                    return;
+                }
                 $day = $this->normalizeWhitespace($dayNode->eq(0)->text(''));
                 $time = $this->normalizeWhitespace($dayNode->eq(1)->text(''));
                 if ($day && $time) {
                     $hours[] = ['day' => $day, 'time' => $time];
                 }
             });
+
         return $hours ?: null;
     }
 
@@ -541,6 +602,7 @@ class MechanicAdvisorImportService implements ImportServiceInterface
             return null;
         }
         $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+
         return $value === '' ? null : $value;
     }
 

@@ -16,14 +16,17 @@ class ImportMasters implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 3600;
+
     public $backoff = 60;
 
     public function __construct(
         private readonly string $jobId,
         private readonly int $serviceId,
         private readonly string $url,
-        private readonly ?int $pages,
+        private readonly ?int $fromPage,
+        private readonly ?int $toPage,
         private readonly string $flavor = 'carbeat' // Default to carbeat if not provided
     ) {}
 
@@ -36,7 +39,8 @@ class ImportMasters implements ShouldQueue
             'job_id' => $this->jobId,
             'service_id' => $this->serviceId,
             'url' => $this->url,
-            'pages' => $this->pages,
+            'from_page' => $this->fromPage,
+            'to_page' => $this->toPage,
             'flavor' => $this->flavor,
         ]);
 
@@ -44,10 +48,10 @@ class ImportMasters implements ShouldQueue
             $importService = $importFactory->getImporter($this->url);
             // Expose job id for stop checks inside the service
             $GLOBALS['current_job_id'] = $this->jobId;
-            $detailUrls = $importService->getDetailLinks($this->url, $this->pages);
+            $detailUrls = $importService->getDetailLinks($this->url, $this->toPage, $this->fromPage);
             Log::info('Extracted detail URLs', [
                 'job_id' => $this->jobId,
-                'count' => count($detailUrls)
+                'count' => count($detailUrls),
             ]);
 
             Cache::store('redis')->put(
@@ -58,7 +62,7 @@ class ImportMasters implements ShouldQueue
                     'skipped' => 0,
                     'processed' => 0,
                     'error' => null,
-                    'total_urls' => count($detailUrls)
+                    'total_urls' => count($detailUrls),
                 ],
                 now()->addHour()
             );
@@ -72,7 +76,7 @@ class ImportMasters implements ShouldQueue
                     Log::info('Import progress update', [
                         'job_id' => $this->jobId,
                         'context' => $context,
-                        'total_urls' => count($detailUrls)
+                        'total_urls' => count($detailUrls),
                     ]);
 
                     $processed = (int) ($context['processed'] ?? 0);
@@ -89,7 +93,7 @@ class ImportMasters implements ShouldQueue
                             'processed' => (int) ($context['processed'] ?? 0),
                             'eta_seconds' => $eta !== null ? (int) $eta : null,
                             'error' => null,
-                            'total_urls' => count($detailUrls)
+                            'total_urls' => count($detailUrls),
                         ],
                         now()->addHour()
                     );
@@ -100,7 +104,7 @@ class ImportMasters implements ShouldQueue
             Log::info('Import completed', [
                 'job_id' => $this->jobId,
                 'result' => $result,
-                'total_urls' => count($detailUrls)
+                'total_urls' => count($detailUrls),
             ]);
 
             Cache::store('redis')->put(
@@ -112,7 +116,7 @@ class ImportMasters implements ShouldQueue
                     'processed' => (int) ($result['imported'] + $result['skipped']),
                     'eta_seconds' => 0,
                     'error' => null,
-                    'total_urls' => count($detailUrls)
+                    'total_urls' => count($detailUrls),
                 ],
                 now()->addHour()
             );
@@ -126,14 +130,14 @@ class ImportMasters implements ShouldQueue
                 ->limit(2000)
                 ->pluck('id')
                 ->all();
-            if (!empty($masterIds)) {
+            if (! empty($masterIds)) {
                 dispatch(new \App\Jobs\CreateMasterThumbnails($masterIds));
             }
 
         } catch (\Exception $e) {
             Log::error('Import failed', [
                 'job_id' => $this->jobId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             Cache::store('redis')->put(
@@ -144,7 +148,7 @@ class ImportMasters implements ShouldQueue
                     'skipped' => 0,
                     'processed' => 0,
                     'error' => $e->getMessage(),
-                    'total_urls' => 0
+                    'total_urls' => 0,
                 ],
                 now()->addHour()
             );
@@ -159,7 +163,7 @@ class ImportMasters implements ShouldQueue
     {
         Log::error('Import job failed', [
             'job_id' => $this->jobId,
-            'error' => $exception->getMessage()
+            'error' => $exception->getMessage(),
         ]);
 
         Cache::store('redis')->put(
@@ -170,7 +174,7 @@ class ImportMasters implements ShouldQueue
                 'skipped' => 0,
                 'processed' => 0,
                 'error' => $exception->getMessage(),
-                'total_urls' => 0
+                'total_urls' => 0,
             ],
             now()->addHour()
         );

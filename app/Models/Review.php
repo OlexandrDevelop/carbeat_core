@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AppScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Traits\AppScoped;
 
 /**
  * @property int $id
@@ -19,6 +19,7 @@ use App\Models\Traits\AppScoped;
  * @property string|null $deleted_at
  * @property-read \App\Models\Master $master
  * @property-read \App\Models\User $user
+ *
  * @method static \Database\Factories\ReviewFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newQuery()
@@ -34,15 +35,17 @@ use App\Models\Traits\AppScoped;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review whereReview($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class Review extends Model
 {
-    use HasFactory, AppScoped;
+    use AppScoped, HasFactory;
 
     protected $fillable = [
         'review',
         'rating',
+        'reviewed_at',
         'master_id',
         'user_id',
     ];
@@ -51,6 +54,7 @@ class Review extends Model
         'rating' => 'integer',
         'master_id' => 'integer',
         'user_id' => 'integer',
+        'reviewed_at' => 'datetime',
     ];
 
     /**

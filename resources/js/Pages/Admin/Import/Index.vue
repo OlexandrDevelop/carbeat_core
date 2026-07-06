@@ -51,12 +51,16 @@
                             >Pages limit (optional)</label
                         >
                         <input
-                            v-model.number="form.pages"
-                            type="number"
-                            min="1"
-                            placeholder="Leave empty for all pages"
+                            v-model="form.pages"
+                            type="text"
+                            pattern="\d+(-\d+)?"
+                            placeholder="e.g. 5 or 5-10 (leave empty for all pages)"
                             class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         />
+                        <p class="mt-1 text-xs text-gray-500">
+                            A single number crawls pages 1..N. A range like
+                            "5-10" crawls only that slice of pages.
+                        </p>
                     </div>
 
                     <div class="flex items-center justify-between">

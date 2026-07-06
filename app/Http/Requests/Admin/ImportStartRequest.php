@@ -39,11 +39,9 @@ class ImportStartRequest extends FormRequest
     {
         return [
             'service_id' => ['required', 'integer', 'min:0'],
-            'pages' => ['nullable', 'integer', 'min:1'],
+            'pages' => ['nullable', 'regex:/^\d+(-\d+)?$/'],
             'urls' => ['required', 'array', 'min:1'],
             'urls.*' => ['required', 'url'],
         ];
     }
 }
-
-

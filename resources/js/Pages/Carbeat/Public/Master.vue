@@ -485,23 +485,45 @@ function claimProfile() {
                     >
                         <span
                             class="mt-px h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                            :class="workStatus.isOpen ? 'bg-emerald-500' : 'bg-red-500'"
+                            :class="
+                                workStatus.isOpen
+                                    ? 'bg-emerald-500'
+                                    : 'bg-red-500'
+                            "
                         />
                         <span
                             class="text-[15px] font-semibold"
-                            :class="workStatus.isOpen ? 'text-emerald-700' : 'text-red-600'"
+                            :class="
+                                workStatus.isOpen
+                                    ? 'text-emerald-700'
+                                    : 'text-red-600'
+                            "
                         >
-                            {{ formatOpenLabel(currentLang, workStatus.isOpen) }}
+                            {{
+                                formatOpenLabel(currentLang, workStatus.isOpen)
+                            }}
                         </span>
                         <span class="text-[15px] text-slate-500">
-                            · {{ formatNextEventLabel(currentLang, workStatus) }}
+                            ·
+                            {{ formatNextEventLabel(currentLang, workStatus) }}
                         </span>
                         <svg
                             class="ml-auto h-4 w-4 flex-shrink-0 text-slate-400 transition-transform duration-300"
-                            :style="{ transform: scheduleOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
-                            viewBox="0 0 12 12" fill="none"
+                            :style="{
+                                transform: scheduleOpen
+                                    ? 'rotate(180deg)'
+                                    : 'rotate(0deg)',
+                            }"
+                            viewBox="0 0 12 12"
+                            fill="none"
                         >
-                            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path
+                                d="M2 4l4 4 4-4"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
                         </svg>
                     </button>
 
@@ -514,9 +536,16 @@ function claimProfile() {
                         @after-leave="scheduleAfterLeave"
                     >
                         <div
-                            v-if="workingSchedule.length && (!workStatus || scheduleOpen)"
+                            v-if="
+                                workingSchedule.length &&
+                                (!workStatus || scheduleOpen)
+                            "
                             class="space-y-px overflow-hidden"
-                            :class="workStatus ? 'rounded-b-2xl bg-slate-200' : 'rounded-2xl bg-slate-200'"
+                            :class="
+                                workStatus
+                                    ? 'rounded-b-2xl bg-slate-200'
+                                    : 'rounded-2xl bg-slate-200'
+                            "
                         >
                             <div
                                 v-for="item in workingSchedule"
@@ -528,7 +557,11 @@ function claimProfile() {
                                 }}</span>
                                 <span
                                     class="text-[15px] font-medium"
-                                    :class="item.value ? 'text-slate-900' : 'text-slate-400'"
+                                    :class="
+                                        item.value
+                                            ? 'text-slate-900'
+                                            : 'text-slate-400'
+                                    "
                                     >{{ item.value ?? 'Вихідний' }}</span
                                 >
                             </div>

@@ -9,16 +9,54 @@ export type WorkStatus = {
     nextDay: string | null; // null = today, otherwise full day name e.g. 'wednesday'
 };
 
-const DAY_INDEX = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const DAY_INDEX = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+];
 
 export const SCHEDULE_ORDER = [
-    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
 ];
 
 const SHORT_DAY: Record<string, Record<string, string>> = {
-    en: { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' },
-    uk: { monday: 'Пн', tuesday: 'Вт', wednesday: 'Ср', thursday: 'Чт', friday: 'Пт', saturday: 'Сб', sunday: 'Нд' },
-    de: { monday: 'Mo', tuesday: 'Di', wednesday: 'Mi', thursday: 'Do', friday: 'Fr', saturday: 'Sa', sunday: 'So' },
+    en: {
+        monday: 'Mon',
+        tuesday: 'Tue',
+        wednesday: 'Wed',
+        thursday: 'Thu',
+        friday: 'Fri',
+        saturday: 'Sat',
+        sunday: 'Sun',
+    },
+    uk: {
+        monday: 'Пн',
+        tuesday: 'Вт',
+        wednesday: 'Ср',
+        thursday: 'Чт',
+        friday: 'Пт',
+        saturday: 'Сб',
+        sunday: 'Нд',
+    },
+    de: {
+        monday: 'Mo',
+        tuesday: 'Di',
+        wednesday: 'Mi',
+        thursday: 'Do',
+        friday: 'Fr',
+        saturday: 'Sa',
+        sunday: 'So',
+    },
 };
 
 export function getShortDayLabel(lang: string, dayKey: string): string {
@@ -30,8 +68,11 @@ function toMinutes(time: string): number {
     return h * 60 + m;
 }
 
-export function getWorkStatus(hours: WorkingHoursData | null | undefined): WorkStatus | null {
-    if (!hours || typeof hours !== 'object' || Array.isArray(hours)) return null;
+export function getWorkStatus(
+    hours: WorkingHoursData | null | undefined,
+): WorkStatus | null {
+    if (!hours || typeof hours !== 'object' || Array.isArray(hours))
+        return null;
 
     const now = new Date();
     const todayIndex = now.getDay();
@@ -59,7 +100,11 @@ export function getWorkStatus(hours: WorkingHoursData | null | undefined): WorkS
         if (!nextKey) continue;
         const nextSlots = hours[nextKey];
         if (Array.isArray(nextSlots) && nextSlots.length > 0 && nextSlots[0]) {
-            return { isOpen: false, nextTime: nextSlots[0].open, nextDay: nextKey };
+            return {
+                isOpen: false,
+                nextTime: nextSlots[0].open,
+                nextDay: nextKey,
+            };
         }
     }
 
@@ -78,7 +123,9 @@ export function formatOpenLabel(lang: string, isOpen: boolean): string {
 }
 
 export function formatNextEventLabel(lang: string, status: WorkStatus): string {
-    const dayStr = status.nextDay ? `${getShortDayLabel(lang, status.nextDay)} ` : '';
+    const dayStr = status.nextDay
+        ? `${getShortDayLabel(lang, status.nextDay)} `
+        : '';
     if (status.isOpen) {
         if (lang === 'uk') return `Зачиняється о ${status.nextTime}`;
         if (lang === 'de') return `Schließt um ${status.nextTime}`;
@@ -95,7 +142,8 @@ export function scheduleEnter(el: Element): void {
     h.style.opacity = '0';
     h.style.overflow = 'hidden';
     requestAnimationFrame(() => {
-        h.style.transition = 'height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.32s ease';
+        h.style.transition =
+            'height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.32s ease';
         h.style.height = h.scrollHeight + 'px';
         h.style.opacity = '1';
     });
@@ -114,7 +162,8 @@ export function scheduleLeave(el: Element): void {
     h.style.height = h.scrollHeight + 'px';
     h.style.overflow = 'hidden';
     requestAnimationFrame(() => {
-        h.style.transition = 'height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease';
+        h.style.transition =
+            'height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease';
         h.style.height = '0';
         h.style.opacity = '0';
     });
@@ -133,15 +182,14 @@ export function formatWorkingHours(
 ): Array<{ dayKey: string; value: string | null }> {
     if (!hours || typeof hours !== 'object' || Array.isArray(hours)) return [];
 
-    return SCHEDULE_ORDER
-        .filter((key) => key in hours)
-        .map((key) => {
-            const slots = hours[key];
-            if (!Array.isArray(slots) || slots.length === 0) return { dayKey: key, value: null };
-            const slot = slots[0];
-            if (slot && 'open' in slot && 'close' in slot) {
-                return { dayKey: key, value: `${slot.open} – ${slot.close}` };
-            }
+    return SCHEDULE_ORDER.filter((key) => key in hours).map((key) => {
+        const slots = hours[key];
+        if (!Array.isArray(slots) || slots.length === 0)
             return { dayKey: key, value: null };
-        });
+        const slot = slots[0];
+        if (slot && 'open' in slot && 'close' in slot) {
+            return { dayKey: key, value: `${slot.open} – ${slot.close}` };
+        }
+        return { dayKey: key, value: null };
+    });
 }

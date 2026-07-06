@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import GuestMapPage from '../../Carbeat/Public/GuestMap.vue';
+import GuestMapPage from '@/components/GuestMap/GuestMapPage.vue';
+import type {
+    MasterDetails,
+    SeoContentPayload,
+    SeoPayload,
+} from '@/types/guest-map';
 
 defineProps<{
     apiBase: string;
@@ -7,22 +12,12 @@ defineProps<{
     profilePathPrefix?: string;
     initialMapView?: { center: [number, number]; zoom: number } | null;
     initialServiceId?: number | null;
-    initialSelectedMaster?: any;
-    seo?: any;
-    seoContent?: any;
+    initialSelectedMaster?: MasterDetails | null;
+    seo?: SeoPayload | null;
+    seoContent?: SeoContentPayload | null;
 }>();
 </script>
 
 <template>
-    <GuestMapPage
-        :api-base="apiBase"
-        :map-path="mapPath"
-        :profile-path-prefix="profilePathPrefix"
-        :initial-map-view="initialMapView"
-        :initial-service-id="initialServiceId"
-        :initial-selected-master="initialSelectedMaster"
-        :seo="seo"
-        :seo-content="seoContent"
-        flavor="floxcity"
-    />
+    <GuestMapPage v-bind="$props" flavor="floxcity" />
 </template>

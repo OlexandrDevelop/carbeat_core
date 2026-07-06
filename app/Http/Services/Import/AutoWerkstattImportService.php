@@ -22,13 +22,13 @@ class AutoWerkstattImportService implements ImportServiceInterface
     private const HOST = 'www.auto-werkstatt.de';
 
     private const DAY_MAP = [
-        'monday'    => 'monday',
-        'tuesday'   => 'tuesday',
+        'monday' => 'monday',
+        'tuesday' => 'tuesday',
         'wednesday' => 'wednesday',
-        'thursday'  => 'thursday',
-        'friday'    => 'friday',
-        'saturday'  => 'saturday',
-        'sunday'    => 'sunday',
+        'thursday' => 'thursday',
+        'friday' => 'friday',
+        'saturday' => 'saturday',
+        'sunday' => 'sunday',
     ];
 
     public function __construct(
@@ -42,9 +42,9 @@ class AutoWerkstattImportService implements ImportServiceInterface
         return str_contains($url, 'auto-werkstatt.de');
     }
 
-    public function getDetailLinks(string $listUrl, ?int $maxPages = null): array
+    public function getDetailLinks(string $listUrl, ?int $maxPages = null, ?int $fromPage = null): array
     {
-        return $this->extractDetailLinks($listUrl, $maxPages);
+        return $this->extractDetailLinks($listUrl, $maxPages, $fromPage);
     }
 
     public function performImport(
@@ -55,8 +55,8 @@ class AutoWerkstattImportService implements ImportServiceInterface
         ?array $prefetchedDetailUrls = null,
     ): array {
         $imported = 0;
-        $skipped  = 0;
-        $stopped  = false;
+        $skipped = 0;
+        $stopped = false;
 
         $detailUrls = $prefetchedDetailUrls ?? $this->extractDetailLinks($listUrl);
 
@@ -75,6 +75,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     $skipped++;
                     Log::info('AutoWerkstatt: kein Telefon', ['url' => $detailUrl]);
                     $onProgress && $onProgress(['imported' => $imported, 'skipped' => $skipped, 'processed' => $imported + $skipped]);
+
                     continue;
                 }
 
@@ -82,6 +83,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     $skipped++;
                     Log::warning('AutoWerkstatt import: fehlende Koordinaten', ['url' => $detailUrl]);
                     $onProgress && $onProgress(['imported' => $imported, 'skipped' => $skipped, 'processed' => $imported + $skipped]);
+
                     continue;
                 }
 
@@ -95,6 +97,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                         'phone' => $dto['phone'],
                     ]);
                     $onProgress && $onProgress(['imported' => $imported, 'skipped' => $skipped, 'processed' => $imported + $skipped]);
+
                     continue;
                 }
 
@@ -118,16 +121,16 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     : null;
 
                 $payload = [
-                    'name'          => $dto['name'],
-                    'phone'         => $dto['phone'],
-                    'address'       => $dto['address'],
-                    'description'   => $dto['description'],
-                    'coordinates'   => ['lat' => $dto['lat'], 'lng' => $dto['lng']],
-                    'city_id'       => $city?->id,
-                    'main_photo'    => $dto['main_photo'],
-                    'reviews'       => $dto['reviews'],
+                    'name' => $dto['name'],
+                    'phone' => $dto['phone'],
+                    'address' => $dto['address'],
+                    'description' => $dto['description'],
+                    'coordinates' => ['lat' => $dto['lat'], 'lng' => $dto['lng']],
+                    'city_id' => $city?->id,
+                    'main_photo' => $dto['main_photo'],
+                    'reviews' => $dto['reviews'],
                     'working_hours' => $dto['working_hours'],
-                    'place_id'      => $dto['place_id'],
+                    'place_id' => $dto['place_id'],
                     'rating_google' => $dto['rating'] ?? null,
                 ];
 
@@ -136,7 +139,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     $master = $this->masterService->importFromExternal($resolvedServiceId, $payload, $this->clientService);
 
                     if (! empty($serviceModels)) {
-                        $master->services()->syncWithoutDetaching(array_map(fn($s) => $s->id, $serviceModels));
+                        $master->services()->syncWithoutDetaching(array_map(fn ($s) => $s->id, $serviceModels));
                     }
 
                     if (! empty($dto['extra_info'])) {
@@ -173,7 +176,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                                     $fl = 'carbeat';
                                 }
                             }
-                            $path = 'images/' . $fl . '/' . $hash . '.' . strtolower($decoded['extension']);
+                            $path = 'images/'.$fl.'/'.$hash.'.'.strtolower($decoded['extension']);
                             if (! Storage::disk('public')->exists($path)) {
                                 Storage::disk('public')->put($path, $decoded['decoded']);
                             }
@@ -204,10 +207,10 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
     // ─── private ───────────────────────────────────────────────────────────────
 
-    private function extractDetailLinks(string $listUrl, ?int $maxPages = null): array
+    private function extractDetailLinks(string $listUrl, ?int $maxPages = null, ?int $fromPage = null): array
     {
-        $baseUrl    = $this->stripPageParam($listUrl);
-        $firstResp  = Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($this->withPage($baseUrl, 1));
+        $baseUrl = $this->stripPageParam($listUrl);
+        $firstResp = Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($this->withPage($baseUrl, 1));
 
         if (! $firstResp->successful()) {
             return [];
@@ -220,8 +223,8 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
         $allUrls = [];
 
-        for ($page = 1; $page <= $totalPages; $page++) {
-            $resp    = $page === 1 ? $firstResp : Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($this->withPage($baseUrl, $page));
+        for ($page = $fromPage ?: 1; $page <= $totalPages; $page++) {
+            $resp = $page === 1 ? $firstResp : Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($this->withPage($baseUrl, $page));
             $crawler = new Crawler($resp->body(), $listUrl);
 
             foreach ($this->extractUrlsFromListingPage($crawler) as $url) {
@@ -234,6 +237,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
     /**
      * Extract detail page URLs from listing JSON-LD itemListElement.
+     *
      * @return string[]
      */
     private function extractUrlsFromListingPage(Crawler $crawler): array
@@ -254,7 +258,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     }
                     $url = strtok($id, '#');
                     if ($url && str_contains($url, self::HOST)) {
-                        $urls[] = rtrim($url, '/') . '/';
+                        $urls[] = rtrim($url, '/').'/';
                     }
                 }
             }
@@ -265,7 +269,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
             $crawler->filter('a[href]')->each(function (Crawler $a) use (&$urls) {
                 $href = $a->attr('href') ?? '';
                 if (preg_match('#^(?:https?://(?:www\.)?auto-werkstatt\.de)?(/[a-z][a-z\-]+/[a-z][^/]+-a[A-Za-z0-9]{5,})/?$#', $href, $m)) {
-                    $urls[] = 'https://' . self::HOST . rtrim($m[1], '/') . '/';
+                    $urls[] = 'https://'.self::HOST.rtrim($m[1], '/').'/';
                 }
             });
         }
@@ -281,37 +285,39 @@ class AutoWerkstattImportService implements ImportServiceInterface
                 $max = max($max, (int) $m[1]);
             }
         });
+
         return max($max, 1);
     }
 
     /**
      * Scrape one detail page and return a normalised DTO.
+     *
      * @return array<string,mixed>
      */
     private function scrapeDetail(string $detailUrl): array
     {
-        $resp    = Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($detailUrl);
+        $resp = Http::withHeaders($this->defaultHeaders())->retry(2, 300)->get($detailUrl);
         $crawler = new Crawler($resp->body(), $detailUrl);
 
         $business = $this->extractBusinessBlock($crawler);
 
-        $name        = $business['name'] ?? null;
-        $phone       = $business['telephone'] ?? null;
+        $name = $business['name'] ?? null;
+        $phone = $business['telephone'] ?? null;
         $description = $business['description'] ?? null;
-        $lat         = $business['geo']['latitude'] ?? null;
-        $lng         = $business['geo']['longitude'] ?? null;
-        $rating      = $business['aggregateRating']['ratingValue'] ?? null;
+        $lat = $business['geo']['latitude'] ?? null;
+        $lng = $business['geo']['longitude'] ?? null;
+        $rating = $business['aggregateRating']['ratingValue'] ?? null;
 
-        $addrBlock  = $business['address'] ?? [];
-        $address    = $this->buildAddress($addrBlock);
-        $cityName   = trim((string) ($addrBlock['addressLocality'] ?? '')) ?: null;
+        $addrBlock = $business['address'] ?? [];
+        $address = $this->buildAddress($addrBlock);
+        $cityName = trim((string) ($addrBlock['addressLocality'] ?? '')) ?: null;
         $postalCode = trim((string) ($addrBlock['postalCode'] ?? '')) ?: null;
-        $services   = $this->extractServices($business);
-        $reviews    = $this->extractReviews($business);
-        $placeId    = 'auto-werkstatt:' . md5(rtrim($detailUrl, '/'));
+        $services = $this->extractServices($business);
+        $reviews = $this->extractReviews($business);
+        $placeId = 'auto-werkstatt:'.md5(rtrim($detailUrl, '/'));
         [$mainPhoto, $gallery] = $this->extractImages($business);
         $workingHours = $this->extractOpeningHours($business);
-        $extraInfo    = $this->extractExtraInfo($business, $crawler);
+        $extraInfo = $this->extractExtraInfo($business, $crawler);
 
         // Phone fallback from HTML
         if (! $phone) {
@@ -322,27 +328,28 @@ class AutoWerkstattImportService implements ImportServiceInterface
         }
 
         return [
-            'name'          => $name ?? 'Keine Angabe',
-            'phone'         => $phone,
-            'address'       => $address,
-            'city'          => $cityName,
-            'postal_code'   => $postalCode,
-            'description'   => $description,
-            'lat'           => $lat,
-            'lng'           => $lng,
-            'main_photo'    => $mainPhoto,
-            'gallery'       => $gallery,
-            'services'      => $services,
-            'reviews'       => $reviews,
-            'place_id'      => $placeId,
-            'rating'        => $rating,
+            'name' => $name ?? 'Keine Angabe',
+            'phone' => $phone,
+            'address' => $address,
+            'city' => $cityName,
+            'postal_code' => $postalCode,
+            'description' => $description,
+            'lat' => $lat,
+            'lng' => $lng,
+            'main_photo' => $mainPhoto,
+            'gallery' => $gallery,
+            'services' => $services,
+            'reviews' => $reviews,
+            'place_id' => $placeId,
+            'rating' => $rating,
             'working_hours' => $workingHours,
-            'extra_info'    => $extraInfo,
+            'extra_info' => $extraInfo,
         ];
     }
 
     /**
      * Extract the AutoRepair block from the page JSON-LD @graph.
+     *
      * @return array<string,mixed>
      */
     private function extractBusinessBlock(Crawler $crawler): array
@@ -365,10 +372,12 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     || str_contains(strtolower((string) $type), 'localbusiness')
                 ) {
                     $result = $node;
+
                     return;
                 }
             }
         });
+
         return $result;
     }
 
@@ -409,6 +418,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
     /**
      * Convert openingHoursSpecification JSON-LD to {monday:[{open,close}],...} format.
+     *
      * @return array<string,list<array{open:string,close:string}>>|null
      */
     private function extractOpeningHours(array $business): ?array
@@ -420,8 +430,8 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
         $hours = [];
         foreach ((array) $specs as $spec) {
-            $days   = (array) ($spec['dayOfWeek'] ?? []);
-            $opens  = $spec['opens']  ?? null;
+            $days = (array) ($spec['dayOfWeek'] ?? []);
+            $opens = $spec['opens'] ?? null;
             $closes = $spec['closes'] ?? null;
             if ($opens === null || $closes === null) {
                 continue;
@@ -440,6 +450,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
     /**
      * Collect website, social links, and "Weitere Informationen" HTML key-values.
+     *
      * @return array<string,mixed>|null
      */
     private function extractExtraInfo(array $business, Crawler $crawler): ?array
@@ -456,17 +467,17 @@ class AutoWerkstattImportService implements ImportServiceInterface
 
         // "Weitere Informationen" definition list (dl/dt+dd) or table after a matching h2/h3
         $weitereXpath = '//*[self::h2 or self::h3][contains(translate(., '
-            . '"ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", "abcdefghijklmnopqrstuvwxyzäöü"), '
-            . '"weitere informationen")]';
+            .'"ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", "abcdefghijklmnopqrstuvwxyzäöü"), '
+            .'"weitere informationen")]';
 
         try {
             $headings = $crawler->filterXPath($weitereXpath);
             if ($headings->count() > 0) {
                 // Try DL sibling first
-                $dl = $crawler->filterXPath($weitereXpath . '/following-sibling::dl[1]');
+                $dl = $crawler->filterXPath($weitereXpath.'/following-sibling::dl[1]');
                 if ($dl->count() > 0) {
-                    $terms = $dl->filter('dt')->each(fn(Crawler $n) => trim($n->text('')));
-                    $defs  = $dl->filter('dd')->each(fn(Crawler $n) => trim($n->text('')));
+                    $terms = $dl->filter('dt')->each(fn (Crawler $n) => trim($n->text('')));
+                    $defs = $dl->filter('dd')->each(fn (Crawler $n) => trim($n->text('')));
                     foreach ($terms as $i => $term) {
                         if ($term !== '' && isset($defs[$i]) && $defs[$i] !== '') {
                             $info['weitere_informationen'][$term] = $defs[$i];
@@ -474,7 +485,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     }
                 }
                 // Try table sibling
-                $table = $crawler->filterXPath($weitereXpath . '/following-sibling::table[1]');
+                $table = $crawler->filterXPath($weitereXpath.'/following-sibling::table[1]');
                 if ($table->count() > 0) {
                     $table->filter('tr')->each(function (Crawler $tr) use (&$info) {
                         $cells = $tr->filter('td, th');
@@ -488,7 +499,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     });
                 }
                 // Try ul/li sibling as "Key: Value" lines
-                $ul = $crawler->filterXPath($weitereXpath . '/following-sibling::ul[1]');
+                $ul = $crawler->filterXPath($weitereXpath.'/following-sibling::ul[1]');
                 if ($ul->count() > 0) {
                     $ul->filter('li')->each(function (Crawler $li) use (&$info) {
                         $text = trim($li->text(''));
@@ -514,9 +525,10 @@ class AutoWerkstattImportService implements ImportServiceInterface
     {
         $parts = array_filter([
             $addr['streetAddress'] ?? null,
-            trim(($addr['postalCode'] ?? '') . ' ' . ($addr['addressLocality'] ?? '')),
+            trim(($addr['postalCode'] ?? '').' '.($addr['addressLocality'] ?? '')),
         ]);
         $address = implode(', ', $parts);
+
         return $address !== '' ? $address : null;
     }
 
@@ -532,6 +544,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
                 $services[] = $name;
             }
         }
+
         return array_values(array_unique($services));
     }
 
@@ -543,17 +556,18 @@ class AutoWerkstattImportService implements ImportServiceInterface
         $reviews = [];
         foreach ($business['review'] ?? [] as $rev) {
             $author = $rev['author']['name'] ?? ($rev['author'] ?? 'Anonym');
-            $text   = $rev['reviewBody'] ?? ($rev['description'] ?? '');
+            $text = $rev['reviewBody'] ?? ($rev['description'] ?? '');
             $rating = $rev['reviewRating']['ratingValue'] ?? null;
             if ($text === '') {
                 continue;
             }
             $reviews[] = [
                 'author' => (string) $author,
-                'text'   => (string) $text,
+                'text' => (string) $text,
                 'rating' => (string) ($rating ?? ''),
             ];
         }
+
         return $reviews;
     }
 
@@ -572,12 +586,13 @@ class AutoWerkstattImportService implements ImportServiceInterface
                     $updates['country_code'] = 'de';
                 }
                 if ($lat && ! $city->latitude) {
-                    $updates['latitude']  = $lat;
+                    $updates['latitude'] = $lat;
                     $updates['longitude'] = $lng;
                 }
                 if ($updates) {
                     $city->update($updates);
                 }
+
                 return $city;
             }
         }
@@ -596,23 +611,24 @@ class AutoWerkstattImportService implements ImportServiceInterface
                 $updates['country_code'] = 'de';
             }
             if ($lat && ! $city->latitude) {
-                $updates['latitude']  = $lat;
+                $updates['latitude'] = $lat;
                 $updates['longitude'] = $lng;
             }
             if ($updates) {
                 $city->update($updates);
             }
+
             return $city;
         }
 
         // 3. Create new city with all available data
         return City::create(array_filter([
-            'name'         => $name,
-            'postal_code'  => $postalCode,
+            'name' => $name,
+            'postal_code' => $postalCode,
             'country_code' => 'de',
-            'latitude'     => $lat,
-            'longitude'    => $lng,
-        ], fn($v) => $v !== null && $v !== ''));
+            'latitude' => $lat,
+            'longitude' => $lng,
+        ], fn ($v) => $v !== null && $v !== ''));
     }
 
     private function stripPageParam(string $url): string
@@ -624,8 +640,9 @@ class AutoWerkstattImportService implements ImportServiceInterface
             unset($query['page']);
         }
         $qs = http_build_query($query);
-        return ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '') . ($parts['path'] ?? '')
-            . ($qs ? "?{$qs}" : '');
+
+        return ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').($parts['path'] ?? '')
+            .($qs ? "?{$qs}" : '');
     }
 
     private function withPage(string $baseUrl, int $page): string
@@ -639,21 +656,23 @@ class AutoWerkstattImportService implements ImportServiceInterface
             $query['page'] = $page;
         }
         $qs = http_build_query($query);
-        return ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '') . ($parts['path'] ?? '')
-            . ($qs ? "?{$qs}" : '');
+
+        return ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').($parts['path'] ?? '')
+            .($qs ? "?{$qs}" : '');
     }
 
     private function defaultHeaders(): array
     {
         return [
-            'User-Agent'      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+            'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
             'Accept-Language' => 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         ];
     }
 
     /**
      * Parse JSON-LD string and return the @graph array, or null on failure.
+     *
      * @return array<int,array<string,mixed>>|null
      */
     private function parseJson(string $raw): ?array
@@ -670,6 +689,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
         if (! is_array($decoded)) {
             return null;
         }
+
         return $decoded['@graph'] ?? [$decoded];
     }
 }
