@@ -35,13 +35,31 @@ readonly class MasterFetcher
         $lat = $validated['lat'] ?? 50.4501;
         $lng = $validated['lng'] ?? 30.5234;
         $zoom = $validated['zoom'] ?? 12;
+        $perPage = $validated['per_page'] ?? null;
+
+        // Optional exact viewport bbox (all four present) — additive, used by the web map only.
+        $bbox = null;
+        if (isset($validated['min_lat'], $validated['max_lat'], $validated['min_lng'], $validated['max_lng'])) {
+            $bbox = [
+                'min_lat' => $validated['min_lat'],
+                'max_lat' => $validated['max_lat'],
+                'min_lng' => $validated['min_lng'],
+                'max_lng' => $validated['max_lng'],
+            ];
+        }
+
+        // Optional lightweight field set — additive, used by the web map only.
+        $fields = $validated['fields'] ?? null;
 
         $masters = $this->masterService->getMastersOnDistance(
             $page,
             $lat,
             $lng,
             $zoom,
-            $filters
+            $filters,
+            $perPage,
+            $bbox,
+            $fields
         );
 
         // Extract master IDs and app values from the array data

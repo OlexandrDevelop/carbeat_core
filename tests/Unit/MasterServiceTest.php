@@ -50,7 +50,7 @@ class MasterServiceTest extends TestCase
         $searchMock = Mockery::mock(MasterSearchService::class);
         $searchMock->shouldReceive('getMastersOnDistance')
             ->once()
-            ->andReturn($items);
+            ->andReturn(['data' => $items, 'total' => count($items)]);
 
         $service = $this->makeService($searchMock);
         $paginator = $service->getMastersOnDistance(1, 50.0, 30.0, 5.0, []);

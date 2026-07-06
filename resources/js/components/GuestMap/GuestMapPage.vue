@@ -360,30 +360,61 @@ async function loadMasters(): Promise<void> {
     const seq = ++mastersRequestSeq;
     showLoadingSoon();
 
+    const baseParams = {
+        per_page: 1500,
+        zoom: Math.round(zoom),
+        lat,
+        lng,
+        min_lat: view.bounds.getSouth(),
+        max_lat: view.bounds.getNorth(),
+        min_lng: view.bounds.getWest(),
+        max_lng: view.bounds.getEast(),
+        fields: 'light',
+        locale: currentLang.value,
+        service_id: selectedServiceId.value || undefined,
+        available: availableOnly.value ? 1 : undefined,
+        name: search || undefined,
+    };
+
     try {
-        const data = await cachedApi.getCached<{ data: MasterDetails[] }>(
-            cacheKey,
-            '/masters',
-            {
-                params: {
-                    per_page: 200,
-                    page: 1,
-                    zoom: Math.round(zoom),
-                    lat,
-                    lng,
-                    locale: currentLang.value,
-                    service_id: selectedServiceId.value || undefined,
-                    available: availableOnly.value ? 1 : undefined,
-                    name: search || undefined,
-                },
-                ttlMs: MASTERS_LIST_TTL,
-                group: 'masters',
-            },
-        );
+        const firstPage = await cachedApi.getCached<{
+            data: MasterDetails[];
+            meta?: { last_page?: number };
+        }>(cacheKey, '/masters', {
+            params: { ...baseParams, page: 1 },
+            ttlMs: MASTERS_LIST_TTL,
+            group: 'masters',
+        });
 
         if (seq !== mastersRequestSeq) return;
 
-        const list = Array.isArray(data?.data) ? data.data : [];
+        let list = Array.isArray(firstPage?.data) ? firstPage.data : [];
+
+        // The bbox can match more masters than fit on one page (e.g. a whole-country
+        // view) — fetch the rest in parallel so the map always shows every match,
+        // not just the first slice. Mirrors the Flutter map's own fetch-all-pages logic.
+        const lastPage = firstPage?.meta?.last_page ?? 1;
+        if (lastPage > 1) {
+            const extraPages = await Promise.all(
+                Array.from({ length: lastPage - 1 }, (_, i) => i + 2).map(
+                    (page) =>
+                        cachedApi.getCached<{ data: MasterDetails[] }>(
+                            `${cacheKey}:page:${page}`,
+                            '/masters',
+                            {
+                                params: { ...baseParams, page },
+                                ttlMs: MASTERS_LIST_TTL,
+                                group: `masters-page-${seq}-${page}`,
+                            },
+                        ),
+                ),
+            );
+            if (seq !== mastersRequestSeq) return;
+            for (const extra of extraPages) {
+                if (Array.isArray(extra?.data)) list = list.concat(extra.data);
+            }
+        }
+
         currentMasters.value =
             selectedMaster.value &&
             !list.some((m) => m.id === selectedMaster.value?.id)

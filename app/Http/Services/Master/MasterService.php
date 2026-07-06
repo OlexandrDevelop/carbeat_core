@@ -41,15 +41,17 @@ class MasterService
         float $lat,
         float $lng,
         float $zoom,
-        array $filters
+        array $filters,
+        ?int $perPage = null,
+        ?array $bbox = null,
+        ?string $fields = null
     ): LengthAwarePaginator {
-        $perPage = 10000;
+        $perPage = $perPage ?? 10000;
 
-        // get masters
-        $masters = $this->masterSearchService->getMastersOnDistance($lat, $lng, $zoom, $filters, $perPage, $page);
-
-        // get general count of masters
-        $totalMasters = count($masters);
+        // get masters (current page) and the true total match count across all pages
+        $result = $this->masterSearchService->getMastersOnDistance($lat, $lng, $zoom, $filters, $perPage, $page, $bbox, $fields);
+        $masters = $result['data'];
+        $totalMasters = $result['total'];
 
         // create paginator
         return $this->paginatorService->paginate($masters, $totalMasters, $perPage, $page);
