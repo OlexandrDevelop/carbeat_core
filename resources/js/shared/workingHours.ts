@@ -177,6 +177,38 @@ export function scheduleAfterLeave(el: Element): void {
     h.style.transition = '';
 }
 
+const SCHEMA_DAY: Record<string, string> = {
+    monday: 'https://schema.org/Monday',
+    tuesday: 'https://schema.org/Tuesday',
+    wednesday: 'https://schema.org/Wednesday',
+    thursday: 'https://schema.org/Thursday',
+    friday: 'https://schema.org/Friday',
+    saturday: 'https://schema.org/Saturday',
+    sunday: 'https://schema.org/Sunday',
+};
+
+export function buildOpeningHoursSpecification(
+    hours: WorkingHoursData | null | undefined,
+): Array<Record<string, string>> | null {
+    if (!hours || typeof hours !== 'object' || Array.isArray(hours))
+        return null;
+
+    const specs = SCHEDULE_ORDER.flatMap((key) => {
+        const slots = hours[key];
+        if (!Array.isArray(slots)) return [];
+        return slots
+            .filter((slot) => slot && slot.open && slot.close)
+            .map((slot) => ({
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: SCHEMA_DAY[key] ?? key,
+                opens: slot.open,
+                closes: slot.close,
+            }));
+    });
+
+    return specs.length ? specs : null;
+}
+
 export function formatWorkingHours(
     hours: WorkingHoursData | null | undefined,
 ): Array<{ dayKey: string; value: string | null }> {

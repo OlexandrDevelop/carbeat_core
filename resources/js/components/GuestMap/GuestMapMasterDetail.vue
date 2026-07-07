@@ -13,7 +13,7 @@ import {
     type WorkStatus,
 } from '@/shared/workingHours';
 import type { MasterDetails, MasterService } from '@/types/guest-map';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 type ScheduleEntry = { dayKey: string; value: string | null };
 
@@ -31,6 +31,10 @@ const props = defineProps<{
     canRequestStatus: boolean;
     isSendingStatusRequest: boolean;
     statusRequestMessage: string;
+    isSubmittingReview: boolean;
+    reviewSubmitError: string;
+    isSubmittingReply: boolean;
+    replySubmitError: string;
     t: (key: UiTextKey) => string;
     photoUrl: (path?: string | null) => string | null;
 }>();
@@ -40,6 +44,8 @@ const emit = defineEmits<{
     photoClick: [photo: string];
     requestStatus: [];
     'update:scheduleOpen': [val: boolean];
+    submitReview: [payload: { name: string; rating: number; review: string }];
+    submitReply: [payload: { reviewId: number; name: string; review: string }];
 }>();
 
 function claimProfile(): void {
@@ -69,6 +75,90 @@ onMounted(() => {
 onBeforeUnmount(() => {
     extraServicesResizeObserver?.disconnect();
 });
+
+const reviewsExpanded = ref(false);
+const descriptionExpanded = ref(false);
+
+const hasWorkingHours = computed(() =>
+    props.schedule.some((entry) => !!entry.value),
+);
+
+// ── Add review ───────────────────────────────────────────────────────────────
+
+const reviewFormOpen = ref(false);
+const reviewFormName = ref('');
+const reviewFormRating = ref(0);
+const reviewFormText = ref('');
+const reviewFormLocalError = ref('');
+
+function toggleReviewForm(): void {
+    reviewFormOpen.value = !reviewFormOpen.value;
+    reviewFormLocalError.value = '';
+}
+
+function resetReviewForm(): void {
+    reviewFormOpen.value = false;
+    reviewFormName.value = '';
+    reviewFormRating.value = 0;
+    reviewFormText.value = '';
+    reviewFormLocalError.value = '';
+}
+
+function submitReview(): void {
+    reviewFormLocalError.value = '';
+    if (!reviewFormRating.value) {
+        reviewFormLocalError.value = props.t('selectRating');
+        return;
+    }
+    const name = reviewFormName.value.trim();
+    const review = reviewFormText.value.trim();
+    if (!name || !review) return;
+    emit('submitReview', { name, rating: reviewFormRating.value, review });
+}
+
+watch(
+    () => [props.isSubmittingReview, props.reviewSubmitError] as const,
+    ([submitting, error], previous) => {
+        const wasSubmitting = previous?.[0] ?? false;
+        if (wasSubmitting && !submitting && !error) {
+            resetReviewForm();
+            reviewsExpanded.value = true;
+        }
+    },
+);
+
+// ── Reply to review ───────────────────────────────────────────────────────────
+
+const replyingToId = ref<number | null>(null);
+const replyFormName = ref('');
+const replyFormText = ref('');
+
+function startReply(reviewId: number): void {
+    replyingToId.value = reviewId;
+    replyFormName.value = '';
+    replyFormText.value = '';
+}
+
+function cancelReply(): void {
+    replyingToId.value = null;
+}
+
+function submitReply(reviewId: number): void {
+    const name = replyFormName.value.trim();
+    const review = replyFormText.value.trim();
+    if (!name || !review) return;
+    emit('submitReply', { reviewId, name, review });
+}
+
+watch(
+    () => [props.isSubmittingReply, props.replySubmitError] as const,
+    ([submitting, error], previous) => {
+        const wasSubmitting = previous?.[0] ?? false;
+        if (wasSubmitting && !submitting && !error) {
+            cancelReply();
+        }
+    },
+);
 </script>
 
 <template>
@@ -381,10 +471,44 @@ onBeforeUnmount(() => {
             >
                 {{ statusRequestMessage }}
             </div>
+
+            <!-- Description section -->
+            <div v-if="master.description" class="mt-2">
+                <button
+                    type="button"
+                    class="flex w-full items-start gap-1.5 text-left"
+                    @click="descriptionExpanded = !descriptionExpanded"
+                >
+                    <p
+                        class="min-w-0 flex-1 text-xs leading-snug text-slate-700"
+                        :class="descriptionExpanded ? '' : 'description-clamp'"
+                    >
+                        {{ master.description }}
+                    </p>
+                    <svg
+                        class="mt-0.5 h-3 w-3 flex-shrink-0 text-slate-400 transition-transform duration-300"
+                        :style="{
+                            transform: descriptionExpanded
+                                ? 'rotate(180deg)'
+                                : 'rotate(0deg)',
+                        }"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                    >
+                        <path
+                            d="M2 4l4 4 4-4"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <!-- Schedule section -->
-        <div v-if="workStatus || schedule.length" class="mt-1 px-3">
+        <div v-if="hasWorkingHours" class="mt-1 px-3">
             <button
                 v-if="workStatus"
                 type="button"
@@ -438,7 +562,7 @@ onBeforeUnmount(() => {
                 @after-leave="scheduleAfterLeave"
             >
                 <div
-                    v-if="schedule.length && (!workStatus || scheduleOpen)"
+                    v-show="!workStatus || scheduleOpen"
                     class="space-y-px rounded-xl"
                     :class="workStatus ? 'rounded-t-none' : ''"
                 >
@@ -465,24 +589,133 @@ onBeforeUnmount(() => {
 
         <!-- Reviews section -->
         <div class="mt-2 px-3 pb-3">
-            <div class="mb-1 flex flex-wrap items-center gap-1.5">
-                <span
-                    v-if="(master.rating ?? 0) > 0"
-                    class="inline-flex items-center gap-1 text-xs font-semibold text-amber-500"
+            <div class="mb-1 flex w-full flex-wrap items-center gap-1.5">
+                <button
+                    type="button"
+                    class="flex flex-1 flex-wrap items-center gap-1.5 text-left"
+                    :disabled="!master.reviews?.length"
+                    @click="reviewsExpanded = !reviewsExpanded"
                 >
-                    ★ {{ (master.rating ?? 0).toFixed(1) }}
-                    <span
-                        v-if="master.reviews_count"
-                        class="font-normal text-slate-500"
-                    >
-                        ({{ master.reviews_count }})
+                    <span class="inline-flex items-center gap-0.5 leading-none">
+                        <span
+                            v-for="i in 5"
+                            :key="i"
+                            class="text-xs"
+                            :class="
+                                i <= Math.round(master.rating ?? 0)
+                                    ? 'text-amber-500'
+                                    : 'text-slate-300'
+                            "
+                            >★</span
+                        >
                     </span>
-                </span>
-                <span class="text-xs font-semibold text-slate-900">{{
-                    t('reviews')
-                }}</span>
+                    <span class="text-xs font-semibold text-amber-500">{{
+                        (master.rating ?? 0).toFixed(1)
+                    }}</span>
+                    <span class="text-xs font-semibold text-slate-900">{{
+                        t('reviews')
+                    }}</span>
+                    <span class="text-xs text-slate-500">
+                        ({{
+                            master.reviews_count ?? master.reviews?.length ?? 0
+                        }})
+                    </span>
+                    <svg
+                        v-if="master.reviews?.length"
+                        class="h-3 w-3 flex-shrink-0 text-slate-400 transition-transform duration-300"
+                        :style="{
+                            transform: reviewsExpanded
+                                ? 'rotate(180deg)'
+                                : 'rotate(0deg)',
+                        }"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                    >
+                        <path
+                            d="M2 4l4 4 4-4"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    class="flex-shrink-0 text-xs font-semibold"
+                    :class="isFloxcity ? 'text-emerald-600' : 'text-sky-600'"
+                    @click="toggleReviewForm"
+                >
+                    {{ t('writeReview') }}
+                </button>
             </div>
-            <div v-if="master.reviews?.length" class="space-y-1.5">
+
+            <!-- Add review form -->
+            <div
+                v-if="reviewFormOpen"
+                class="mb-2 space-y-2 rounded-xl border border-slate-200 bg-white/70 p-3"
+            >
+                <input
+                    v-model="reviewFormName"
+                    type="text"
+                    :placeholder="t('yourName')"
+                    maxlength="100"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-slate-400"
+                />
+                <div class="flex items-center gap-1">
+                    <button
+                        v-for="i in 5"
+                        :key="i"
+                        type="button"
+                        class="text-lg leading-none"
+                        :class="
+                            i <= reviewFormRating
+                                ? 'text-amber-500'
+                                : 'text-slate-300'
+                        "
+                        @click="reviewFormRating = i"
+                    >
+                        ★
+                    </button>
+                </div>
+                <textarea
+                    v-model="reviewFormText"
+                    :placeholder="t('yourReview')"
+                    rows="3"
+                    maxlength="2000"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-slate-400"
+                ></textarea>
+                <div
+                    v-if="reviewFormLocalError || reviewSubmitError"
+                    class="text-xs text-red-600"
+                >
+                    {{ reviewFormLocalError || reviewSubmitError }}
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="text-xs font-semibold text-slate-500"
+                        @click="resetReviewForm"
+                    >
+                        {{ t('cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
+                        :class="isFloxcity ? 'bg-emerald-600' : 'bg-sky-600'"
+                        :disabled="isSubmittingReview"
+                        @click="submitReview"
+                    >
+                        {{ t('submit') }}
+                    </button>
+                </div>
+            </div>
+
+            <div
+                v-if="master.reviews?.length"
+                v-show="reviewsExpanded"
+                class="space-y-1.5"
+            >
                 <div
                     v-for="review in master.reviews"
                     :key="review.id"
@@ -492,6 +725,7 @@ onBeforeUnmount(() => {
                         {{ review.user?.name || t('anonymous') }}
                     </div>
                     <div
+                        v-if="review.rating"
                         :class="
                             isFloxcity ? 'text-yellow-500' : 'text-yellow-300'
                         "
@@ -499,16 +733,86 @@ onBeforeUnmount(() => {
                         ★ {{ review.rating }}
                     </div>
                     <div class="text-slate-700">{{ review.review || '—' }}</div>
+
+                    <button
+                        v-if="replyingToId !== review.id"
+                        type="button"
+                        class="mt-1 text-[11px] font-semibold text-slate-500"
+                        @click="startReply(review.id)"
+                    >
+                        {{ t('reply') }}
+                    </button>
+                    <div v-else class="mt-2 space-y-1.5">
+                        <input
+                            v-model="replyFormName"
+                            type="text"
+                            :placeholder="t('yourName')"
+                            maxlength="100"
+                            class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:border-slate-400"
+                        />
+                        <textarea
+                            v-model="replyFormText"
+                            :placeholder="t('yourReply')"
+                            rows="2"
+                            maxlength="2000"
+                            class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:border-slate-400"
+                        ></textarea>
+                        <div
+                            v-if="replySubmitError"
+                            class="text-xs text-red-600"
+                        >
+                            {{ replySubmitError }}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="text-[11px] font-semibold text-slate-500"
+                                @click="cancelReply"
+                            >
+                                {{ t('cancel') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white"
+                                :class="
+                                    isFloxcity ? 'bg-emerald-600' : 'bg-sky-600'
+                                "
+                                :disabled="isSubmittingReply"
+                                @click="submitReply(review.id)"
+                            >
+                                {{ t('submit') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="review.replies?.length"
+                        class="mt-2 space-y-2 border-l-2 border-slate-200 pl-2"
+                    >
+                        <div v-for="reply in review.replies" :key="reply.id">
+                            <div class="font-medium text-slate-900">
+                                {{ reply.user?.name || t('anonymous') }}
+                            </div>
+                            <div class="text-slate-700">
+                                {{ reply.review || '—' }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div v-else class="text-xs text-slate-500">
-                {{ t('noReviews') }}
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
+.description-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .glass-panel {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);

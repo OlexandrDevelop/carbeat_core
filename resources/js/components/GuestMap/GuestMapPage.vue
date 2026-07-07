@@ -6,7 +6,12 @@ import { useGuestMap } from '@/composables/useGuestMap';
 import { useStatusBeacon } from '@/composables/useStatusBeacon';
 import { useStatusRequest } from '@/composables/useStatusRequest';
 import { SERVICE_LABELS } from '@/shared/guest-map-display-labels';
-import { formatWorkingHours, getWorkStatus } from '@/shared/workingHours';
+import {
+    buildOpeningHoursSpecification,
+    formatWorkingHours,
+    getWorkStatus,
+    type WorkingHoursData,
+} from '@/shared/workingHours';
 import type {
     Flavor,
     MasterDetails,
@@ -61,10 +66,17 @@ const currentMasters = ref<MasterDetails[]>(
 const mapBounds = ref<LatLngBounds | null>(null);
 const visibleMasters = computed(() => {
     const bounds = mapBounds.value;
-    if (!bounds) return currentMasters.value;
-    return currentMasters.value.filter((master) =>
-        bounds.contains([master.latitude, master.longitude]),
-    );
+    const masters = bounds
+        ? currentMasters.value.filter((master) =>
+              bounds.contains([master.latitude, master.longitude]),
+          )
+        : currentMasters.value;
+
+    return [...masters].sort((a, b) => {
+        const reviewsDiff = (b.reviews_count ?? 0) - (a.reviews_count ?? 0);
+        if (reviewsDiff !== 0) return reviewsDiff;
+        return (b.rating ?? 0) - (a.rating ?? 0);
+    });
 });
 const loading = ref(false);
 const geoErrorMessage = ref<string | null>(null);
@@ -458,6 +470,58 @@ async function openMaster(masterId: number): Promise<void> {
     }
 }
 
+async function refreshSelectedMaster(masterId: number): Promise<void> {
+    cachedApi.invalidate((key) => key === `master:${masterId}`);
+    await openMaster(masterId);
+}
+
+const isSubmittingReview = ref(false);
+const reviewSubmitError = ref('');
+
+async function submitGuestReview(payload: {
+    name: string;
+    rating: number;
+    review: string;
+}): Promise<void> {
+    const masterId = selectedMasterId.value;
+    if (!masterId) return;
+    isSubmittingReview.value = true;
+    reviewSubmitError.value = '';
+    try {
+        await cachedApi.instance.post(`/masters/${masterId}/reviews`, payload);
+        await refreshSelectedMaster(masterId);
+    } catch {
+        reviewSubmitError.value = t('reviewSubmitError');
+    } finally {
+        isSubmittingReview.value = false;
+    }
+}
+
+const isSubmittingReply = ref(false);
+const replySubmitError = ref('');
+
+async function submitReviewReply(payload: {
+    reviewId: number;
+    name: string;
+    review: string;
+}): Promise<void> {
+    const masterId = selectedMasterId.value;
+    if (!masterId) return;
+    isSubmittingReply.value = true;
+    replySubmitError.value = '';
+    try {
+        await cachedApi.instance.post(
+            `/masters/${masterId}/reviews/${payload.reviewId}/reply`,
+            { name: payload.name, review: payload.review },
+        );
+        await refreshSelectedMaster(masterId);
+    } catch {
+        replySubmitError.value = t('replySubmitError');
+    } finally {
+        isSubmittingReply.value = false;
+    }
+}
+
 function closeDetails(): void {
     selectedMaster.value = null;
     selectedMasterId.value = null;
@@ -695,6 +759,13 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
             ratingValue: Number(master.rating ?? 0).toFixed(1),
             reviewCount: master.reviews_count,
         };
+    }
+
+    const openingHours = buildOpeningHoursSpecification(
+        master.working_hours as WorkingHoursData | null | undefined,
+    );
+    if (openingHours) {
+        structuredData.openingHoursSpecification = openingHours;
     }
 
     return {
@@ -959,12 +1030,18 @@ onBeforeUnmount(() => {
                             :can-request-status="canRequestMasterStatus"
                             :is-sending-status-request="isSendingStatusRequest"
                             :status-request-message="statusRequestMessage"
+                            :is-submitting-review="isSubmittingReview"
+                            :review-submit-error="reviewSubmitError"
+                            :is-submitting-reply="isSubmittingReply"
+                            :reply-submit-error="replySubmitError"
                             :t="t"
                             :photo-url="photoUrl"
                             @close="closeDetails"
                             @photo-click="openLightbox"
                             @request-status="requestMasterStatus"
                             @update:schedule-open="scheduleOpen = $event"
+                            @submit-review="submitGuestReview"
+                            @submit-reply="submitReviewReply"
                         />
                     </Transition>
                 </div>
@@ -1049,7 +1126,7 @@ onBeforeUnmount(() => {
     opacity: 0;
 }
 
-/* Leaflet marker styles */
+/* Leaflet marker styles — pin shape matching Flutter mobile */
 :global(.master-marker-wrapper) {
     background: transparent;
     border: none;
@@ -1057,9 +1134,10 @@ onBeforeUnmount(() => {
 }
 
 :global(.master-marker) {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    position: relative;
+    /* width/height driven by Leaflet iconSize; we fill 100% */
+    width: 100%;
+    height: 100%;
     transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1067,58 +1145,64 @@ onBeforeUnmount(() => {
     transform: translateY(-2px) scale(1.08);
 }
 
-:global(.marker-circle) {
+/* Photo layer (behind the SVG overlay) */
+:global(.marker-bg) {
+    position: absolute;
     border-radius: 50%;
     overflow: hidden;
-    border: 2.5px solid #fff;
-    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.28);
-    flex-shrink: 0;
+    background: #fff;
+    z-index: 0;
 }
 
-:global(.pin-available .marker-circle) {
-    background: var(--brand-primary);
-}
-:global(.pin-unavailable .marker-circle) {
-    background: #9ca3af;
-}
-:global(.pin-active .marker-circle) {
-    background: #f97316;
-    border-width: 3px;
-    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.28);
-}
-
-:global(.marker-avatar-img) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
+:global(.marker-avatar-img),
 :global(.marker-avatar-fallback) {
     width: 100%;
     height: 100%;
+}
+
+:global(.marker-avatar-img) {
+    object-fit: cover;
+}
+
+:global(.marker-avatar-fallback) {
     display: grid;
     place-items: center;
     background: var(--marker-fallback-gradient);
     color: #fff;
 }
+
 :global(.marker-avatar-icon) {
     width: 55%;
     height: 55%;
 }
 
-:global(.marker-name-pill) {
-    margin-top: 4px;
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1.2;
-    padding: 2px 8px;
-    border-radius: 20px;
-    white-space: nowrap;
-    max-width: 96px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* Pin SVG — evenodd hole reveals the photo underneath */
+:global(.marker-pin-svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.22));
+    z-index: 1;
+    pointer-events: none;
+}
+
+:global(.master-marker.pin-active .marker-pin-svg) {
+    filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.28));
+}
+
+/* Pin fill colors — mirrors Flutter Styles */
+:global(.pin-available .marker-pin-path) {
+    fill: var(--brand-primary);
+}
+
+:global(.pin-unavailable .marker-pin-path) {
+    fill: #9ca3af;
+}
+
+:global(.pin-active .marker-pin-path) {
+    fill: #f97316;
 }
 
 /* Cluster markers */

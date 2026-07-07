@@ -4,20 +4,19 @@ namespace App\Http\Services\Master;
 
 use App\Helpers\PhoneHelper;
 use App\Helpers\PhotoHelper;
-use App\Jobs\CreateMasterThumbnails;
 use App\Http\Services\ClientService;
 use App\Http\Services\PaginatorService;
-use App\Http\Services\TelegramService;
-use App\Models\Master;
+use App\Jobs\CreateMasterThumbnails;
 use App\Models\City;
+use App\Models\Master;
+use App\Models\Review;
 use App\Models\Service;
+use App\Models\User;
 use Cocur\Slugify\Slugify;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Log\LogServiceProvider;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
-use NotificationChannels\Telegram\TelegramMessage;
 
 class MasterService
 {
@@ -97,9 +96,11 @@ class MasterService
                 $extension = $matches[1];
                 $photo = base64_decode(substr($photo, strpos($photo, ',') + 1));
                 // Persist under flavor directory
-                $fl = !empty($master->app) ? (string) $master->app : null;
+                $fl = ! empty($master->app) ? (string) $master->app : null;
                 $saved = app(\App\Helpers\PhotoHelper::class)->saveDecoded($photo, $extension, $fl);
-                if ($saved) $master->update(['photo' => $saved]);
+                if ($saved) {
+                    $master->update(['photo' => $saved]);
+                }
                 // Generate a square thumbnail immediately so clients can display it
                 try {
                     (new CreateMasterThumbnails([$master->id]))->handle();
@@ -132,6 +133,38 @@ class MasterService
         $master = $this->model::find($data['master_id']);
 
         return $master->reviews()->create($data);
+    }
+
+    /**
+     * Add an unauthenticated (guest) review to a master. Guests identify
+     * themselves by name only — no account/phone is required.
+     */
+    public function addGuestReview(int $masterId, array $data): Model
+    {
+        $master = Master::findOrFail($masterId);
+
+        return $master->reviews()->create([
+            'guest_name' => $data['name'],
+            'rating' => $data['rating'],
+            'review' => $data['review'],
+        ]);
+    }
+
+    /**
+     * Reply to an existing top-level review. Replies are single-level —
+     * you cannot reply to a reply.
+     */
+    public function replyToReview(int $masterId, int $reviewId, array $data): Model
+    {
+        $parent = Review::where('master_id', $masterId)
+            ->whereNull('parent_id')
+            ->findOrFail($reviewId);
+
+        return $parent->replies()->create([
+            'master_id' => $masterId,
+            'guest_name' => $data['name'],
+            'review' => $data['review'],
+        ]);
     }
 
     public static function generateSlug(Master $master): string
@@ -178,11 +211,25 @@ class MasterService
         ];
         $master = $this->createOrUpdate($masterData);
         if (! empty($data['reviews'])) {
+            // Each author gets their own deterministic synthetic phone (keyed by place_id,
+            // falling back to the master id) so reviews don't collapse onto one Client keyed
+            // by the master's own phone, and a real per-author User so the admin panel/public
+            // API (which resolve the displayed name via review.user_id -> users.name) show
+            // the actual reviewer instead of whichever account user_id happened to be hardcoded.
+            $placeId = (string) ($data['place_id'] ?? $master->id);
             foreach ($data['reviews'] as $review) {
+                $author = $review['author'] ?? 'Anonymous';
+                $syntheticPhone = 'extreview:'.substr(md5($placeId.'|'.mb_strtolower(trim($author))), 0, 20);
+
+                $user = User::firstOrCreate(
+                    ['phone' => $syntheticPhone],
+                    ['name' => $author]
+                );
+
                 $client = $clientService->createOrUpdate([
-                    'name' => $review['author'] ?? 'Anonymous',
-                    'phone' => $data['phone'] ?? null,
-                    'user_id' => 1,
+                    'name' => $author,
+                    'phone' => $syntheticPhone,
+                    'user_id' => $user->id,
                 ]);
 
                 $parsedRating = 0;
@@ -192,7 +239,7 @@ class MasterService
                 $master->reviews()->firstOrCreate([
                     'review' => $review['text'] ?? '',
                     'rating' => $parsedRating,
-                    'user_id' => $client->user_id ?? null,
+                    'user_id' => $client->user_id ?? $user->id,
                     'master_id' => $master->id,
                 ]);
             }
@@ -230,6 +277,7 @@ class MasterService
                 $nearestId = $city['id'];
             }
         }
+
         return $nearestId;
     }
 
@@ -259,6 +307,7 @@ class MasterService
         $a = sin($dLat / 2) * sin($dLat / 2)
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
         return $earthRadius * $c;
     }
 
@@ -269,7 +318,15 @@ class MasterService
      */
     public function getMasterById(int $id): Master
     {
-        return Master::with(['services.translations', 'gallery', 'reviews.user'])->findOrFail($id);
+        return Master::with([
+            'services.translations',
+            'gallery',
+            'reviews' => fn ($query) => $query->whereNull('parent_id'),
+            'reviews.user',
+            'reviews.replies.user',
+        ])
+            ->withCount(['reviews' => fn ($query) => $query->whereNull('parent_id')])
+            ->findOrFail($id);
     }
 
     /**
@@ -285,7 +342,7 @@ class MasterService
             ->values();
 
         // Ensure main service remains represented in pivot for consistency
-        if ($master->service_id && !$serviceIds->contains((int) $master->service_id)) {
+        if ($master->service_id && ! $serviceIds->contains((int) $master->service_id)) {
             $serviceIds->push((int) $master->service_id);
         }
 

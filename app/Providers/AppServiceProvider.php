@@ -8,8 +8,10 @@ use App\Http\Services\Import\MechanicAdvisorImportService;
 use App\Http\Services\Import\RatelistImportService;
 use App\Http\Services\Import\VseStoImportService;
 use App\Models\Master;
+use App\Models\Review;
 use App\Models\User;
 use App\Observers\MasterObserver;
+use App\Observers\ReviewObserver;
 use App\Support\AdminAccess;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
         Master::observe(MasterObserver::class);
+        Review::observe(ReviewObserver::class);
         Inertia::share('translations', function () {
             $locale = app()->getLocale();
 

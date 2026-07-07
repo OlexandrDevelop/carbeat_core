@@ -1,24 +1,25 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\ClaimController;
+use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\GoogleImportController;
 use App\Http\Controllers\Api\V1\MasterController;
+use App\Http\Controllers\Api\V1\MasterCrmController;
+use App\Http\Controllers\Api\V1\MasterSlotsController;
+use App\Http\Controllers\Api\V1\MasterStatusRequestController;
+use App\Http\Controllers\Api\V1\PublicReviewController;
 use App\Http\Controllers\Api\V1\ServiceController;
 use App\Http\Controllers\Api\V1\SmsVerificationController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\UserStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\BookingController;
-use App\Http\Controllers\Api\V1\SubscriptionController;
-use App\Http\Controllers\Api\V1\MasterSlotsController;
-use App\Http\Controllers\Api\V1\AppController;
-use App\Http\Controllers\Api\V1\UserStatusController;
-use App\Http\Controllers\Api\V1\AccountController;
-use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\MasterCrmController;
-use App\Http\Controllers\Api\V1\MasterStatusRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,10 @@ Route::prefix('public')->group(function () {
 
 Route::prefix('masters')->group(function () {
     Route::get('/', [MasterController::class, 'index']);
+    Route::middleware('throttle:5,1')->group(function () {
+        Route::post('/{id}/reviews', [PublicReviewController::class, 'store']);
+        Route::post('/{id}/reviews/{reviewId}/reply', [PublicReviewController::class, 'reply']);
+    });
     Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/review', [MasterController::class, 'addReview']);
         Route::put('/{id}/services', [MasterController::class, 'updateServices']);
@@ -141,7 +146,6 @@ Route::middleware('auth:api')->prefix('crm')->group(function () {
     Route::get('/snapshot', [MasterCrmController::class, 'snapshot']);
     Route::post('/sync', [MasterCrmController::class, 'sync']);
 });
-
 
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/protected-route', [MasterController::class, 'protectedMethod']);

@@ -15,11 +15,20 @@ export type UiTextKey =
     | 'mainService'
     | 'extraServices'
     | 'reviews'
-    | 'noReviews'
     | 'anonymous'
     | 'statusSent'
     | 'statusError'
-    | 'geoError';
+    | 'geoError'
+    | 'writeReview'
+    | 'yourName'
+    | 'yourReview'
+    | 'submit'
+    | 'cancel'
+    | 'reply'
+    | 'yourReply'
+    | 'selectRating'
+    | 'reviewSubmitError'
+    | 'replySubmitError';
 
 export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
     en: {
@@ -37,12 +46,21 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         mainService: 'Main service',
         extraServices: 'Additional:',
         reviews: 'Reviews',
-        noReviews: 'No reviews yet',
         anonymous: 'Anonymous',
         statusSent: 'Request sent to master.',
         statusError: 'Failed to send request.',
         geoError:
             "Couldn't get your location. Check location permissions in your browser.",
+        writeReview: 'Write a review',
+        yourName: 'Your name',
+        yourReview: 'Your review',
+        submit: 'Submit',
+        cancel: 'Cancel',
+        reply: 'Reply',
+        yourReply: 'Your reply',
+        selectRating: 'Please select a rating',
+        reviewSubmitError: 'Failed to submit review. Try again.',
+        replySubmitError: 'Failed to submit reply. Try again.',
     },
     uk: {
         allServices: 'Всі послуги',
@@ -59,12 +77,21 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         mainService: 'Основна послуга',
         extraServices: 'Додатково:',
         reviews: 'Відгуки',
-        noReviews: 'Поки що немає відгуків',
         anonymous: 'Анонім',
         statusSent: 'Запит відправлено майстру.',
         statusError: 'Не вдалося відправити запит.',
         geoError:
             'Не вдалося визначити ваше місцезнаходження. Перевірте дозвіл на геолокацію в браузері.',
+        writeReview: 'Написати відгук',
+        yourName: "Ваше ім'я",
+        yourReview: 'Ваш відгук',
+        submit: 'Надіслати',
+        cancel: 'Скасувати',
+        reply: 'Відповісти',
+        yourReply: 'Ваша відповідь',
+        selectRating: 'Оберіть оцінку',
+        reviewSubmitError: 'Не вдалося надіслати відгук. Спробуйте ще раз.',
+        replySubmitError: 'Не вдалося надіслати відповідь. Спробуйте ще раз.',
     },
     de: {
         allServices: 'Alle Leistungen',
@@ -81,12 +108,23 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         mainService: 'Hauptleistung',
         extraServices: 'Extra:',
         reviews: 'Bewertungen',
-        noReviews: 'Noch keine Bewertungen',
         anonymous: 'Anonym',
         statusSent: 'Anfrage wurde gesendet.',
         statusError: 'Anfrage konnte nicht gesendet werden.',
         geoError:
             'Standort konnte nicht ermittelt werden. Bitte Standortberechtigung im Browser prüfen.',
+        writeReview: 'Bewertung schreiben',
+        yourName: 'Ihr Name',
+        yourReview: 'Ihre Bewertung',
+        submit: 'Absenden',
+        cancel: 'Abbrechen',
+        reply: 'Antworten',
+        yourReply: 'Ihre Antwort',
+        selectRating: 'Bitte wählen Sie eine Bewertung',
+        reviewSubmitError:
+            'Bewertung konnte nicht gesendet werden. Versuchen Sie es erneut.',
+        replySubmitError:
+            'Antwort konnte nicht gesendet werden. Versuchen Sie es erneut.',
     },
 };
 

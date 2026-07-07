@@ -38,6 +38,25 @@ interface IconState {
     photoKey: string;
 }
 
+// viewBox "0 0 744.09 1052.4" — same SVG geometry as the Flutter mobile pin
+// Circle center (373, 370), radius 250 — evenodd rule creates a transparent hole for the photo
+const PIN_SVG_PATH =
+    'M373.3 58.058 C189.87 58.316 41.25 207.1 41.25 390.59 ' +
+    'c0 121.52 65.173 227.8 162.48 285.82 ' +
+    '94.942 70.715 159.22 180.26 169.37 305.13 ' +
+    'l0.19675 0.33729 0.0843-0.14058 0.0562 0.14058 ' +
+    '0.19675-0.33729 ' +
+    'c10.16-124.88 74.43-234.42 169.38-305.13 ' +
+    '97.312-58.012 162.48-164.3 162.48-285.82 ' +
+    '0-183.49-148.62-332.27-332.05-332.53 ' +
+    '-0.0469-0.000063-0.0937 0.000045-0.14053 0z ' +
+    'M373 120 a250 250 0 1 1 0 500 a250 250 0 1 1 0 -500 z';
+
+// SVG geometry fractions (matching Flutter constants)
+const PIN_CX_F = 373.0 / 744.09; // 0.5013
+const PIN_CY_F = 370.0 / 1052.4; // 0.3516
+const PIN_R_F = 250.0 / 744.09; // 0.3361
+
 const SVG_FALLBACK = `<div class="marker-avatar-fallback" aria-hidden="true">
     <svg class="marker-avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M14.3 3.8a1 1 0 0 1 1.4 0l4.5 4.5a1 1 0 0 1 0 1.4l-2.1 2.1-5.9-5.9 2.1-2.1Z" fill="currentColor"/>
@@ -78,9 +97,10 @@ function buildMasterIcon(
     name: string,
 ): L.DivIcon {
     const showPhoto = state.photoKey !== '' && !!photo;
+    // Master photos are unique per marker; only fallback icons share the cache.
     const sharedKey = showPhoto
         ? null
-        : `circle-${state.available ? 'a' : 'u'}-${state.selected ? 's' : 'n'}-fallback`;
+        : `pin-${state.available ? 'a' : 'u'}-${state.selected ? 's' : 'n'}-fallback`;
 
     if (sharedKey) {
         const cached = sharedIconCache.get(sharedKey);
@@ -93,7 +113,6 @@ function buildMasterIcon(
           ? 'pin-available'
           : 'pin-unavailable';
 
-    const sz = state.selected ? 52 : 40;
     const loadingMode = state.selected ? 'eager' : 'lazy';
     const fetchPriority = state.selected ? 'high' : 'low';
     const decodingMode = state.selected ? 'sync' : 'async';
@@ -101,20 +120,30 @@ function buildMasterIcon(
         ? `<img src="${photo}" alt="${escapeHtml(name)}" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="${decodingMode}" class="marker-avatar-img" />`
         : SVG_FALLBACK;
 
-    const namePill = state.selected
-        ? `<div class="marker-name-pill">${escapeHtml(name.split(' ')[0])}</div>`
-        : '';
+    // Pin dimensions matching Flutter: width × (1052.4/744.09) aspect ratio
+    const pinW = state.selected ? 52 : 40;
+    const pinH = Math.round(pinW * (1052.4 / 744.09)); // 74 or 57
 
-    const inner = `<div class="marker-circle" style="width:${sz}px;height:${sz}px">${avatarInner}</div>${namePill}`;
+    // Photo circle position derived from SVG geometry fractions
+    const cx = PIN_CX_F * pinW;
+    const cy = PIN_CY_F * pinH;
+    const r = PIN_R_F * pinW;
+    const bgL = Math.round((cx - r) * 10) / 10;
+    const bgT = Math.round((cy - r) * 10) / 10;
+    const bgD = Math.round(r * 2 * 10) / 10;
 
-    const iconW = state.selected ? 100 : sz;
-    const iconH = state.selected ? sz + 26 : sz;
+    const inner = `
+        <div class="marker-bg" style="left:${bgL}px;top:${bgT}px;width:${bgD}px;height:${bgD}px">${avatarInner}</div>
+        <svg class="marker-pin-svg" viewBox="0 0 744.09 1052.4" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path class="marker-pin-path" fill-rule="evenodd" d="${PIN_SVG_PATH}"/>
+        </svg>`;
 
     const icon = L.divIcon({
         className: 'master-marker-wrapper',
         html: `<div class="master-marker ${colorClass}">${inner}</div>`,
-        iconSize: [iconW, iconH],
-        iconAnchor: [iconW / 2, sz / 2],
+        iconSize: [pinW, pinH],
+        // Anchor at the pin tip — bottom center
+        iconAnchor: [pinW / 2, pinH],
     });
 
     if (sharedKey) sharedIconCache.set(sharedKey, icon);

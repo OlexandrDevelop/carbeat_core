@@ -11,6 +11,7 @@ use App\Models\City;
 use App\Models\Master;
 use App\Models\MasterGallery;
 use App\Models\Service;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,7 @@ class VseStoImportService implements ImportServiceInterface
         private readonly ClientService $clientService,
         private readonly PhotoHelper $photoHelper,
         private readonly MasterMatcher $masterMatcher,
+        private readonly NominatimGeocoder $geocoder,
     ) {}
 
     public function canHandle(string $url): bool
@@ -81,7 +83,7 @@ class VseStoImportService implements ImportServiceInterface
     /**
      * @return array{imported:int, skipped:int, matched:int}
      */
-    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null): array
+    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null, ?callable $onMasterResult = null): array
     {
         $imported = 0;
         $skipped = 0;
@@ -110,6 +112,7 @@ class VseStoImportService implements ImportServiceInterface
                 if (empty($dto['phone'])) {
                     $skipped++;
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'skipped', $dto, null, null, 'no_phone');
 
                     continue;
                 }
@@ -117,6 +120,7 @@ class VseStoImportService implements ImportServiceInterface
                     $skipped++;
                     Log::warning('VseSTO import: missing coordinates', ['url' => $detailUrl]);
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'skipped', $dto, null, null, 'no_coordinates');
 
                     continue;
                 }
@@ -125,12 +129,14 @@ class VseStoImportService implements ImportServiceInterface
                     $skipped++;
                     Log::info('VseSTO import: skipping network entry without a single address', ['url' => $detailUrl]);
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'skipped', $dto, null, null, 'network_entry');
 
                     continue;
                 }
                 if (empty($dto['main_photo'])) {
                     $skipped++;
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'skipped', $dto, null, null, 'no_photo');
 
                     continue;
                 }
@@ -168,6 +174,7 @@ class VseStoImportService implements ImportServiceInterface
                         DB::commit();
                         $matched++;
                         $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                        $this->reportMasterResult($onMasterResult, 'matched', $dto, $matchedMaster, $matchedMaster->city);
 
                         continue;
                     }
@@ -211,6 +218,7 @@ class VseStoImportService implements ImportServiceInterface
                     DB::commit();
                     $imported++;
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'created', $dto, $master, $city);
                 } catch (\Exception $e) {
                     DB::rollBack();
                     Log::error('Failed to import VseSTO master', [
@@ -220,6 +228,7 @@ class VseStoImportService implements ImportServiceInterface
                     ]);
                     $skipped++;
                     $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                    $this->reportMasterResult($onMasterResult, 'skipped', $dto, null, null, 'db_error');
                 }
             } catch (\Throwable $e) {
                 Log::error('Failed to scrape VseSTO master', [
@@ -229,10 +238,29 @@ class VseStoImportService implements ImportServiceInterface
                 ]);
                 $skipped++;
                 $this->reportProgress($onProgress, $imported, $skipped, $matched);
+                $this->reportMasterResult($onMasterResult, 'skipped', [], null, null, 'scrape_error');
             }
         }
 
         return ['imported' => $imported, 'skipped' => $skipped, 'matched' => $matched, 'stopped' => $stopped];
+    }
+
+    /**
+     * @param  array<string,mixed>  $dto
+     */
+    private function reportMasterResult(?callable $onMasterResult, string $status, array $dto, ?Master $master, ?City $city, ?string $skipReason = null): void
+    {
+        if (! $onMasterResult) {
+            return;
+        }
+        $onMasterResult([
+            'status' => $status,
+            'master_id' => $master?->id,
+            'city_id' => $master?->city_id ?? $city?->id,
+            'master_name' => $master?->name ?? ($dto['name'] ?? null),
+            'city_name' => $city?->name ?? ($dto['city'] ?? null),
+            'skip_reason' => $skipReason,
+        ]);
     }
 
     private function reportProgress(?callable $onProgress, int $imported, int $skipped, int $matched): void
@@ -290,8 +318,12 @@ class VseStoImportService implements ImportServiceInterface
 
     /**
      * Attach scraped reviews to a master, preserving the real author name per review
-     * (each author gets its own deterministic synthetic-phone Client, see
+     * (each author gets its own deterministic synthetic-phone Client AND User, see
      * reviewerClientPhone()) and deduplicating on repeated imports via firstOrCreate.
+     *
+     * Both the admin panel and the public API resolve the displayed reviewer name via
+     * review.user_id -> users.name (not client.name), so the User itself must carry
+     * the scraped author name rather than being hardcoded to the admin account.
      *
      * @param  array<int,array{author?:string,text?:string,rating?:string,date?:?Carbon}>  $reviews
      */
@@ -299,10 +331,17 @@ class VseStoImportService implements ImportServiceInterface
     {
         foreach ($reviews as $review) {
             $author = $review['author'] ?? 'Anonymous';
+            $syntheticPhone = $this->reviewerClientPhone($placeId, $author);
+
+            $user = User::firstOrCreate(
+                ['phone' => $syntheticPhone],
+                ['name' => $author]
+            );
+
             $client = $this->clientService->createOrUpdate([
                 'name' => $author,
-                'phone' => $this->reviewerClientPhone($placeId, $author),
-                'user_id' => 1,
+                'phone' => $syntheticPhone,
+                'user_id' => $user->id,
             ]);
             $parsedRating = 0;
             if (! empty($review['rating']) && preg_match('/(\d+)/', $review['rating'], $m)) {
@@ -311,7 +350,7 @@ class VseStoImportService implements ImportServiceInterface
             $master->reviews()->firstOrCreate([
                 'review' => $review['text'] ?? '',
                 'rating' => $parsedRating,
-                'user_id' => $client->user_id ?? null,
+                'user_id' => $client->user_id ?? $user->id,
                 'master_id' => $master->id,
             ], [
                 'reviewed_at' => $review['date'] ?? null,
@@ -580,6 +619,19 @@ class VseStoImportService implements ImportServiceInterface
         });
 
         $city = $this->firstText($crawler, '.breadcrumbs-list li:first-child a');
+
+        // vse-sto serves city/street in Russian (and sometimes pre-renaming street names).
+        // Reverse-geocoding the scraped coordinates gives the current official Ukrainian names;
+        // fall back to the scraped text above if geocoding is unavailable or finds nothing.
+        if ($lat && $lng) {
+            $geocoded = $this->geocoder->reverse($lat, $lng);
+            if (! empty($geocoded['city'])) {
+                $city = $geocoded['city'];
+            }
+            if (! empty($geocoded['road'])) {
+                $address = trim($geocoded['road'].(! empty($geocoded['house_number']) ? ', '.$geocoded['house_number'] : ''));
+            }
+        }
 
         $workingHours = $this->extractWorkingHours($crawler);
 

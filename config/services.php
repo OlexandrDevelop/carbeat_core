@@ -51,4 +51,8 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
+    'nominatim' => [
+        'url' => env('NOMINATIM_URL'),
+    ],
+
 ];

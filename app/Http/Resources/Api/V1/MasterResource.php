@@ -4,7 +4,6 @@ namespace App\Http\Resources\Api\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * MasterResource Class
@@ -136,24 +135,40 @@ class MasterResource extends JsonResource
             'reviews' => $this->when(
                 ($this->resource instanceof \Illuminate\Database\Eloquent\Model)
                     && $this->resource->relationLoaded('reviews'),
-                function () {
-                    return $this->reviews
-                        ->sortByDesc('id')
-                        ->map(fn ($r) => [
-                            'id' => (int) $r->id,
-                            'rating' => (int) $r->rating,
-                            'review' => (string) ($r->review ?? ''),
-                            'user' => $r->relationLoaded('user') && $r->user
-                                ? [
-                                    'id' => (int) $r->user->id,
-                                    'name' => (string) ($r->user->name ?? ''),
-                                    'phone' => (string) ($r->user->phone ?? ''),
-                                ]
-                                : null,
-                            'created_at' => optional($r->created_at)->toISOString(),
-                        ]);
-                }
+                fn () => $this->reviews
+                    ->sortByDesc('id')
+                    ->map(fn ($r) => $this->formatReview($r))
+                    ->values()
             ),
+        ];
+    }
+
+    /**
+     * Format a review (or reply) row, resolving the display name from the
+     * linked account or the guest-submitted name.
+     */
+    private function formatReview(\App\Models\Review $review): array
+    {
+        $user = null;
+        if ($review->relationLoaded('user') && $review->user) {
+            $user = [
+                'id' => (int) $review->user->id,
+                'name' => (string) ($review->user->name ?? ''),
+                'phone' => (string) ($review->user->phone ?? ''),
+            ];
+        } elseif ($review->guest_name) {
+            $user = ['name' => (string) $review->guest_name];
+        }
+
+        return [
+            'id' => (int) $review->id,
+            'rating' => $review->rating !== null ? (int) $review->rating : null,
+            'review' => (string) ($review->review ?? ''),
+            'user' => $user,
+            'created_at' => optional($review->created_at)->toISOString(),
+            'replies' => $review->relationLoaded('replies')
+                ? $review->replies->map(fn ($reply) => $this->formatReview($reply))->values()
+                : [],
         ];
     }
 
@@ -219,9 +234,9 @@ class MasterResource extends JsonResource
         }
 
         if (str_starts_with($path, 'storage/')) {
-            return '/' . $path;
+            return '/'.$path;
         }
 
-        return '/storage/' . ltrim($path, '/');
+        return '/storage/'.ltrim($path, '/');
     }
 }

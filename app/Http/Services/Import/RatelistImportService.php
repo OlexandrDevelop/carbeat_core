@@ -47,7 +47,7 @@ class RatelistImportService implements ImportServiceInterface
      * @param  callable|null  $onProgress  Optional callback reporting progress
      * @return array{imported:int, skipped:int}
      */
-    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null): array
+    public function performImport(int $serviceId, string $listUrl, ?int $limit = null, ?callable $onProgress = null, ?array $prefetchedDetailUrls = null, ?callable $onMasterResult = null): array
     {
         $imported = 0;
         $skipped = 0;

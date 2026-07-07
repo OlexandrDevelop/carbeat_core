@@ -53,6 +53,7 @@ class AutoWerkstattImportService implements ImportServiceInterface
         ?int $limit = null,
         ?callable $onProgress = null,
         ?array $prefetchedDetailUrls = null,
+        ?callable $onMasterResult = null,
     ): array {
         $imported = 0;
         $skipped = 0;

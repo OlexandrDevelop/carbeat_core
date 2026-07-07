@@ -6,6 +6,15 @@ export interface MasterService {
     is_primary?: boolean;
 }
 
+export interface MasterReview {
+    id: number;
+    rating: number | null;
+    review?: string;
+    user?: { id?: number; name?: string; phone?: string } | null;
+    created_at?: string;
+    replies?: MasterReview[];
+}
+
 export interface MasterDetails {
     id: number;
     name: string;
@@ -22,12 +31,7 @@ export interface MasterDetails {
     reviews_count?: number;
     phone?: string | null;
     services?: MasterService[];
-    reviews?: Array<{
-        id: number;
-        rating: number;
-        review?: string;
-        user?: { name?: string };
-    }>;
+    reviews?: MasterReview[];
     photos?: Array<{ id: number; url: string }>;
     working_hours?:
         | Array<Record<string, unknown>>

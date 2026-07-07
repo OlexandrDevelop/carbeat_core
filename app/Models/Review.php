@@ -6,6 +6,7 @@ use App\Models\Traits\AppScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -13,12 +14,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $review
  * @property int $rating
  * @property int $master_id
- * @property int $user_id
+ * @property int|null $parent_id
+ * @property int|null $user_id
+ * @property string|null $guest_name
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property-read \App\Models\Master $master
- * @property-read \App\Models\User $user
+ * @property-read \App\Models\User|null $user
+ * @property-read \App\Models\Review|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Review> $replies
  *
  * @method static \Database\Factories\ReviewFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
@@ -47,12 +52,15 @@ class Review extends Model
         'rating',
         'reviewed_at',
         'master_id',
+        'parent_id',
         'user_id',
+        'guest_name',
     ];
 
     protected $casts = [
         'rating' => 'integer',
         'master_id' => 'integer',
+        'parent_id' => 'integer',
         'user_id' => 'integer',
         'reviewed_at' => 'datetime',
     ];
@@ -71,6 +79,22 @@ class Review extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The review this one replies to, if any
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Review::class, 'parent_id');
+    }
+
+    /**
+     * Replies posted to this review
+     */
+    public function replies(): HasMany
+    {
+        return $this->hasMany(Review::class, 'parent_id')->orderBy('id');
     }
 
     /**

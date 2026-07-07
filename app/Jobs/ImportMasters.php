@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Http\Services\Import\ImportServiceFactory;
+use App\Models\ImportRun;
+use App\Models\ImportRunMaster;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,8 +46,55 @@ class ImportMasters implements ShouldQueue
             'flavor' => $this->flavor,
         ]);
 
+        // Set outside the try block so the catch/failed handlers below can always
+        // reference it; populated with a real ImportRun as soon as the importer resolves.
+        $importRun = null;
+        $flushMasterResults = function () {};
+
         try {
             $importService = $importFactory->getImporter($this->url);
+
+            // History/analytics record for this run (survives past the 1h Redis progress TTL).
+            // updateOrCreate + wiping prior master rows keeps retries (job $tries=3) idempotent.
+            $source = str_replace('ImportService', '', class_basename($importService));
+            $importRun = ImportRun::updateOrCreate(
+                ['job_id' => $this->jobId],
+                [
+                    'source' => $source,
+                    'url' => $this->url,
+                    'app' => $this->flavor,
+                    'status' => 'running',
+                    'started_at' => now(),
+                    'finished_at' => null,
+                    'error' => null,
+                ]
+            );
+            $importRun->masters()->delete();
+
+            $masterResultBuffer = [];
+            $flushMasterResults = function () use (&$masterResultBuffer) {
+                if (empty($masterResultBuffer)) {
+                    return;
+                }
+                ImportRunMaster::insert($masterResultBuffer);
+                $masterResultBuffer = [];
+            };
+            $onMasterResult = function (array $result) use (&$masterResultBuffer, $flushMasterResults, $importRun) {
+                $masterResultBuffer[] = [
+                    'import_run_id' => $importRun->id,
+                    'master_id' => $result['master_id'] ?? null,
+                    'city_id' => $result['city_id'] ?? null,
+                    'master_name' => $result['master_name'] ?? null,
+                    'city_name' => $result['city_name'] ?? null,
+                    'status' => $result['status'],
+                    'skip_reason' => $result['skip_reason'] ?? null,
+                    'created_at' => now(),
+                ];
+                if (count($masterResultBuffer) >= 50) {
+                    $flushMasterResults();
+                }
+            };
+
             // Expose job id for stop checks inside the service
             $GLOBALS['current_job_id'] = $this->jobId;
             $detailUrls = $importService->getDetailLinks($this->url, $this->toPage, $this->fromPage);
@@ -66,6 +115,7 @@ class ImportMasters implements ShouldQueue
                 ],
                 now()->addHour()
             );
+            $importRun->update(['total_urls' => count($detailUrls)]);
 
             $start = microtime(true);
             $result = $importService->performImport(
@@ -98,8 +148,10 @@ class ImportMasters implements ShouldQueue
                         now()->addHour()
                     );
                 },
-                $detailUrls
+                $detailUrls,
+                $onMasterResult
             );
+            $flushMasterResults();
 
             Log::info('Import completed', [
                 'job_id' => $this->jobId,
@@ -120,6 +172,13 @@ class ImportMasters implements ShouldQueue
                 ],
                 now()->addHour()
             );
+            $importRun->update([
+                'status' => ($result['stopped'] ?? false) ? 'stopped' : 'completed',
+                'imported_count' => (int) $result['imported'],
+                'matched_count' => (int) ($result['matched'] ?? 0),
+                'skipped_count' => (int) $result['skipped'],
+                'finished_at' => now(),
+            ]);
 
             // Dispatch thumbnail creation job for all affected masters (ids where main photo exists and no thumb yet)
             $masterIds = \App\Models\Master::query()
@@ -139,6 +198,9 @@ class ImportMasters implements ShouldQueue
                 'job_id' => $this->jobId,
                 'error' => $e->getMessage(),
             ]);
+
+            $flushMasterResults();
+            $importRun?->update(['status' => 'error', 'error' => $e->getMessage(), 'finished_at' => now()]);
 
             Cache::store('redis')->put(
                 "import_progress_{$this->jobId}",
@@ -164,6 +226,12 @@ class ImportMasters implements ShouldQueue
         Log::error('Import job failed', [
             'job_id' => $this->jobId,
             'error' => $exception->getMessage(),
+        ]);
+
+        ImportRun::where('job_id', $this->jobId)->update([
+            'status' => 'error',
+            'error' => $exception->getMessage(),
+            'finished_at' => now(),
         ]);
 
         Cache::store('redis')->put(

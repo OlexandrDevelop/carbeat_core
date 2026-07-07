@@ -20,8 +20,20 @@ class CreateMasterThumbnails implements ShouldQueue
 
     public function __construct(private readonly array $masterIds) {}
 
+    // A single uncompressed decode (width * height * 4 bytes) plus the resize buffers
+    // can dwarf the default 128M memory_limit for modern phone-camera photos; GD's
+    // "Allowed memory size exhausted" fatal is not catchable, so it kills the whole
+    // worker process instead of just this iteration. Bump the limit for this job only.
+    private const MAX_MEMORY_LIMIT = '512M';
+
+    // Decoded raw bitmap size (width * height, RGBA) above which even the bumped
+    // limit isn't safe; skip these rather than risk taking the worker down again.
+    private const MAX_PIXELS = 40_000_000;
+
     public function handle(): int
     {
+        ini_set('memory_limit', self::MAX_MEMORY_LIMIT);
+
         $size = (int) config('images.thumb.size', 50);
         $dir = trim((string) config('images.thumb.dir', 'thumbnails'), '/');
         $done = 0;
@@ -36,6 +48,19 @@ class CreateMasterThumbnails implements ShouldQueue
                 $srcPath = $master->photo; // relative to public disk
                 if (! Storage::disk('public')->exists($srcPath)) { Log::debug('Thumb: photo path missing', ['id' => $id, 'path' => $srcPath]); continue; }
                 $binary = Storage::disk('public')->get($srcPath);
+
+                // getimagesize() only parses the header, so this check itself is cheap
+                // even for a huge file, unlike imagecreatefromstring() below.
+                $dimensions = @getimagesizefromstring($binary);
+                if ($dimensions && $dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
+                    Log::warning('Thumb: source image too large to decode safely, skipping', [
+                        'id' => $id,
+                        'path' => $srcPath,
+                        'width' => $dimensions[0],
+                        'height' => $dimensions[1],
+                    ]);
+                    continue;
+                }
 
                 // Create GD image
                 $img = @imagecreatefromstring($binary);

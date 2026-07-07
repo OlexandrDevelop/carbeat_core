@@ -17,6 +17,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.access', 'adm
     Route::get('/masters', [\App\Http\Controllers\Admin\MasterController::class, 'index'])->name('admin.masters.index');
     Route::get('/masters/{id}/edit', [\App\Http\Controllers\Admin\MasterController::class, 'edit'])->name('admin.masters.edit');
     Route::get('/import', [\App\Http\Controllers\Admin\ImportController::class, 'index'])->name('admin.import.index');
+    Route::get('/import/runs', [\App\Http\Controllers\Admin\ImportRunController::class, 'index'])->name('admin.import.runs.index');
+    Route::get('/import/runs/{importRun}', [\App\Http\Controllers\Admin\ImportRunController::class, 'show'])->name('admin.import.runs.show');
     Route::get('/api-docs', [\App\Http\Controllers\Admin\ApiDocsController::class, 'index'])->name('admin.api-docs.index');
     Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('admin.services.index');
     Route::get('/services/{id}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('admin.services.edit');
@@ -125,6 +127,11 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'admin.access', 
     Route::post('/import/start', [\App\Http\Controllers\Admin\ImportController::class, 'startImport'])->name('admin.api.import.start');
     Route::get('/import/progress/{jobId}', [\App\Http\Controllers\Admin\ImportController::class, 'getProgress'])->name('admin.api.import.progress');
     Route::post('/import/stop/{jobId}', [\App\Http\Controllers\Admin\ImportController::class, 'stop'])->name('admin.api.import.stop');
+
+    // Import run history/analytics
+    Route::get('/import/runs', [\App\Http\Controllers\Admin\ImportRunController::class, 'list'])->name('admin.api.import.runs.list');
+    Route::get('/import/runs/{importRun}/summary', [\App\Http\Controllers\Admin\ImportRunController::class, 'summary'])->name('admin.api.import.runs.summary');
+    Route::get('/import/runs/{importRun}/masters', [\App\Http\Controllers\Admin\ImportRunController::class, 'masters'])->name('admin.api.import.runs.masters');
 });
 
 // Admin OTP auth routes (session login)
