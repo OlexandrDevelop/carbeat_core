@@ -22,9 +22,6 @@ class SecurityHardeningTest extends TestCase
 
         config([
             'admin.allow_all_in_local' => false,
-            'admin.allowed_user_ids' => [],
-            'admin.allowed_emails' => [],
-            'admin.allowed_phones' => [],
         ]);
     }
 
@@ -107,9 +104,8 @@ class SecurityHardeningTest extends TestCase
     {
         $admin = User::factory()->create([
             'phone' => '+380500000099',
+            'is_admin' => true,
         ]);
-
-        config(['admin.allowed_phones' => [$admin->phone]]);
 
         $response = $this->actingAs($admin)->get('/admin/masters');
 
@@ -127,12 +123,11 @@ class SecurityHardeningTest extends TestCase
     {
         $admin = User::factory()->create([
             'phone' => '+380500000010',
+            'is_admin' => true,
         ]);
         $user = User::factory()->create([
             'phone' => '+380500000011',
         ]);
-
-        config(['admin.allowed_phones' => [$admin->phone]]);
 
         self::assertTrue(Gate::forUser($admin)->allows('viewPulse'));
         self::assertTrue(Gate::forUser($admin)->allows('viewHorizon'));
