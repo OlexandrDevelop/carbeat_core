@@ -3,11 +3,11 @@
 use App\Console\Commands\GenerateSlugForMasters;
 use App\Console\Commands\SyncSmartRandomStatuses;
 use App\Console\Commands\SyncSubscriptions;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\AddSecurityHeaders;
-use App\Http\Middleware\SetLocale;
-use App\Http\Middleware\DetectApp;
 use App\Http\Middleware\AdminBrand;
+use App\Http\Middleware\DetectApp;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrackMobileActivity;
 use App\Http\Services\TelegramService;
 use Illuminate\Console\Scheduling\Schedule;
@@ -56,7 +56,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'plan.feature' => \App\Http\Middleware\EnsurePlanAllowsFeature::class,
             'admin.brand' => AdminBrand::class,
             'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
+            'master.access' => \App\Http\Middleware\EnsureIsMaster::class,
         ]);
+
+        // By default `auth` middleware redirects every unauthenticated web
+        // request to the `login` route (the admin login). Master portal
+        // routes must never bounce a master to the admin login, so redirect
+        // based on which segment was hit — keeps admin/master auth fully
+        // separate even for this framework-level redirect.
+        \Illuminate\Auth\Middleware\Authenticate::redirectUsing(function ($request) {
+            return $request->is('master', 'master/*')
+                ? route('master-login')
+                : route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->reportable(function (\Throwable $e) {
@@ -94,6 +106,7 @@ return Application::configure(basePath: dirname(__DIR__))
                         default => 'Server error',
                     };
                 }
+
                 return response()->json(['message' => $message], $e->getStatusCode());
             }
 
@@ -112,9 +125,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 Log::error('Unhandled API exception', [
                     'exception' => get_class($e),
-                    'message'   => $e->getMessage(),
-                    'url'       => $request->fullUrl(),
+                    'message' => $e->getMessage(),
+                    'url' => $request->fullUrl(),
                 ]);
+
                 return response()->json(['error' => 'server_error'], 500);
             }
         });

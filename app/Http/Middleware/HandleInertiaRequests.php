@@ -2,11 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AppBrand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
-use App\Enums\AppBrand;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -55,6 +55,14 @@ class HandleInertiaRequests extends Middleware
 
     private function ziggyGroup(Request $request): string
     {
-        return $request->routeIs('admin.*') ? 'admin' : 'public';
+        if ($request->routeIs('admin.*')) {
+            return 'admin';
+        }
+
+        if ($request->routeIs('master.*') || $request->routeIs('master-login') || $request->routeIs('master-logout')) {
+            return 'master';
+        }
+
+        return 'public';
     }
 }

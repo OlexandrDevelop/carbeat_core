@@ -26,5 +26,10 @@ return [
             'logout',
             'admin.*',
         ],
+        'master' => [
+            'master-login',
+            'master-logout',
+            'master.*',
+        ],
     ],
 ];

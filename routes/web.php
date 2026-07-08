@@ -9,22 +9,22 @@ use App\Http\Controllers\PublicMasterController;
 use App\Http\Middleware\DetectApp;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
-use Illuminate\Http\Request;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Inertia\Inertia;
 
 Route::get('/sitemap.xml', function () {
     $brand = AppBrand::fromHost(request()->getHost());
     $sitemapPath = storage_path("app/public/sitemap-{$brand->value}.xml");
 
-    if (!file_exists($sitemapPath)) {
+    if (! file_exists($sitemapPath)) {
         abort(404, 'Sitemap not found');
     }
 
@@ -51,7 +51,7 @@ Route::get('/sitemap-clean.xml', function () {
 
     $sitemapPath = storage_path('app/public/sitemap-clean.xml');
 
-    if (!file_exists($sitemapPath)) {
+    if (! file_exists($sitemapPath)) {
         abort(404, 'Clean sitemap not found');
     }
 
@@ -78,7 +78,7 @@ Route::get('/sitemap-sto.xml', function () {
 
     $sitemapPath = storage_path('app/public/sitemap-carbeat.xml');
 
-    if (!file_exists($sitemapPath)) {
+    if (! file_exists($sitemapPath)) {
         abort(404, 'STO sitemap not found');
     }
 
@@ -102,7 +102,7 @@ Route::get('/robots.txt', function () {
     $content = implode("\n", [
         'User-agent: *',
         'Disallow:',
-        'Sitemap: ' . route('sitemap'),
+        'Sitemap: '.route('sitemap'),
         '',
     ]);
 
@@ -134,16 +134,19 @@ Route::post('/r/{token}', [MasterStatusRequestWebController::class, 'respond'])-
 // Public pages — brand-specific
 Route::get('/terms', function () {
     $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+
     return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/Terms' : 'Carbeat/Terms');
 })->name('terms');
 
 Route::get('/privacy', function () {
     $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+
     return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/Privacy' : 'Carbeat/Privacy');
 })->name('privacy');
 
 Route::get('/data-deletion', function () {
     $brand = config('app.client') instanceof AppBrand ? config('app.client') : AppBrand::CARBEAT;
+
     return Inertia::render($brand === AppBrand::FLOXCITY ? 'Floxcity/DataDeletion' : 'Carbeat/DataDeletion');
 })->name('data_deletion');
 
@@ -153,6 +156,7 @@ Route::get('/landing', LandingController::class)->name('marketing.landing');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => Inertia::render('Admin/Auth/Login'))->name('login');
+    Route::get('/master-login', fn () => Inertia::render('Master/Auth/Login'))->name('master-login');
 });
 
 Route::middleware('auth')->group(function () {
@@ -164,6 +168,18 @@ Route::middleware('auth')->group(function () {
 
         return redirect()->route('login');
     })->name('logout');
+
+    // Separate from the admin /logout above: one person is never both an
+    // admin and a master, so this deliberately does not share code with it.
+    Route::post('/master-logout', function (Request $request) {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('master-login');
+    })->name('master-logout');
 });
 
 require __DIR__.'/admin.php';
+require __DIR__.'/master.php';
