@@ -2,14 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AppScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CrmMessage extends Model
 {
+    use AppScoped;
+
     protected $table = 'crm_messages';
+
     protected $primaryKey = 'uuid';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -19,6 +25,7 @@ class CrmMessage extends Model
         'kind',
         'body',
         'message_created_at',
+        'app',
     ];
 
     protected $casts = [
