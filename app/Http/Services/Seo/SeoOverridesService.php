@@ -26,7 +26,46 @@ class SeoOverridesService
     public function put(string $entryKey, array $payload, ?AppBrand $brand = null): array
     {
         $all = $this->getAll($brand);
+        $this->applyEntry($all, $entryKey, $payload);
 
+        AppSetting::updateOrCreate(
+            ['key' => $this->settingsKey($brand)],
+            ['value' => $all],
+        );
+
+        return $all[$entryKey] ?? [];
+    }
+
+    /**
+     * Write many entries in a single read-modify-write instead of one round trip per
+     * entry. All entries for a brand live in one `AppSetting` row/JSON blob, so writing
+     * them one at a time (as a bulk backfill naturally would, entry by entry) means
+     * every single write re-reads and re-writes the *entire*, ever-growing blob —
+     * `n` round trips moving O(n²) bytes in total for `n` entries. Batching collapses
+     * that into one read and one write per brand.
+     *
+     * @param array<string, array<string, mixed>> $entries entryKey => payload
+     */
+    public function putMany(array $entries, ?AppBrand $brand = null): void
+    {
+        if ($entries === []) {
+            return;
+        }
+
+        $all = $this->getAll($brand);
+
+        foreach ($entries as $entryKey => $payload) {
+            $this->applyEntry($all, $entryKey, $payload);
+        }
+
+        AppSetting::updateOrCreate(
+            ['key' => $this->settingsKey($brand)],
+            ['value' => $all],
+        );
+    }
+
+    private function applyEntry(array &$all, string $entryKey, array $payload): void
+    {
         $normalized = array_filter([
             'title' => $this->nullableString($payload['title'] ?? null),
             'description' => $this->nullableString($payload['description'] ?? null),
@@ -45,13 +84,6 @@ class SeoOverridesService
         } else {
             $all[$entryKey] = $normalized;
         }
-
-        AppSetting::updateOrCreate(
-            ['key' => $this->settingsKey($brand)],
-            ['value' => $all],
-        );
-
-        return $all[$entryKey] ?? [];
     }
 
     private function settingsKey(?AppBrand $brand = null): string

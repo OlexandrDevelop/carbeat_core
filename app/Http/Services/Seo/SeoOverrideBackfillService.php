@@ -10,6 +10,7 @@ use App\Models\Master;
 use App\Models\Service;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
+use Laravel\Telescope\Telescope;
 
 /**
  * Writes auto-generated Ukrainian SEO copy (title/description/intro/sections/faq) for
@@ -22,6 +23,16 @@ use Illuminate\Support\Str;
  *   master count) — `$overwriteAuto = true`, refreshes only entries this pipeline
  *   itself wrote (tagged `auto_generated`), never touches one an admin typed by hand
  *   in `/admin/seo-content`.
+ *
+ * All entries for a brand live in a single `AppSetting` row (one JSON blob keyed
+ * `seo_content_overrides_{brand}`), so every city/service is collected into an
+ * in-memory array and written via ONE `SeoOverridesService::putMany()` call per
+ * brand at the end, instead of one read-modify-write round trip per entry — with
+ * dozens of cities/services that would mean dozens of increasingly large UPDATEs
+ * against the very same row. `Telescope::withoutRecording()` additionally keeps
+ * this bulk write out of Telescope's query log, since Telescope's own binding
+ * formatter (`QueryWatcher::replaceBindings()`) is not built to safely handle a
+ * bound value this large.
  */
 class SeoOverrideBackfillService
 {
@@ -38,28 +49,40 @@ class SeoOverrideBackfillService
     {
         $summary = ['cities' => 0, 'services' => 0, 'skipped' => 0];
 
-        foreach (AppBrand::cases() as $brand) {
-            Config::set('app.client', $brand);
-            $brandName = $brand === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+        Telescope::withoutRecording(function () use ($overwriteAuto, &$summary) {
+            foreach (AppBrand::cases() as $brand) {
+                Config::set('app.client', $brand);
+                $brandName = $brand === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+                $existing = $this->overrides->getAll($brand);
 
-            $this->syncCities($brand, $brandName, $overwriteAuto, $summary);
-            $this->syncServices($brand, $brandName, $overwriteAuto, $summary);
-        }
+                $entries = [];
+                $this->collectCities($brand, $brandName, $overwriteAuto, $existing, $summary, $entries);
+                $this->collectServices($brand, $brandName, $overwriteAuto, $existing, $summary, $entries);
+
+                $this->overrides->putMany($entries, $brand);
+            }
+        });
 
         return $summary;
     }
 
-    private function syncCities(AppBrand $brand, string $brandName, bool $overwriteAuto, array &$summary): void
-    {
+    private function collectCities(
+        AppBrand $brand,
+        string $brandName,
+        bool $overwriteAuto,
+        array $existing,
+        array &$summary,
+        array &$entries
+    ): void {
         City::query()
             ->whereHas('masters')
             ->withCount('masters')
             ->with('masters.services.translations')
             ->get()
-            ->each(function (City $city) use ($brand, $brandName, $overwriteAuto, &$summary) {
+            ->each(function (City $city) use ($brand, $brandName, $overwriteAuto, $existing, &$summary, &$entries) {
                 $key = 'city:' . Str::slug($city->name);
 
-                if (!$this->shouldWrite($key, $brand, $overwriteAuto)) {
+                if (!$this->shouldWrite($key, $existing, $overwriteAuto)) {
                     $summary['skipped']++;
 
                     return;
@@ -74,21 +97,27 @@ class SeoOverrideBackfillService
                     ->all();
 
                 $copy = $this->generator->citySeo($city, (int) $city->masters_count, $popularServiceNames, $brand, $brandName);
-                $this->write($key, $copy, $brand);
+                $entries[$key] = $this->payload($copy);
                 $summary['cities']++;
             });
     }
 
-    private function syncServices(AppBrand $brand, string $brandName, bool $overwriteAuto, array &$summary): void
-    {
+    private function collectServices(
+        AppBrand $brand,
+        string $brandName,
+        bool $overwriteAuto,
+        array $existing,
+        array &$summary,
+        array &$entries
+    ): void {
         Service::query()
             ->whereHas('masters')
             ->withCount('masters')
             ->get()
-            ->each(function (Service $service) use ($brand, $brandName, $overwriteAuto, &$summary) {
+            ->each(function (Service $service) use ($brand, $brandName, $overwriteAuto, $existing, &$summary, &$entries) {
                 $key = 'service:' . Str::slug($service->name);
 
-                if (!$this->shouldWrite($key, $brand, $overwriteAuto)) {
+                if (!$this->shouldWrite($key, $existing, $overwriteAuto)) {
                     $summary['skipped']++;
 
                     return;
@@ -96,16 +125,16 @@ class SeoOverrideBackfillService
 
                 $serviceName = $service->translate('uk');
                 $copy = $this->generator->serviceSeo($service, $serviceName, (int) $service->masters_count, $brand, $brandName);
-                $this->write($key, $copy, $brand);
+                $entries[$key] = $this->payload($copy);
                 $summary['services']++;
             });
     }
 
-    private function shouldWrite(string $key, AppBrand $brand, bool $overwriteAuto): bool
+    private function shouldWrite(string $key, array $existing, bool $overwriteAuto): bool
     {
-        $existing = $this->overrides->get($key, $brand);
+        $entry = is_array($existing[$key] ?? null) ? $existing[$key] : [];
 
-        if ($existing === []) {
+        if ($entry === []) {
             return true;
         }
 
@@ -113,18 +142,18 @@ class SeoOverrideBackfillService
             return false;
         }
 
-        return ($existing['auto_generated'] ?? false) === true;
+        return ($entry['auto_generated'] ?? false) === true;
     }
 
-    private function write(string $key, array $copy, AppBrand $brand): void
+    private function payload(array $copy): array
     {
-        $this->overrides->put($key, [
+        return [
             'title' => $copy['metaTitle'],
             'description' => $copy['description'],
             'intro' => $copy['intro'],
             'sections' => $copy['sections'],
             'faq' => $copy['faq'],
             'auto_generated' => true,
-        ], $brand);
+        ];
     }
 }
