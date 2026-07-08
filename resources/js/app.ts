@@ -6,6 +6,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, DefineComponent, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import AdminLayout from './Layouts/AdminLayout.vue';
+import MasterLayout from './Layouts/MasterLayout.vue';
 import i18n from './i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -22,6 +23,11 @@ createInertiaApp({
                 page.default.layout === undefined
             ) {
                 page.default.layout = AdminLayout;
+            } else if (
+                name.startsWith('Master/') &&
+                page.default.layout === undefined
+            ) {
+                page.default.layout = MasterLayout;
             }
 
             return page;

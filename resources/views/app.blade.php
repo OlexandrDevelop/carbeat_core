@@ -18,6 +18,13 @@
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
 
+        {{-- JetBrains Mono: used by the master portal (/master/*) for time ranges,
+             plate numbers and status badges. Loaded globally (cheap, cached) rather
+             than per-page to keep the Vite entry points simple. --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
         @if ($title !== '')
         <title>{{ $title }}</title>
         <meta property="og:title" content="{{ $title }}" />
