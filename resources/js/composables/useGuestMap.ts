@@ -243,6 +243,19 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         return true;
     }
 
+    // Pulls a marker out of the cluster group and onto the map directly, so it can never be absorbed into a cluster bubble.
+    function excludeFromCluster(marker: L.Marker): void {
+        if (!cluster || !map) return;
+        if (cluster.hasLayer(marker)) cluster.removeLayer(marker);
+        if (!map.hasLayer(marker)) marker.addTo(map);
+    }
+
+    function includeInCluster(marker: L.Marker): void {
+        if (!cluster || !map) return;
+        if (map.hasLayer(marker)) map.removeLayer(marker);
+        if (!cluster.hasLayer(marker)) cluster.addLayer(marker);
+    }
+
     function scheduleMoveCallback(): void {
         if (!map) return;
         if (moveTimer !== null) window.clearTimeout(moveTimer);
@@ -331,8 +344,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         if (!map || !cluster) return;
 
         const incoming = new Set<number>();
-        const priorityToAdd: L.Marker[] = [];
-        const deferredToAdd: L.Marker[] = [];
+        const toAdd: L.Marker[] = [];
         const toRemove: L.Marker[] = [];
         let shouldRefreshClusters = false;
 
@@ -387,51 +399,31 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             iconKeyById.set(master.id, iconStateKey(state));
             markersById.set(master.id, marker);
             if (master.id === selectedId) {
-                priorityToAdd.push(marker);
+                marker.setZIndexOffset(1200);
+                marker.addTo(map);
             } else {
-                deferredToAdd.push(marker);
+                toAdd.push(marker);
             }
         }
 
         markersById.forEach((marker, id) => {
             if (incoming.has(id)) return;
-            toRemove.push(marker);
+            if (map!.hasLayer(marker)) {
+                map!.removeLayer(marker);
+            } else {
+                toRemove.push(marker);
+            }
             markersById.delete(id);
             masterById.delete(id);
             iconKeyById.delete(id);
             if (selectedId === id) selectedId = null;
         });
 
+        // Add/remove synchronously — leaflet.markercluster chunks addLayers internally and can't cancel a pending add.
         if (toRemove.length) cluster.removeLayers(toRemove);
-        if (priorityToAdd.length) cluster.addLayers(priorityToAdd);
-        if (shouldRefreshClusters || priorityToAdd.length || toRemove.length) {
+        if (toAdd.length) cluster.addLayers(toAdd);
+        if (shouldRefreshClusters || toRemove.length || toAdd.length) {
             cluster.refreshClusters?.();
-        }
-
-        if (deferredToAdd.length) {
-            const enqueueDeferred = () => {
-                if (!cluster) return;
-                cluster.addLayers(deferredToAdd);
-                cluster.refreshClusters?.();
-            };
-
-            if (typeof window !== 'undefined') {
-                if (typeof window.requestIdleCallback === 'function') {
-                    window.requestIdleCallback(() => {
-                        window.setTimeout(
-                            enqueueDeferred,
-                            priorityToAdd.length ? 180 : 0,
-                        );
-                    });
-                } else {
-                    window.setTimeout(
-                        enqueueDeferred,
-                        priorityToAdd.length ? 180 : 0,
-                    );
-                }
-            } else {
-                enqueueDeferred();
-            }
         }
     }
 
@@ -446,7 +438,10 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         if (previous !== null && previous !== masterId) {
             const marker = markersById.get(previous);
             const master = masterById.get(previous);
-            if (marker && master) applyIcon(marker, master, false);
+            if (marker && master) {
+                applyIcon(marker, master, false);
+                includeInCluster(marker);
+            }
         }
 
         if (masterId === null) return;
@@ -454,27 +449,21 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         const master = masterById.get(masterId);
         if (marker && master) {
             applyIcon(marker, master, true);
+            excludeFromCluster(marker);
 
-            if (options?.reveal && cluster) {
-                cluster.zoomToShowLayer(marker, () => {
-                    if (!map) return;
+            if (options?.reveal) {
+                const targetZoom = Math.max(map.getZoom(), 15);
+                let targetLatLng = L.latLng(master.latitude, master.longitude);
 
-                    const targetZoom = Math.max(map.getZoom(), 15);
-                    let targetLatLng = L.latLng(
-                        master.latitude,
-                        master.longitude,
-                    );
+                if (options.offsetY) {
+                    const projected = map.project(targetLatLng, targetZoom);
+                    projected.y += options.offsetY;
+                    targetLatLng = map.unproject(projected, targetZoom);
+                }
 
-                    if (options.offsetY) {
-                        const projected = map.project(targetLatLng, targetZoom);
-                        projected.y += options.offsetY;
-                        targetLatLng = map.unproject(projected, targetZoom);
-                    }
-
-                    map.flyTo(targetLatLng, targetZoom, {
-                        duration: 0.45,
-                        easeLinearity: 0.25,
-                    });
+                map.flyTo(targetLatLng, targetZoom, {
+                    duration: 0.45,
+                    easeLinearity: 0.25,
                 });
             }
         }
@@ -488,7 +477,8 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         const marker = markersById.get(masterId);
         if (!marker) return;
         const changed = applyIcon(marker, master, masterId === selectedId);
-        if (changed) cluster.refreshClusters?.(marker);
+        if (changed && cluster.hasLayer(marker))
+            cluster.refreshClusters?.(marker);
     }
 
     function setUserPosition(latlng: [number, number]): void {

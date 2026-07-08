@@ -5,6 +5,7 @@ export type UiTextKey =
     | 'availableOnly'
     | 'appDownloadCta'
     | 'myGeo'
+    | 'filters'
     | 'loading'
     | 'call'
     | 'profile'
@@ -36,6 +37,7 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         availableOnly: 'Available',
         appDownloadCta: 'Better in the app',
         myGeo: 'My location',
+        filters: 'Filter by service',
         loading: 'Loading...',
         call: 'Call',
         profile: 'Profile',
@@ -67,6 +69,7 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         availableOnly: 'Вільні',
         appDownloadCta: 'В додатку зручніше',
         myGeo: 'Моя гео',
+        filters: 'Фільтр за послугою',
         loading: 'Завантаження...',
         call: 'Подзвонити',
         profile: 'Профіль',
@@ -98,6 +101,7 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         availableOnly: 'Verfügbar',
         appDownloadCta: 'In der App bequemer',
         myGeo: 'Mein Standort',
+        filters: 'Nach Leistung filtern',
         loading: 'Laden...',
         call: 'Anrufen',
         profile: 'Profil',

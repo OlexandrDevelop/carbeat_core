@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Lang, UiTextKey } from '@/composables/useGuestLang';
 import type { Flavor } from '@/types/guest-map';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface ServiceOption {
     id: number;
@@ -31,12 +31,11 @@ const emit = defineEmits<{
 }>();
 
 const isFloxcity = computed(() => props.flavor === 'floxcity');
+const showServiceFilter = ref(false);
 
-function toggleService(id: number): void {
-    emit(
-        'update:selectedServiceId',
-        props.selectedServiceId === id ? null : id,
-    );
+function selectService(id: number | null): void {
+    emit('update:selectedServiceId', id);
+    showServiceFilter.value = false;
 }
 </script>
 
@@ -82,27 +81,75 @@ function toggleService(id: number): void {
             </div>
         </div>
 
-        <div class="relative mb-2">
-            <input
-                :value="searchQuery"
-                type="text"
-                placeholder="Пошук послуг або майстрів"
-                class="search-input w-full rounded-xl py-2.5 pl-4 pr-12 text-sm"
-                @input="
-                    emit(
-                        'update:searchQuery',
-                        ($event.target as HTMLInputElement).value,
-                    )
-                "
-            />
+        <div class="mb-2 flex items-stretch gap-2">
             <button
                 type="button"
-                class="search-filter-btn absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg"
-                :aria-label="t('myGeo')"
-                @click="emit('useMyLocation')"
+                class="available-toggle-btn flex w-11 shrink-0 items-center justify-center rounded-xl"
+                :class="availableOnly ? 'available-toggle-btn-active' : ''"
+                :aria-label="t('availableOnly')"
+                :aria-pressed="availableOnly"
+                @click="emit('update:availableOnly', !availableOnly)"
             >
                 <svg
-                    class="h-4 w-4 text-white"
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="none"
+                >
+                    <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
+                </svg>
+            </button>
+
+            <div class="relative flex-1">
+                <input
+                    :value="searchQuery"
+                    type="text"
+                    placeholder="Пошук послуг або майстрів"
+                    class="search-input h-full w-full rounded-xl py-2.5 pl-4 pr-12 text-sm"
+                    @input="
+                        emit(
+                            'update:searchQuery',
+                            ($event.target as HTMLInputElement).value,
+                        )
+                    "
+                />
+                <button
+                    type="button"
+                    class="search-filter-btn absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg"
+                    :aria-label="t('myGeo')"
+                    @click="emit('useMyLocation')"
+                >
+                    <svg
+                        class="h-4 w-4 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <button
+                type="button"
+                class="service-filter-btn flex w-11 shrink-0 items-center justify-center rounded-xl"
+                :class="
+                    selectedServiceId !== null
+                        ? 'service-filter-btn-active'
+                        : ''
+                "
+                :aria-label="t('filters')"
+                :aria-expanded="showServiceFilter"
+                @click="showServiceFilter = !showServiceFilter"
+            >
+                <svg
+                    class="h-4 w-4"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -110,46 +157,79 @@ function toggleService(id: number): void {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                 >
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                        d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"
+                    <line x1="4" y1="6" x2="20" y2="6" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="18" x2="20" y2="18" />
+                    <circle
+                        cx="9"
+                        cy="6"
+                        r="2"
+                        fill="currentColor"
+                        stroke="none"
+                    />
+                    <circle
+                        cx="16"
+                        cy="12"
+                        r="2"
+                        fill="currentColor"
+                        stroke="none"
+                    />
+                    <circle
+                        cx="11"
+                        cy="18"
+                        r="2"
+                        fill="currentColor"
+                        stroke="none"
                     />
                 </svg>
             </button>
         </div>
 
-        <div
-            v-if="geoErrorMessage"
-            class="mb-2 text-xs font-medium text-red-600"
-        >
-            {{ geoErrorMessage }}
-        </div>
+        <Transition name="service-filter-expand">
+            <div
+                v-if="showServiceFilter"
+                class="service-filter-panel rounded-xl"
+            >
+                <div
+                    class="service-filter-panel-inner max-h-64 overflow-y-auto p-1.5"
+                >
+                    <div
+                        class="service-filter-header px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide"
+                    >
+                        {{ t('filters') }}
+                    </div>
+                    <button
+                        type="button"
+                        class="service-filter-item"
+                        :class="
+                            selectedServiceId === null
+                                ? 'service-filter-item-active'
+                                : ''
+                        "
+                        @click="selectService(null)"
+                    >
+                        {{ t('allServices') }}
+                    </button>
+                    <button
+                        v-for="service in services"
+                        :key="service.id"
+                        type="button"
+                        class="service-filter-item"
+                        :class="
+                            selectedServiceId === service.id
+                                ? 'service-filter-item-active'
+                                : ''
+                        "
+                        @click="selectService(service.id)"
+                    >
+                        {{ service.label }}
+                    </button>
+                </div>
+            </div>
+        </Transition>
 
-        <div class="chips-scroll flex gap-2 overflow-x-auto pb-1">
-            <button
-                type="button"
-                class="filter-chip"
-                :class="availableOnly ? 'filter-chip-active' : ''"
-                @click="emit('update:availableOnly', !availableOnly)"
-            >
-                <span
-                    class="mr-1.5 inline-block h-1.5 w-1.5 rounded-full"
-                    :class="availableOnly ? 'bg-emerald-400' : 'bg-slate-400'"
-                ></span>
-                Відкрито
-            </button>
-            <button
-                v-for="service in services"
-                :key="service.id"
-                type="button"
-                class="filter-chip"
-                :class="
-                    selectedServiceId === service.id ? 'filter-chip-active' : ''
-                "
-                @click="toggleService(service.id)"
-            >
-                {{ service.label }}
-            </button>
+        <div v-if="geoErrorMessage" class="text-xs font-medium text-red-600">
+            {{ geoErrorMessage }}
         </div>
     </div>
 </template>
@@ -195,49 +275,130 @@ function toggleService(id: number): void {
     opacity: 0.88;
 }
 
-.chips-scroll {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.chips-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-.filter-chip {
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-    padding: 0.375rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
+.available-toggle-btn {
+    color: var(--panel-muted-text);
     background: var(--surface-bg);
     border: 1px solid var(--surface-border);
-    color: var(--panel-muted-text);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    cursor: pointer;
     transition:
         background 0.12s ease,
-        border-color 0.12s ease,
-        color 0.12s ease;
+        color 0.12s ease,
+        border-color 0.12s ease;
 }
 
-.filter-chip:hover {
+.available-toggle-btn:hover {
     background: var(--surface-bg-hover);
     color: var(--panel-text);
 }
 
-.filter-chip-active {
-    background: var(--cluster-bg);
+.available-toggle-btn-active {
+    background: var(--brand-primary);
     border-color: transparent;
     color: #fff;
 }
 
-.filter-chip-active:hover {
-    background: var(--cluster-bg);
+.available-toggle-btn-active:hover {
+    background: var(--brand-primary);
     color: #fff;
+}
+
+.service-filter-btn {
+    color: var(--panel-muted-text);
+    background: var(--surface-bg);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        color 0.12s ease,
+        border-color 0.12s ease;
+}
+
+.service-filter-btn:hover {
+    background: var(--surface-bg-hover);
+    color: var(--panel-text);
+}
+
+.service-filter-btn-active {
+    background: var(--brand-primary);
+    border-color: transparent;
+    color: #fff;
+}
+
+.service-filter-btn-active:hover {
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.service-filter-panel {
+    background: var(--dropdown-bg);
+    border: 1px solid var(--panel-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    overflow: hidden;
+}
+
+.service-filter-panel-inner {
+    scrollbar-width: thin;
+}
+
+.service-filter-header {
+    color: var(--panel-muted-text);
+}
+
+.service-filter-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--panel-text);
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+}
+
+.service-filter-item:hover {
+    background: var(--surface-bg-hover);
+}
+
+.service-filter-item-active {
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.service-filter-item-active:hover {
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.service-filter-expand-enter-active,
+.service-filter-expand-leave-active {
+    transition:
+        max-height 0.22s ease,
+        opacity 0.18s ease,
+        margin-bottom 0.22s ease;
+}
+
+.service-filter-expand-enter-from,
+.service-filter-expand-leave-to {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
+
+.service-filter-expand-enter-to,
+.service-filter-expand-leave-from {
+    max-height: 20rem;
+    opacity: 1;
+    margin-bottom: 0.5rem;
 }
 
 .app-download-cta {
