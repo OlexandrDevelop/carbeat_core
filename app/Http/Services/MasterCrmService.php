@@ -27,6 +27,7 @@ class MasterCrmService
         $bookings = Booking::where('master_id', $master->id)
             ->whereNotNull('crm_uuid')
             ->whereDate('start_time', $date)
+            ->where('status', '!=', 'cancelled')
             ->orderBy('start_time')
             ->get();
 
@@ -63,6 +64,7 @@ class MasterCrmService
             'businessDay' => $date->toDateString(),
             'bays' => $bays->map(function (MasterBay $bay) use ($appointmentsByBay, $bayMap) {
                 $bayBookings = $appointmentsByBay->get($bay->id, collect());
+
                 return [
                     'id' => $bay->uuid ?? (string) $bay->id,
                     'title' => $bay->title,
@@ -129,14 +131,14 @@ class MasterCrmService
         $title = $master->app === 'floxcity' ? 'Крісло 1' : 'Бокс 1';
 
         MasterBay::withoutGlobalScopes()->create([
-            'uuid'            => Str::uuid()->toString(),
-            'master_id'       => $master->id,
-            'title'           => $title,
+            'uuid' => Str::uuid()->toString(),
+            'master_id' => $master->id,
+            'title' => $title,
             'technician_name' => $master->name ?? '',
-            'is_active'       => true,
-            'display_order'   => 0,
-            'status'          => 'free',
-            'app'             => $master->app ?? 'carbeat',
+            'is_active' => true,
+            'display_order' => 0,
+            'status' => 'free',
+            'app' => $master->app ?? 'carbeat',
         ]);
     }
 
@@ -156,6 +158,8 @@ class MasterCrmService
         match ($type) {
             'set_bay_status' => $this->applySetBayStatus($master, $payload),
             'create_appointment' => $this->applyCreateAppointment($master, $payload),
+            'update_appointment' => $this->applyUpdateAppointment($master, $payload),
+            'cancel_appointment' => $this->applyCancelAppointment($master, $payload),
             'update_appointment_payment' => $this->applyUpdateAppointmentPayment($master, $payload),
             'save_bay' => $this->applySaveBay($master, $payload),
             'delete_bay' => $this->applyDeleteBay($master, $payload),
@@ -219,6 +223,60 @@ class MasterCrmService
             'status' => 'confirmed',
             'app' => $master->app,
         ]);
+    }
+
+    private function applyUpdateAppointment(Master $master, array $payload): void
+    {
+        $crmUuid = $payload['id'] ?? null;
+        if (! $crmUuid) {
+            return;
+        }
+
+        $booking = Booking::where('master_id', $master->id)
+            ->where('crm_uuid', $crmUuid)
+            ->first();
+
+        if (! $booking) {
+            // Idempotent fallback: if the client is replaying a create that
+            // never landed (e.g. offline queue), create it instead of no-op'ing.
+            $this->applyCreateAppointment($master, $payload);
+
+            return;
+        }
+
+        $bay = $this->findBayByUuid($master, $payload['bayId'] ?? null);
+
+        $booking->update([
+            'bay_id' => $bay?->id,
+            'crm_garage_client_uuid' => $payload['clientId'] ?? $booking->crm_garage_client_uuid,
+            'crm_vehicle_uuid' => $payload['vehicleId'] ?? $booking->crm_vehicle_uuid,
+            'crm_service_catalog_uuid' => $payload['serviceCatalogId'] ?? $booking->crm_service_catalog_uuid,
+            'crm_kind' => $payload['kind'] ?? $booking->crm_kind,
+            'start_time' => isset($payload['startsAt']) ? Carbon::parse($payload['startsAt']) : $booking->start_time,
+            'end_time' => isset($payload['endsAt']) ? Carbon::parse($payload['endsAt']) : $booking->end_time,
+            'service_name' => $payload['serviceName'] ?? $booking->service_name,
+            'customer_name' => $payload['customerName'] ?? $booking->customer_name,
+            'customer_phone' => $payload['customerPhone'] ?? $booking->customer_phone,
+            'car_model' => $payload['carModel'] ?? $booking->car_model,
+            'plate_number' => $payload['plateNumber'] ?? $booking->plate_number,
+            'total_amount' => $payload['priceUah'] ?? $booking->total_amount,
+            'has_photo_request' => array_key_exists('hasPhotoRequest', $payload)
+                ? (bool) $payload['hasPhotoRequest']
+                : $booking->has_photo_request,
+            'note' => $payload['notes'] ?? $booking->note,
+        ]);
+    }
+
+    private function applyCancelAppointment(Master $master, array $payload): void
+    {
+        $crmUuid = $payload['id'] ?? ($payload['appointmentId'] ?? null);
+        if (! $crmUuid) {
+            return;
+        }
+
+        Booking::where('master_id', $master->id)
+            ->where('crm_uuid', $crmUuid)
+            ->update(['status' => 'cancelled']);
     }
 
     private function applyUpdateAppointmentPayment(Master $master, array $payload): void
@@ -411,6 +469,7 @@ class MasterCrmService
             'kind' => $messageData['kind'] ?? 'text',
             'body' => $messageData['body'] ?? '',
             'message_created_at' => $createdAt,
+            'app' => $master->app,
         ]);
 
         $thread->update([
@@ -425,6 +484,7 @@ class MasterCrmService
         if (! $uuid) {
             return null;
         }
+
         return MasterBay::where('master_id', $master->id)->where('uuid', $uuid)->first();
     }
 
@@ -462,7 +522,7 @@ class MasterCrmService
         if (is_array($master->working_hours) && ! empty($master->working_hours)) {
             $first = reset($master->working_hours);
             if (isset($first['from'], $first['to'])) {
-                $workingHours = $first['from'] . '–' . $first['to'];
+                $workingHours = $first['from'].'–'.$first['to'];
             }
         }
 
