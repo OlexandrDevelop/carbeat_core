@@ -39,6 +39,7 @@
                         <option value="master">STO</option>
                         <option value="city">City</option>
                         <option value="city_service">City + service</option>
+                        <option value="service">Service</option>
                     </select>
                 </div>
 

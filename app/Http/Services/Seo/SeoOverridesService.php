@@ -33,6 +33,11 @@ class SeoOverridesService
             'intro' => $this->nullableString($payload['intro'] ?? null),
             'sections' => $this->normalizeArray($payload['sections'] ?? null),
             'faq' => $this->normalizeArray($payload['faq'] ?? null),
+            // Marks entries written by the auto-generation pipeline (migration /
+            // `seo:refresh`) so it can safely re-generate its own output later without
+            // touching text an admin typed by hand via `/admin/seo-content` — manual
+            // saves never set this, so its mere absence means "hands off".
+            'auto_generated' => array_key_exists('auto_generated', $payload) ? (bool) $payload['auto_generated'] : null,
         ], fn ($value) => $value !== null && $value !== []);
 
         if ($normalized === []) {

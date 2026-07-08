@@ -232,7 +232,7 @@ const {
     t,
 });
 
-type Service = { id: number; name: string };
+type Service = { id: number; name: string; slug?: string };
 const services = ref<Service[]>([]);
 
 const serviceOptions = computed(() =>
@@ -244,6 +244,14 @@ const serviceOptions = computed(() =>
                 service.name,
         }))
         .sort((a, b) => a.label.localeCompare(b.label, currentLang.value)),
+);
+
+const serviceSlugById = computed<Record<number, string>>(() =>
+    Object.fromEntries(
+        services.value
+            .filter((s) => !!s.slug)
+            .map((s) => [s.id, s.slug as string]),
+    ),
 );
 
 // The map list endpoint (`/api/masters`) only returns `main_service_id`, not
@@ -633,6 +641,36 @@ function extractMasterSlug(pathname: string): string | null {
     return match ? decodeURIComponent(match[1]) : null;
 }
 
+function extractCityAndServiceSlugs(pathname: string): {
+    citySlug: string | null;
+    serviceSlug: string | null;
+} {
+    const cityMatch = pathname.match(/^\/city\/([^/]+)(?:\/([^/]+))?$/);
+    if (cityMatch) {
+        return {
+            citySlug: decodeURIComponent(cityMatch[1]),
+            serviceSlug: cityMatch[2] ? decodeURIComponent(cityMatch[2]) : null,
+        };
+    }
+
+    const serviceMatch = pathname.match(/^\/service\/([^/]+)$/);
+    if (serviceMatch) {
+        return {
+            citySlug: null,
+            serviceSlug: decodeURIComponent(serviceMatch[1]),
+        };
+    }
+
+    return { citySlug: null, serviceSlug: null };
+}
+
+function findServiceIdBySlug(slug: string): number | null {
+    const entry = Object.entries(serviceSlugById.value).find(
+        ([, serviceSlug]) => serviceSlug === slug,
+    );
+    return entry ? Number(entry[0]) : null;
+}
+
 function findMasterBySlug(slug: string): MasterDetails | null {
     if (selectedMaster.value?.slug === slug) return selectedMaster.value;
     return (
@@ -646,18 +684,26 @@ function findMasterBySlug(slug: string): MasterDetails | null {
 async function syncSelectionFromLocation(): Promise<void> {
     if (typeof window === 'undefined') return;
     const slug = extractMasterSlug(window.location.pathname);
-    if (!slug) {
-        if (selectedMaster.value !== null || selectedMasterId.value !== null)
-            closeDetails();
+    if (slug) {
+        const matched = findMasterBySlug(slug);
+        if (matched?.id) {
+            if (selectedMasterId.value === matched.id) return;
+            await openMaster(matched.id);
+            return;
+        }
+        window.location.reload();
         return;
     }
-    const matched = findMasterBySlug(slug);
-    if (matched?.id) {
-        if (selectedMasterId.value === matched.id) return;
-        await openMaster(matched.id);
-        return;
-    }
-    window.location.reload();
+
+    if (selectedMaster.value !== null || selectedMasterId.value !== null)
+        closeDetails();
+
+    const { serviceSlug } = extractCityAndServiceSlugs(
+        window.location.pathname,
+    );
+    const nextServiceId = serviceSlug ? findServiceIdBySlug(serviceSlug) : null;
+    if (selectedServiceId.value !== nextServiceId)
+        selectedServiceId.value = nextServiceId;
 }
 
 watch(
@@ -673,6 +719,23 @@ watch(
         window.history.replaceState({}, '', nextPath);
     },
 );
+
+watch(selectedServiceId, (serviceId) => {
+    if (typeof window === 'undefined') return;
+    const { citySlug } = extractCityAndServiceSlugs(window.location.pathname);
+    const serviceSlug = serviceId ? serviceSlugById.value[serviceId] : null;
+
+    const nextPath = citySlug
+        ? serviceSlug
+            ? `/city/${citySlug}/${serviceSlug}`
+            : `/city/${citySlug}`
+        : serviceSlug
+          ? `/service/${serviceSlug}`
+          : baseMapPath.value;
+
+    if (window.location.pathname === nextPath) return;
+    window.history.pushState({}, '', nextPath);
+});
 
 watch([selectedServiceId, availableOnly], () => {
     selectedMaster.value = null;
@@ -694,18 +757,45 @@ watch(searchQuery, () => {
 });
 
 // SEO helpers
+//
+// Mirrors the vocabulary split in `UkrainianSeoCopyGenerator` (backend): Carbeat is the
+// auto-service (СТО/автосервіс) vertical, FloxCity is the beauty-salon (салон краси)
+// vertical — see `database/seeders/ServiceTranslationsSeeder.php`. These client-side
+// builders only run once the visitor changes the filter after the initial SSR render
+// (see the `pageSeo` guard below), so they stay lightweight, but must still use the
+// right vertical's words rather than always talking about car repair.
+const vertical = computed(() =>
+    isFloxcity.value
+        ? {
+              placeNounMid: 'салони краси та майстрів',
+              placeNounSingular: 'салон краси',
+              entityFew: 'салони',
+              schemaType: 'BeautySalon',
+          }
+        : {
+              placeNounMid: 'СТО та автосервіси',
+              placeNounSingular: 'автосервіс',
+              entityFew: 'станції',
+              schemaType: 'AutoRepair',
+          },
+);
 
 function buildGenericSeo(): SeoPayload {
+    const title = isFloxcity.value
+        ? `${brandName.value} — карта салонів краси та майстрів поруч`
+        : `${brandName.value} — карта СТО та автосервісів поруч`;
+    const description = `Знайдіть ${vertical.value.placeNounMid} поруч на карті ${brandName.value}. Порівняйте рейтинги, послуги та відкривайте профілі напряму.`;
+
     return {
-        title: `${brandName.value} Car Service Map & STO Near You`,
-        description: `Find nearby STO stations, auto repair shops and car service specialists on the ${brandName.value} map.`,
+        title,
+        description,
         canonical: buildCanonicalUrl(baseMapPath.value),
         robots: 'index, follow',
         ogImage: props.seo?.ogImage ?? '/og-image.svg',
         structuredData: {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
-            name: `${brandName.value} Car Service Map`,
+            name: title,
             url: buildCanonicalUrl(baseMapPath.value),
         },
     };
@@ -723,20 +813,20 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
         .join(', ');
     const descriptionBody = [
         location,
-        servicesText ? `Services: ${servicesText}.` : '',
+        servicesText ? `Послуги: ${servicesText}.` : '',
         normalizeMetaText(master.description).slice(0, 120),
     ]
         .filter(Boolean)
         .join(' ');
     const description = (
         descriptionBody
-            ? `${master.name} on ${brandName.value}. ${descriptionBody}`
-            : `${master.name} on ${brandName.value}. View services, location and reviews on the map.`
+            ? `${master.name} на ${brandName.value}. ${descriptionBody}`
+            : `${master.name} на ${brandName.value}. Послуги, розташування та відгуки — на карті.`
     ).slice(0, 160);
     const canonical = buildCanonicalUrl(buildMasterPath(master.slug));
     const structuredData: Record<string, unknown> = {
         '@context': 'https://schema.org',
-        '@type': 'AutoRepair',
+        '@type': vertical.value.schemaType,
         name: master.name,
         url: canonical,
         description,
@@ -776,7 +866,7 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
     }
 
     return {
-        title: `${master.name} STO · ${brandName.value}`,
+        title: `${master.name} · ${brandName.value}`,
         description,
         canonical,
         robots: 'index, follow',
@@ -788,19 +878,72 @@ function buildSelectedMasterSeo(master: MasterDetails): SeoPayload {
     };
 }
 
+function buildServiceSeo(serviceId: number): SeoPayload {
+    const service = serviceOptions.value.find((s) => s.id === serviceId);
+    const label = service?.label ?? '';
+    const slug = serviceSlugById.value[serviceId];
+    const citySlug =
+        typeof window !== 'undefined'
+            ? extractCityAndServiceSlugs(window.location.pathname).citySlug
+            : null;
+    const path =
+        citySlug && slug
+            ? `/city/${citySlug}/${slug}`
+            : slug
+              ? `/service/${slug}`
+              : baseMapPath.value;
+    const canonical = buildCanonicalUrl(path);
+    const title = isFloxcity.value
+        ? `${label} — салони та майстри поруч · ${brandName.value}`
+        : `${label} — СТО та майстри поруч · ${brandName.value}`;
+    const description =
+        `«${label}» — послуга, яку пропонують перевірені ${vertical.value.entityFew} на карті ${brandName.value}. Порівняйте рейтинги та адреси, і відкрийте профіль напряму.`.slice(
+            0,
+            160,
+        );
+
+    return {
+        title,
+        description,
+        canonical,
+        robots: 'index, follow',
+        ogImage: props.seo?.ogImage ?? '/og-image.svg',
+        structuredData: {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: title,
+            url: canonical,
+            description,
+        },
+    };
+}
+
 const pageSeo = computed<SeoPayload>(() => {
     if (selectedMaster.value?.slug)
         return buildSelectedMasterSeo(selectedMaster.value);
+    // Only switch to the lightweight client-built SEO once the filter has
+    // actually changed from what the server rendered — the initial SSR pass
+    // (and any crawler hitting the URL directly) must keep the rich,
+    // admin-overridable `props.seo` payload intact.
+    if (
+        selectedServiceId.value &&
+        selectedServiceId.value !== props.initialServiceId
+    )
+        return buildServiceSeo(selectedServiceId.value);
     return props.seo ?? buildGenericSeo();
 });
 
 const semanticHeading = computed(() => {
     if (isMasterSeoContent.value && selectedMaster.value) {
-        return `${selectedMaster.value.name} STO profile`;
+        return isFloxcity.value
+            ? `${selectedMaster.value.name} — профіль салону`
+            : `${selectedMaster.value.name} — профіль СТО`;
     }
     return (
         seoContent.value?.title ??
-        `${brandName.value} car service map and STO near you`
+        (isFloxcity.value
+            ? `${brandName.value} — карта салонів краси та майстрів поруч`
+            : `${brandName.value} — карта СТО та автосервісів поруч`)
     );
 });
 
@@ -808,12 +951,14 @@ const semanticSubheading = computed(() => {
     if (isMasterSeoContent.value && selectedMaster.value) {
         const city = normalizeMetaText(selectedMaster.value.city);
         return city
-            ? `Services, reviews and location in ${city}`
-            : 'Services, reviews and location';
+            ? `Послуги, відгуки та розташування у місті ${city}`
+            : 'Послуги, відгуки та розташування';
     }
     return (
         seoContent.value?.sections?.[0]?.heading ??
-        'Compare nearby car service stations, ratings and available STO profiles'
+        (isFloxcity.value
+            ? 'Порівняйте салони краси поруч, рейтинги та доступні профілі майстрів'
+            : 'Порівняйте автосервіси поруч, рейтинги та доступні профілі СТО')
     );
 });
 

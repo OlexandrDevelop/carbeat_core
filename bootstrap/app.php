@@ -134,6 +134,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ->onSuccess(fn () => Log::info('Clean sitemap generated successfully'))
             ->onFailure(fn () => Log::error('Failed to generate clean sitemap'));
 
+        // Safety net alongside the observer-driven `RefreshSeoOverridesJob`: catches
+        // anything that changes masters/services/cities via a path the observers can't
+        // see (e.g. raw queries in one-off maintenance commands like `services:normalize`).
+        $schedule->command('seo:refresh')
+            ->daily()
+            ->at('00:20')
+            ->onSuccess(fn () => Log::info('SEO overrides refreshed successfully'))
+            ->onFailure(fn () => Log::error('Failed to refresh SEO overrides'));
+
         $schedule->command('subscriptions:sync')
             ->twiceDaily(0, 12)
             ->runInBackground();
@@ -154,6 +163,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Commands\GenerateSitemap::class,
             SyncSubscriptions::class,
             \App\Console\Commands\NormalizeServiceNames::class,
+            \App\Console\Commands\RefreshSeoContent::class,
         ]
     )
     ->create();

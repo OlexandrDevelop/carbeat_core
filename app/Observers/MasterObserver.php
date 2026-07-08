@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Enums\AppBrand;
 use App\Http\Services\Master\MasterService;
+use App\Jobs\RefreshSeoOverridesJob;
 use App\Models\Master;
 
 class MasterObserver
@@ -13,7 +14,7 @@ class MasterObserver
      */
     public function created(Master $master): void
     {
-        //
+        RefreshSeoOverridesJob::queue();
     }
 
     public function creating(Master $master): void
@@ -45,10 +46,16 @@ class MasterObserver
 
     /**
      * Handle the Master "updated" event.
+     *
+     * Dispatched unconditionally rather than gated on `wasChanged(['city_id', ...])`:
+     * a master's `services()` many-to-many sync (which also affects the popular-services
+     * text on city pages) doesn't touch those scalar columns at all, so it wouldn't be
+     * caught by a narrower check — and the job is debounced/idempotent, so an
+     * occasional unnecessary refresh costs nothing.
      */
     public function updated(Master $master): void
     {
-        //
+        RefreshSeoOverridesJob::queue();
     }
 
     /**
@@ -56,7 +63,7 @@ class MasterObserver
      */
     public function deleted(Master $master): void
     {
-        //
+        RefreshSeoOverridesJob::queue();
     }
 
     /**

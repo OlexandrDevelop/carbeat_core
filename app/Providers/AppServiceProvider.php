@@ -7,11 +7,17 @@ use App\Http\Services\Import\ImportServiceFactory;
 use App\Http\Services\Import\MechanicAdvisorImportService;
 use App\Http\Services\Import\RatelistImportService;
 use App\Http\Services\Import\VseStoImportService;
+use App\Models\City;
 use App\Models\Master;
 use App\Models\Review;
+use App\Models\Service;
+use App\Models\ServiceTranslation;
 use App\Models\User;
+use App\Observers\CityObserver;
 use App\Observers\MasterObserver;
 use App\Observers\ReviewObserver;
+use App\Observers\ServiceObserver;
+use App\Observers\ServiceTranslationObserver;
 use App\Support\AdminAccess;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +53,9 @@ class AppServiceProvider extends ServiceProvider
         }
         Master::observe(MasterObserver::class);
         Review::observe(ReviewObserver::class);
+        Service::observe(ServiceObserver::class);
+        ServiceTranslation::observe(ServiceTranslationObserver::class);
+        City::observe(CityObserver::class);
         Inertia::share('translations', function () {
             $locale = app()->getLocale();
 

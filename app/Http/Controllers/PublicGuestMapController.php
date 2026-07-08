@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Enums\AppBrand;
 use App\Http\Services\Appointment\AppointmentRedisService;
 use App\Http\Services\Seo\SeoOverridesService;
+use App\Http\Services\Seo\UkrainianSeoCopyGenerator;
 use App\Models\City;
 use App\Models\Master;
 use App\Models\Service;
@@ -21,6 +22,7 @@ class PublicGuestMapController extends Controller
 {
     public function __construct(
         private readonly SeoOverridesService $seoOverridesService,
+        private readonly UkrainianSeoCopyGenerator $seoCopyGenerator,
     ) {
     }
 
@@ -58,7 +60,7 @@ class PublicGuestMapController extends Controller
             $appointmentRedisService->isAvailableFlag($master->id, $master->app),
         );
         $entryKey = "master:{$selectedMaster['slug']}";
-        $content = $this->buildMasterSeoContent($selectedMaster);
+        $content = $this->buildMasterSeoContent($selectedMaster, $this->brand());
         $applied = $this->applySeoOverride(
             $entryKey,
             $this->buildSelectedMasterSeo($selectedMaster, $this->brand()),
@@ -82,9 +84,10 @@ class PublicGuestMapController extends Controller
         $city = $this->resolveCityBySlug($citySlug);
         $masters = $this->getCityMasters($city);
         $serviceLinks = $this->buildCityServiceLinks($city, $masters);
+        $copy = $this->buildCityCopy($city, $masters);
         $entryKey = 'city:' . Str::slug($city->name);
-        $content = $this->buildCitySeoContent($city, $masters, $serviceLinks);
-        $applied = $this->applySeoOverride($entryKey, $this->buildCitySeo($city, $masters), $content);
+        $content = $this->buildCitySeoContent($copy, $city, $masters, $serviceLinks);
+        $applied = $this->applySeoOverride($entryKey, $this->buildCitySeo($copy, $city, $masters), $content);
 
         return $this->renderPage(
             seo: $applied['seo'],
@@ -103,9 +106,11 @@ class PublicGuestMapController extends Controller
         abort_if($masters->isEmpty(), 404);
 
         $serviceLinks = $this->buildCityServiceLinks($city, $this->getCityMasters($city), $service->id);
+        $serviceName = $service->translate(app()->getLocale());
+        $copy = $this->seoCopyGenerator->cityServiceSeo($city, $service, $serviceName, $masters->count(), $this->brand(), $this->brandName());
         $entryKey = 'city_service:' . Str::slug($city->name) . ':' . Str::slug($service->name);
-        $content = $this->buildCityServiceSeoContent($city, $service, $masters, $serviceLinks);
-        $applied = $this->applySeoOverride($entryKey, $this->buildCityServiceSeo($city, $service, $masters), $content);
+        $content = $this->buildCityServiceSeoContent($copy, $city, $service, $masters, $serviceLinks);
+        $applied = $this->applySeoOverride($entryKey, $this->buildCityServiceSeo($copy, $city, $service, $masters), $content);
 
         return $this->renderPage(
             seo: $applied['seo'],
@@ -114,6 +119,41 @@ class PublicGuestMapController extends Controller
             initialSelectedMaster: null,
             initialServiceId: (int) $service->id,
         );
+    }
+
+    public function showService(string $serviceSlug): Response
+    {
+        $service = $this->resolveServiceBySlug($serviceSlug);
+        $masters = $this->getServiceMasters($service->id);
+        abort_if($masters->isEmpty(), 404);
+
+        $cityLinks = $this->buildServiceCityLinks($service, $masters);
+        $serviceName = $service->translate(app()->getLocale());
+        $copy = $this->seoCopyGenerator->serviceSeo($service, $serviceName, $masters->count(), $this->brand(), $this->brandName());
+        $entryKey = 'service:' . Str::slug($service->name);
+        $content = $this->buildServiceSeoContent($copy, $service, $masters, $cityLinks);
+        $applied = $this->applySeoOverride($entryKey, $this->buildServiceSeo($copy, $service, $masters), $content);
+
+        return $this->renderPage(
+            seo: $applied['seo'],
+            initialMapView: $this->defaultMapView(),
+            seoContent: $applied['content'],
+            initialSelectedMaster: null,
+            initialServiceId: (int) $service->id,
+        );
+    }
+
+    private function buildCityCopy(City $city, Collection $masters): array
+    {
+        $popularServiceNames = $masters
+            ->flatMap(fn (Master $master) => $master->services)
+            ->unique('id')
+            ->take(4)
+            ->map(fn (Service $service) => $service->translate(app()->getLocale()))
+            ->values()
+            ->all();
+
+        return $this->seoCopyGenerator->citySeo($city, $masters->count(), $popularServiceNames, $this->brand(), $this->brandName());
     }
 
     private function renderPage(
@@ -223,19 +263,25 @@ class PublicGuestMapController extends Controller
     private function buildGenericSeo(AppBrand $brand, bool $isTechnicalGuestMapRoute = false): array
     {
         $brandName = $brand === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+        $vertical = $this->seoCopyGenerator->vertical($brand);
+
+        $title = $brand === AppBrand::FLOXCITY
+            ? "{$brandName} — карта салонів краси та майстрів поруч"
+            : "{$brandName} — карта СТО та автосервісів поруч";
+        $description = "Знайдіть {$vertical['placeNounMid']} поруч на карті {$brandName}. Порівняйте рейтинги, послуги та відкривайте профілі напряму.";
 
         return [
-            'title' => "{$brandName} Car Service Map & STO Near You",
-            'description' => "Find nearby STO stations, auto repair shops and car service specialists on the {$brandName} map. Compare ratings, services and direct profile pages.",
+            'title' => $title,
+            'description' => $description,
             'canonical' => route('landing'),
             'robots' => $isTechnicalGuestMapRoute ? 'noindex, follow' : 'index, follow',
             'ogImage' => url('/og-image.svg'),
             'structuredData' => [
                 '@context' => 'https://schema.org',
                 '@type' => 'WebPage',
-                'name' => "{$brandName} Car Service Map",
+                'name' => $title,
                 'url' => route('landing'),
-                'description' => "Interactive STO and auto repair map for nearby car service stations on {$brandName}.",
+                'description' => $description,
             ],
         ];
     }
@@ -243,6 +289,7 @@ class PublicGuestMapController extends Controller
     private function buildSelectedMasterSeo(array $selectedMaster, AppBrand $brand): array
     {
         $brandName = $brand === AppBrand::FLOXCITY ? 'Floxcity' : 'Carbeat';
+        $vertical = $this->seoCopyGenerator->vertical($brand);
         $address = trim((string) ($selectedMaster['address'] ?? ''));
         $city = trim((string) ($selectedMaster['city'] ?? ''));
         $serviceNames = collect($selectedMaster['services'] ?? [])
@@ -254,7 +301,7 @@ class PublicGuestMapController extends Controller
         $location = trim(implode(', ', array_filter([$city, $address])));
         $descriptionParts = array_filter([
             $location !== '' ? $location : null,
-            $serviceNames !== '' ? "Services: {$serviceNames}." : null,
+            $serviceNames !== '' ? "Послуги: {$serviceNames}." : null,
             !empty($selectedMaster['description'])
                 ? Str::limit(trim((string) $selectedMaster['description']), 120)
                 : null,
@@ -262,29 +309,29 @@ class PublicGuestMapController extends Controller
 
         $description = Str::limit(
             implode(' ', $descriptionParts) !== ''
-                ? "{$selectedMaster['name']} on {$brandName}. ".implode(' ', $descriptionParts)
-                : "{$selectedMaster['name']} on {$brandName}. View services, location and reviews on the map.",
+                ? "{$selectedMaster['name']} на {$brandName}. " . implode(' ', $descriptionParts)
+                : "{$selectedMaster['name']} на {$brandName}. Послуги, розташування та відгуки — на карті.",
             160,
         );
 
         $canonical = $this->profileUrl((string) $selectedMaster['slug']);
         $faq = [
             [
-                'q' => "How to contact {$selectedMaster['name']}?",
-                'a' => "Open {$selectedMaster['name']} on the {$brandName} map to call directly, open navigation, and review the listed services before visiting.",
+                'q' => "Як зв'язатися з {$selectedMaster['name']}?",
+                'a' => "Відкрийте {$selectedMaster['name']} на карті {$brandName}, щоб зателефонувати напряму, відкрити навігацію та переглянути перелік послуг перед візитом.",
             ],
             [
-                'q' => "What services does {$selectedMaster['name']} provide?",
+                'q' => "Які послуги надає {$selectedMaster['name']}?",
                 'a' => $serviceNames !== ''
-                    ? "{$selectedMaster['name']} lists services such as {$serviceNames}. Open the profile on the map for the full list."
-                    : "Open the profile on the map to review the services currently listed for {$selectedMaster['name']}.",
+                    ? "{$selectedMaster['name']} пропонує послуги: {$serviceNames}. Відкрийте профіль на карті, щоб побачити повний список."
+                    : "Відкрийте профіль на карті, щоб переглянути актуальний перелік послуг {$selectedMaster['name']}.",
             ],
         ];
 
         $schemas = [
             [
                 '@context' => 'https://schema.org',
-                '@type' => 'AutoRepair',
+                '@type' => $vertical['schemaType'],
                 'name' => $selectedMaster['name'],
                 'url' => $canonical,
                 'description' => $description,
@@ -302,8 +349,8 @@ class PublicGuestMapController extends Controller
                 ],
             ],
             $this->buildBreadcrumbSchema([
-                ['label' => 'Map', 'href' => route('landing')],
-                ['label' => $selectedMaster['city'] ?: 'STO', 'href' => $selectedMaster['city'] ? route('public.city.show', ['citySlug' => Str::slug((string) $selectedMaster['city'])]) : route('landing')],
+                ['label' => 'Мапа', 'href' => route('landing')],
+                ['label' => $selectedMaster['city'] ?: ucfirst($vertical['placeNounSingular']), 'href' => $selectedMaster['city'] ? route('public.city.show', ['citySlug' => Str::slug((string) $selectedMaster['city'])]) : route('landing')],
                 ['label' => $selectedMaster['name'], 'href' => $canonical],
             ]),
             $this->buildFaqSchema($faq),
@@ -318,7 +365,7 @@ class PublicGuestMapController extends Controller
         }
 
         return [
-            'title' => "{$selectedMaster['name']} STO · {$brandName}",
+            'title' => "{$selectedMaster['name']} · {$brandName}",
             'description' => $description,
             'canonical' => $canonical,
             'robots' => 'index, follow',
@@ -327,36 +374,13 @@ class PublicGuestMapController extends Controller
         ];
     }
 
-    private function buildCitySeo(City $city, Collection $masters): array
+    private function buildCitySeo(array $copy, City $city, Collection $masters): array
     {
-        $brandName = $this->brandName();
-        $count = $masters->count();
-        $popularServices = $masters
-            ->flatMap(fn (Master $master) => $master->services)
-            ->unique('id')
-            ->take(4)
-            ->map(fn (Service $service) => $service->translate(app()->getLocale()))
-            ->implode(', ');
-        $title = "STO and Car Service in {$city->name} · {$brandName}";
-        $description = Str::limit(
-            "Find car service stations and auto repair specialists in {$city->name} on {$brandName}. Browse {$count} listed stations, services, ratings and direct profile links" . ($popularServices !== '' ? " including {$popularServices}." : '.'),
-            160,
-        );
         $canonical = route('public.city.show', ['citySlug' => Str::slug($city->name)]);
-        $faq = [
-            [
-                'q' => "How to find a car service station in {$city->name}?",
-                'a' => "Use the {$brandName} city map for {$city->name} to compare nearby stations, addresses, services and ratings before opening a profile page.",
-            ],
-            [
-                'q' => "Can I browse specific repair categories in {$city->name}?",
-                'a' => 'Yes. Open one of the linked service pages for the city to narrow the map to a specific repair or maintenance category.',
-            ],
-        ];
 
         return [
-            'title' => $title,
-            'description' => $description,
+            'title' => $copy['metaTitle'],
+            'description' => $copy['description'],
             'canonical' => $canonical,
             'robots' => 'index, follow',
             'ogImage' => url('/og-image.svg'),
@@ -364,48 +388,30 @@ class PublicGuestMapController extends Controller
                 [
                     '@context' => 'https://schema.org',
                     '@type' => 'CollectionPage',
-                    'name' => $title,
+                    'name' => $copy['metaTitle'],
                     'url' => $canonical,
-                    'description' => $description,
+                    'description' => $copy['description'],
                 ],
                 $this->buildItemListSchema($masters, $canonical),
                 $this->buildBreadcrumbSchema([
-                    ['label' => 'Map', 'href' => route('landing')],
+                    ['label' => 'Мапа', 'href' => route('landing')],
                     ['label' => $city->name, 'href' => $canonical],
                 ]),
-                $this->buildFaqSchema($faq),
+                $this->buildFaqSchema($copy['faq']),
             ],
         ];
     }
 
-    private function buildCityServiceSeo(City $city, Service $service, Collection $masters): array
+    private function buildCityServiceSeo(array $copy, City $city, Service $service, Collection $masters): array
     {
-        $brandName = $this->brandName();
-        $serviceName = $service->translate(app()->getLocale());
-        $count = $masters->count();
-        $title = "{$serviceName} STO in {$city->name} · {$brandName}";
-        $description = Str::limit(
-            "Find {$serviceName} providers in {$city->name} on {$brandName}. Compare {$count} listed stations, addresses, ratings and direct profile pages.",
-            160,
-        );
         $canonical = route('public.city.service.show', [
             'citySlug' => Str::slug($city->name),
             'serviceSlug' => Str::slug($service->name),
         ]);
-        $faq = [
-            [
-                'q' => "How to find {$serviceName} in {$city->name}?",
-                'a' => "Use the {$brandName} service page for {$city->name} to compare {$serviceName} providers, ratings, addresses and direct profile links.",
-            ],
-            [
-                'q' => "Can I switch from {$serviceName} to all stations in {$city->name}?",
-                'a' => "Yes. Open the city landing page to view all stations in {$city->name}, or keep this page to stay focused on {$serviceName}.",
-            ],
-        ];
 
         return [
-            'title' => $title,
-            'description' => $description,
+            'title' => $copy['metaTitle'],
+            'description' => $copy['description'],
             'canonical' => $canonical,
             'robots' => 'index, follow',
             'ogImage' => url('/og-image.svg'),
@@ -413,37 +419,66 @@ class PublicGuestMapController extends Controller
                 [
                     '@context' => 'https://schema.org',
                     '@type' => 'CollectionPage',
-                    'name' => $title,
+                    'name' => $copy['metaTitle'],
                     'url' => $canonical,
-                    'description' => $description,
+                    'description' => $copy['description'],
                 ],
                 $this->buildItemListSchema($masters, $canonical),
                 $this->buildBreadcrumbSchema([
-                    ['label' => 'Map', 'href' => route('landing')],
+                    ['label' => 'Мапа', 'href' => route('landing')],
                     ['label' => $city->name, 'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)])],
-                    ['label' => $serviceName, 'href' => $canonical],
+                    ['label' => $service->translate(app()->getLocale()), 'href' => $canonical],
                 ]),
-                $this->buildFaqSchema($faq),
+                $this->buildFaqSchema($copy['faq']),
             ],
         ];
     }
 
-    private function buildMasterSeoContent(array $master): array
+    private function buildServiceSeo(array $copy, Service $service, Collection $masters): array
     {
+        $canonical = route('public.service.show', ['serviceSlug' => Str::slug($service->name)]);
+
+        return [
+            'title' => $copy['metaTitle'],
+            'description' => $copy['description'],
+            'canonical' => $canonical,
+            'robots' => 'index, follow',
+            'ogImage' => url('/og-image.svg'),
+            'structuredData' => [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'CollectionPage',
+                    'name' => $copy['metaTitle'],
+                    'url' => $canonical,
+                    'description' => $copy['description'],
+                ],
+                $this->buildItemListSchema($masters, $canonical),
+                $this->buildBreadcrumbSchema([
+                    ['label' => 'Мапа', 'href' => route('landing')],
+                    ['label' => $service->translate(app()->getLocale()), 'href' => $canonical],
+                ]),
+                $this->buildFaqSchema($copy['faq']),
+            ],
+        ];
+    }
+
+    private function buildMasterSeoContent(array $master, AppBrand $brand): array
+    {
+        $vertical = $this->seoCopyGenerator->vertical($brand);
         $citySlug = !empty($master['city']) ? Str::slug((string) $master['city']) : null;
         $primaryService = collect($master['services'] ?? [])->firstWhere('is_primary', true);
         $relatedLinks = [];
 
         if ($citySlug) {
             $relatedLinks[] = [
-                'label' => "More stations in {$master['city']}",
+                'label' => "Більше {$vertical['entityMany']} у місті {$master['city']}",
                 'href' => route('public.city.show', ['citySlug' => $citySlug]),
             ];
         }
 
         if ($citySlug && !empty($primaryService['name'])) {
             $relatedLinks[] = [
-                'label' => "{$primaryService['name']} in {$master['city']}",
+                'label' => "{$primaryService['name']} у місті {$master['city']}",
                 'href' => route('public.city.service.show', [
                     'citySlug' => $citySlug,
                     'serviceSlug' => Str::slug((string) $primaryService['name']),
@@ -458,29 +493,29 @@ class PublicGuestMapController extends Controller
             'sections' => array_values(array_filter([
                 !empty($master['description'])
                     ? [
-                        'heading' => "About {$master['name']}",
+                        'heading' => "Про {$master['name']}",
                         'body' => Str::limit((string) $master['description'], 320),
                     ]
                     : null,
                 !empty($master['city']) || !empty($master['address'])
                     ? [
-                        'heading' => 'Location',
+                        'heading' => 'Розташування',
                         'body' => trim(implode(', ', array_filter([
                             $master['address'] ?? null,
                             $master['city'] ?? null,
-                        ]))) . '. Open the marker on the map to build a route and compare nearby stations.',
+                        ]))) . ". Відкрийте маркер на карті, щоб прокласти маршрут і порівняти сусідні {$vertical['entityFew']}.",
                     ]
                     : null,
             ])),
             'breadcrumbs' => array_values(array_filter([
-                ['label' => 'Map', 'href' => route('landing')],
+                ['label' => 'Мапа', 'href' => route('landing')],
                 $citySlug ? ['label' => (string) $master['city'], 'href' => route('public.city.show', ['citySlug' => $citySlug])] : null,
                 ['label' => $master['name'], 'href' => $this->profileUrl((string) $master['slug'])],
             ])),
             'stats' => array_values(array_filter([
-                $master['address'] ? ['label' => 'Address', 'value' => $master['address']] : null,
-                !empty($master['rating']) ? ['label' => 'Rating', 'value' => number_format((float) $master['rating'], 1)] : null,
-                !empty($master['reviews_count']) ? ['label' => 'Reviews', 'value' => (string) $master['reviews_count']] : null,
+                $master['address'] ? ['label' => 'Адреса', 'value' => $master['address']] : null,
+                !empty($master['rating']) ? ['label' => 'Рейтинг', 'value' => number_format((float) $master['rating'], 1)] : null,
+                !empty($master['reviews_count']) ? ['label' => 'Відгуки', 'value' => (string) $master['reviews_count']] : null,
             ])),
             'serviceLinks' => collect($master['services'] ?? [])
                 ->map(fn ($service) => [
@@ -498,42 +533,31 @@ class PublicGuestMapController extends Controller
             'relatedLinks' => $relatedLinks,
             'faq' => [
                 [
-                    'q' => "How to contact {$master['name']}?",
-                    'a' => 'Use the profile card on the map to call directly, open navigation, or review services and ratings before contacting the station.',
+                    'q' => "Як зв'язатися з {$master['name']}?",
+                    'a' => 'Скористайтеся карткою профілю на карті, щоб зателефонувати напряму, відкрити навігацію або переглянути послуги й рейтинг перед візитом.',
                 ],
                 [
-                    'q' => "Can I compare {$master['name']} with nearby stations?",
-                    'a' => 'Yes. Open the city or service landing page from the links below to compare nearby stations and profile pages.',
+                    'q' => "Чи можна порівняти {$master['name']} з іншими поблизу?",
+                    'a' => 'Так. Відкрийте сторінку міста або послуги за посиланнями нижче, щоб порівняти сусідні варіанти та профілі.',
                 ],
             ],
         ];
     }
 
-    private function buildCitySeoContent(City $city, Collection $masters, array $serviceLinks): array
+    private function buildCitySeoContent(array $copy, City $city, Collection $masters, array $serviceLinks): array
     {
         return [
             'type' => 'city',
-            'title' => "Car service stations in {$city->name}",
-            'intro' => "Browse nearby stations in {$city->name}, compare services, ratings and direct profile pages, and open each station on the map.",
-            'sections' => [
-                [
-                    'heading' => "Compare stations in {$city->name}",
-                    'body' => "This city page groups stations in {$city->name} into one searchable map experience. You can compare profile pages, ratings, service categories and exact map positions without leaving the page.",
-                ],
-                [
-                    'heading' => "Popular repair categories in {$city->name}",
-                    'body' => $serviceLinks
-                        ? "Use the service links on this page to narrow the city map to specific categories such as " . collect($serviceLinks)->pluck('label')->take(4)->implode(', ') . '.'
-                        : "Use the station links below to open profile pages and compare available repair categories in {$city->name}.",
-                ],
-            ],
+            'title' => $copy['title'],
+            'intro' => $copy['intro'],
+            'sections' => $copy['sections'],
             'breadcrumbs' => [
-                ['label' => 'Map', 'href' => route('landing')],
+                ['label' => 'Мапа', 'href' => route('landing')],
                 ['label' => $city->name, 'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)])],
             ],
             'stats' => [
-                ['label' => 'Stations', 'value' => (string) $masters->count()],
-                ['label' => 'Services', 'value' => (string) count($serviceLinks)],
+                ['label' => 'Станцій', 'value' => (string) $masters->count()],
+                ['label' => 'Послуг', 'value' => (string) count($serviceLinks)],
             ],
             'serviceLinks' => $serviceLinks,
             'topMasters' => $masters
@@ -542,40 +566,21 @@ class PublicGuestMapController extends Controller
                 ->values()
                 ->all(),
             'relatedLinks' => $serviceLinks,
-            'faq' => [
-                [
-                    'q' => "How to find a car service station in {$city->name}?",
-                    'a' => "Use the map and the station list below to compare addresses, services, ratings and direct profile pages in {$city->name}.",
-                ],
-                [
-                    'q' => "Can I search by service in {$city->name}?",
-                    'a' => 'Yes. Use the service links below to open landing pages for specific repair or maintenance categories in the same city.',
-                ],
-            ],
+            'faq' => $copy['faq'],
         ];
     }
 
-    private function buildCityServiceSeoContent(City $city, Service $service, Collection $masters, array $serviceLinks): array
+    private function buildCityServiceSeoContent(array $copy, City $city, Service $service, Collection $masters, array $serviceLinks): array
     {
         $serviceName = $service->translate(app()->getLocale());
-        $brandName = $this->brandName();
 
         return [
             'type' => 'city_service',
-            'title' => "{$serviceName} in {$city->name}",
-            'intro' => "Browse {$serviceName} providers in {$city->name}, compare station profiles, ratings and addresses, and open each station directly on the map.",
-            'sections' => [
-                [
-                    'heading' => "Find {$serviceName} providers in {$city->name}",
-                    'body' => "This page focuses the {$brandName} map on {$serviceName} providers in {$city->name}. Use it to compare stations faster than on the full city map.",
-                ],
-                [
-                    'heading' => 'How to use this filtered map',
-                    'body' => "Open any listed station profile to review its services, address and rating. If you need a broader overview, use the city page link below to return to all stations in {$city->name}.",
-                ],
-            ],
+            'title' => $copy['title'],
+            'intro' => $copy['intro'],
+            'sections' => $copy['sections'],
             'breadcrumbs' => [
-                ['label' => 'Map', 'href' => route('landing')],
+                ['label' => 'Мапа', 'href' => route('landing')],
                 ['label' => $city->name, 'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)])],
                 ['label' => $serviceName, 'href' => route('public.city.service.show', [
                     'citySlug' => Str::slug($city->name),
@@ -583,8 +588,8 @@ class PublicGuestMapController extends Controller
                 ])],
             ],
             'stats' => [
-                ['label' => 'Stations', 'value' => (string) $masters->count()],
-                ['label' => 'City', 'value' => $city->name],
+                ['label' => 'Станцій', 'value' => (string) $masters->count()],
+                ['label' => 'Місто', 'value' => $city->name],
             ],
             'serviceLinks' => $serviceLinks,
             'topMasters' => $masters
@@ -594,20 +599,37 @@ class PublicGuestMapController extends Controller
                 ->all(),
             'relatedLinks' => [
                 [
-                    'label' => "All stations in {$city->name}",
+                    'label' => "Усі станції міста {$city->name}",
                     'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)]),
                 ],
             ],
-            'faq' => [
-                [
-                    'q' => "How to find {$serviceName} in {$city->name}?",
-                    'a' => "Use the list below to compare {$serviceName} providers in {$city->name}, then open the chosen station on the map.",
-                ],
-                [
-                    'q' => "Can I open the full city map from this page?",
-                    'a' => "Yes. The city landing page shows all stations in {$city->name}, while this page narrows the list to {$serviceName}.",
-                ],
+            'faq' => $copy['faq'],
+        ];
+    }
+
+    private function buildServiceSeoContent(array $copy, Service $service, Collection $masters, array $cityLinks): array
+    {
+        return [
+            'type' => 'service',
+            'title' => $copy['title'],
+            'intro' => $copy['intro'],
+            'sections' => $copy['sections'],
+            'breadcrumbs' => [
+                ['label' => 'Мапа', 'href' => route('landing')],
+                ['label' => $service->translate(app()->getLocale()), 'href' => route('public.service.show', ['serviceSlug' => Str::slug($service->name)])],
             ],
+            'stats' => [
+                ['label' => 'Станцій', 'value' => (string) $masters->count()],
+                ['label' => 'Міст', 'value' => (string) count($cityLinks)],
+            ],
+            'serviceLinks' => $cityLinks,
+            'topMasters' => $masters
+                ->take(10)
+                ->map(fn (Master $master) => $this->serializeMasterCard($master))
+                ->values()
+                ->all(),
+            'relatedLinks' => $cityLinks,
+            'faq' => $copy['faq'],
         ];
     }
 
@@ -628,6 +650,31 @@ class PublicGuestMapController extends Controller
                 ]),
                 'active' => $activeServiceId !== null && (int) $service->id === $activeServiceId,
             ])
+            ->all();
+    }
+
+    private function buildServiceCityLinks(Service $service, Collection $masters): array
+    {
+        $serviceSlug = Str::slug($service->name);
+
+        $cityNames = [];
+        foreach ($masters as $master) {
+            $cityName = optional($master->city)->name;
+            if ($cityName) {
+                $cityNames[$cityName] = $cityName;
+            }
+        }
+        ksort($cityNames, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return collect($cityNames)
+            ->map(fn (string $cityName) => [
+                'label' => $cityName,
+                'href' => route('public.city.service.show', [
+                    'citySlug' => Str::slug($cityName),
+                    'serviceSlug' => $serviceSlug,
+                ]),
+            ])
+            ->values()
             ->all();
     }
 
@@ -769,6 +816,23 @@ class PublicGuestMapController extends Controller
                     $subQuery->where('service_id', $serviceId)
                         ->orWhereHas('services', fn ($services) => $services->where('services.id', $serviceId));
                 });
+            })
+            ->orderByDesc('reviews_avg_rating')
+            ->orderByDesc('reviews_count')
+            ->orderByDesc('rating_google')
+            ->orderBy('name')
+            ->limit(60)
+            ->get();
+    }
+
+    private function getServiceMasters(int $serviceId): Collection
+    {
+        return Master::with(['services.translations', 'city'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->where(function ($subQuery) use ($serviceId) {
+                $subQuery->where('service_id', $serviceId)
+                    ->orWhereHas('services', fn ($services) => $services->where('services.id', $serviceId));
             })
             ->orderByDesc('reviews_avg_rating')
             ->orderByDesc('reviews_count')

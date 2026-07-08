@@ -78,6 +78,15 @@ class GenerateSitemap extends Command
                 });
         });
 
+        Service::query()->whereHas('masters')->get(['id', 'name', 'updated_at'])->each(function ($service) use ($sitemap) {
+            $sitemap->add(
+                Url::create($this->absoluteUrl('/service/' . Str::slug($service->name)))
+                    ->setLastModificationDate($service->updated_at)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
+                    ->setPriority(0.72)
+            );
+        });
+
         $sitemapPath = storage_path("app/public/sitemap-{$brand->value}.xml");
         $sitemap->writeToFile($sitemapPath);
     }

@@ -6,6 +6,7 @@ namespace App\Http\Services\Admin;
 
 use App\Enums\AppBrand;
 use App\Http\Services\Seo\SeoOverridesService;
+use App\Http\Services\Seo\UkrainianSeoCopyGenerator;
 use App\Models\City;
 use App\Models\Master;
 use App\Models\Service;
@@ -16,6 +17,7 @@ class SeoContentAdminService
 {
     public function __construct(
         private readonly SeoOverridesService $overridesService,
+        private readonly UkrainianSeoCopyGenerator $copyGenerator,
     ) {
     }
 
@@ -35,6 +37,10 @@ class SeoContentAdminService
 
         if ($type === 'all' || $type === 'city_service') {
             $entries = $entries->merge($this->cityServiceEntries($search));
+        }
+
+        if ($type === 'all' || $type === 'service') {
+            $entries = $entries->merge($this->serviceEntries($search));
         }
 
         return [
@@ -84,31 +90,31 @@ class SeoContentAdminService
                     'title' => "{$master->name} · " . $this->brandName(),
                     'description' => Str::limit(
                         "{$master->name}" .
-                        ($cityName ? " in {$cityName}" : '') .
-                        '. View services, location and reviews on the map.',
+                        ($cityName ? " у місті {$cityName}" : '') .
+                        '. Послуги, адреса та відгуки — на карті.',
                         160,
                     ),
                     'intro' => Str::limit((string) ($master->description ?? ''), 220),
                     'sections' => array_values(array_filter([
                         !empty($master->description) ? [
-                            'heading' => "About {$master->name}",
+                            'heading' => "Про {$master->name}",
                             'body' => Str::limit((string) $master->description, 320),
                         ] : null,
                         ($master->address || $cityName) ? [
-                            'heading' => 'Location',
-                            'body' => trim(implode(', ', array_filter([$master->address, $cityName]))) . '. Open the marker on the map to build a route and compare nearby stations.',
+                            'heading' => 'Розташування',
+                            'body' => trim(implode(', ', array_filter([$master->address, $cityName]))) . '. Відкрийте маркер на карті, щоб прокласти маршрут і порівняти сусідні станції.',
                         ] : null,
                     ])),
                     'faq' => [
                         [
-                            'q' => "How to contact {$master->name}?",
-                            'a' => "Open {$master->name} on the {$this->brandName()} map to call directly, open navigation, and review the listed services before visiting.",
+                            'q' => "Як зв'язатися з {$master->name}?",
+                            'a' => "Відкрийте {$master->name} на карті {$this->brandName()}, щоб зателефонувати напряму, відкрити навігацію та переглянути перелік послуг перед візитом.",
                         ],
                         [
-                            'q' => "What services does {$master->name} provide?",
+                            'q' => "Які послуги надає {$master->name}?",
                             'a' => $services !== []
-                                ? "{$master->name} lists services such as " . implode(', ', $services) . '. Open the profile on the map for the full list.'
-                                : "Open the profile on the map to review the services currently listed for {$master->name}.",
+                                ? "{$master->name} пропонує послуги: " . implode(', ', $services) . '. Відкрийте профіль на карті, щоб побачити повний список.'
+                                : "Відкрийте профіль на карті, щоб переглянути актуальний перелік послуг {$master->name}.",
                         ],
                     ],
                 ];
@@ -128,33 +134,27 @@ class SeoContentAdminService
         return City::query()
             ->whereHas('masters')
             ->withCount('masters')
+            ->with('masters.services.translations')
             ->orderBy('name')
             ->get()
             ->filter(fn (City $city) => $search === '' || Str::contains(Str::lower($city->name), $search))
             ->map(function (City $city) {
+                $popularServiceNames = $city->masters
+                    ->flatMap(fn (Master $master) => $master->services)
+                    ->unique('id')
+                    ->take(4)
+                    ->map(fn (Service $service) => $service->translate(app()->getLocale()))
+                    ->values()
+                    ->all();
+
+                $copy = $this->copyGenerator->citySeo($city, (int) $city->masters_count, $popularServiceNames, $this->brand(), $this->brandName());
+
                 $default = [
-                    'title' => "{$city->name} Car Service Map · " . $this->brandName(),
-                    'description' => Str::limit(
-                        "Find car service stations and auto repair specialists in {$city->name} on {$this->brandName()}. Browse {$city->masters_count} listed stations, services, ratings and direct profile links.",
-                        160,
-                    ),
-                    'intro' => "Browse nearby stations in {$city->name}, compare services, ratings and direct profile pages, and open each station on the map.",
-                    'sections' => [
-                        [
-                            'heading' => "Compare stations in {$city->name}",
-                            'body' => "This city page groups stations in {$city->name} into one searchable map experience. You can compare profile pages, ratings, service categories and exact map positions without leaving the page.",
-                        ],
-                    ],
-                    'faq' => [
-                        [
-                            'q' => "How to find a car service station in {$city->name}?",
-                            'a' => "Use the {$this->brandName()} city map for {$city->name} to compare nearby stations, addresses, services and ratings before opening a profile page.",
-                        ],
-                        [
-                            'q' => "Can I browse specific repair categories in {$city->name}?",
-                            'a' => 'Yes. Open one of the linked service pages for the city to narrow the map to a specific repair or maintenance category.',
-                        ],
-                    ],
+                    'title' => $copy['metaTitle'],
+                    'description' => $copy['description'],
+                    'intro' => $copy['intro'],
+                    'sections' => $copy['sections'],
+                    'faq' => $copy['faq'],
                 ];
 
                 return $this->formatEntry(
@@ -183,56 +183,76 @@ class SeoContentAdminService
             }
 
             foreach ($master->services as $service) {
-                $citySlug = Str::slug($city->name);
-                $serviceSlug = Str::slug($service->name);
-                $label = $service->translate(app()->getLocale()) . ' · ' . $city->name;
-                $key = "city_service:{$citySlug}:{$serviceSlug}";
-
-                if ($search !== '' && !Str::contains(Str::lower($label), $search)) {
-                    continue;
-                }
-
-                $combos[$key] = [
-                    'key' => $key,
-                    'type' => 'city_service',
-                    'label' => $label,
-                    'route' => "/city/{$citySlug}/{$serviceSlug}",
-                    'default' => [
-                        'title' => $service->translate(app()->getLocale()) . " in {$city->name} · " . $this->brandName(),
-                        'description' => Str::limit(
-                            "Find {$service->translate(app()->getLocale())} providers in {$city->name} on {$this->brandName()}. Compare listed stations, addresses, ratings and direct profile pages.",
-                            160,
-                        ),
-                        'intro' => "Browse {$service->translate(app()->getLocale())} providers in {$city->name}, compare station profiles, ratings and addresses, and open each station directly on the map.",
-                        'sections' => [
-                            [
-                                'heading' => "Find {$service->translate(app()->getLocale())} providers in {$city->name}",
-                                'body' => "This page focuses the {$this->brandName()} map on {$service->translate(app()->getLocale())} providers in {$city->name}. Use it to compare stations faster than on the full city map.",
-                            ],
-                        ],
-                        'faq' => [
-                            [
-                                'q' => "How to find {$service->translate(app()->getLocale())} in {$city->name}?",
-                                'a' => "Use the {$this->brandName()} service page for {$city->name} to compare {$service->translate(app()->getLocale())} providers, ratings, addresses and direct profile links.",
-                            ],
-                            [
-                                'q' => "Can I switch from {$service->translate(app()->getLocale())} to all stations in {$city->name}?",
-                                'a' => "Yes. Open the city landing page to view all stations in {$city->name}, or keep this page to stay focused on {$service->translate(app()->getLocale())}.",
-                            ],
-                        ],
-                    ],
-                ];
+                $key = 'city_service:' . Str::slug($city->name) . ':' . Str::slug($service->name);
+                $combos[$key] ??= ['city' => $city, 'service' => $service, 'count' => 0];
+                $combos[$key]['count']++;
             }
         }
 
         return collect($combos)
-            ->map(fn (array $entry) => $this->formatEntry(
-                $entry['key'],
-                $entry['type'],
-                $entry['label'],
-                $entry['route'],
-                $entry['default'],
-            ));
+            ->filter(function (array $combo) use ($search) {
+                if ($search === '') {
+                    return true;
+                }
+
+                $label = $combo['service']->translate(app()->getLocale()) . ' · ' . $combo['city']->name;
+
+                return Str::contains(Str::lower($label), $search);
+            })
+            ->map(function (array $combo, string $key) {
+                $city = $combo['city'];
+                $service = $combo['service'];
+                $serviceName = $service->translate(app()->getLocale());
+                $copy = $this->copyGenerator->cityServiceSeo($city, $service, $serviceName, $combo['count'], $this->brand(), $this->brandName());
+
+                $default = [
+                    'title' => $copy['metaTitle'],
+                    'description' => $copy['description'],
+                    'intro' => $copy['intro'],
+                    'sections' => $copy['sections'],
+                    'faq' => $copy['faq'],
+                ];
+
+                return $this->formatEntry(
+                    $key,
+                    'city_service',
+                    "{$serviceName} · {$city->name}",
+                    '/city/' . Str::slug($city->name) . '/' . Str::slug($service->name),
+                    $default,
+                );
+            })
+            ->values();
+    }
+
+    private function serviceEntries(string $search): Collection
+    {
+        return Service::query()
+            ->whereHas('masters')
+            ->withCount('masters')
+            ->with('translations')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (Service $service) => $search === '' || Str::contains(Str::lower($service->translate(app()->getLocale())), $search))
+            ->map(function (Service $service) {
+                $serviceName = $service->translate(app()->getLocale());
+                $copy = $this->copyGenerator->serviceSeo($service, $serviceName, (int) $service->masters_count, $this->brand(), $this->brandName());
+
+                $default = [
+                    'title' => $copy['metaTitle'],
+                    'description' => $copy['description'],
+                    'intro' => $copy['intro'],
+                    'sections' => $copy['sections'],
+                    'faq' => $copy['faq'],
+                ];
+
+                return $this->formatEntry(
+                    'service:' . Str::slug($service->name),
+                    'service',
+                    $serviceName,
+                    '/service/' . Str::slug($service->name),
+                    $default,
+                );
+            });
     }
 
     private function formatEntry(

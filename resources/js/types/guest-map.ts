@@ -85,7 +85,7 @@ export interface SeoMasterCard {
 }
 
 export interface SeoContentPayload {
-    type: 'master' | 'city' | 'city_service';
+    type: 'master' | 'city' | 'city_service' | 'service';
     title: string;
     intro?: string;
     sections?: SeoSection[];

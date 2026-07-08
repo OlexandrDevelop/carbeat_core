@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Admin;
 
+use App\Jobs\RefreshSeoOverridesJob;
 use App\Models\Master;
 use App\Models\Service;
 use App\Models\ServiceTranslation;
@@ -115,6 +116,11 @@ class ServiceAdminService
             }
         }
 
+        // `ServiceTranslation::where(...)->delete()` above (when a translation is
+        // cleared to empty) is a mass query-builder delete and won't fire
+        // `ServiceTranslationObserver` — dispatch explicitly to cover that branch too.
+        RefreshSeoOverridesJob::queue();
+
         return $this->get($serviceId);
     }
 
@@ -131,6 +137,9 @@ class ServiceAdminService
             $rows = array_map(fn ($mid) => ['master_id' => $mid, 'service_id' => $serviceId], $finalMasterIds);
             DB::table('master_services')->insert($rows);
         }
+
+        // Raw `master_services` writes above don't fire any Eloquent event.
+        RefreshSeoOverridesJob::queue();
 
         return $this->get($serviceId);
     }
@@ -251,6 +260,10 @@ class ServiceAdminService
             DB::table('master_services')->where('service_id', $serviceId)->delete();
             Service::where('id', $serviceId)->delete();
 
+            // `Service::where(...)->delete()` is a mass query-builder delete — it
+            // never fires `ServiceObserver::deleted()`, so dispatch explicitly.
+            RefreshSeoOverridesJob::queue();
+
             return [
                 'deleted_service_id'     => (int) $serviceId,
                 'detached_from_masters'  => (int) $preview['affected_masters_count'],
@@ -290,6 +303,9 @@ class ServiceAdminService
                 DB::table('master_services')->whereIn('service_id', $serviceIds)->delete();
                 Service::whereIn('id', $serviceIds)->delete();
             }
+
+            // Mass query-builder delete above — doesn't fire `ServiceObserver::deleted()`.
+            RefreshSeoOverridesJob::queue();
 
             return [
                 'deleted_service_ids'   => $serviceIds,
@@ -340,6 +356,11 @@ class ServiceAdminService
             }
 
             Service::whereIn('id', $toRemove)->delete();
+
+            // Raw `master_services` writes and the mass `Service::whereIn(...)->delete()`
+            // above bypass Eloquent entirely — this is exactly the "merged two services"
+            // case that needs the surviving service's (and its cities') SEO copy refreshed.
+            RefreshSeoOverridesJob::queue();
 
             return ['primary_id' => $primaryId, 'deleted_ids' => $toRemove];
         });

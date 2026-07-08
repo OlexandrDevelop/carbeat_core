@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 /**
  * @property mixed $id
@@ -16,6 +17,7 @@ class ServiceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->translate(app()->getLocale()),
+            'slug' => Str::slug($this->name),
             'masters_count' => $this->masters_count ?? 0,
         ];
     }
