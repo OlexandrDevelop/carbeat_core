@@ -31,16 +31,37 @@ export function serviceEmoji(name: string): string {
     return '🔨';
 }
 
+/**
+ * Resolves a display name for the master's primary service.
+ *
+ * The map list/nearby-strip endpoint (`/api/masters`) returns raw SQL rows,
+ * so `services` is never populated there (see MasterResource::toArray) —
+ * only `main_service_id`. `serviceNameById` lets callers resolve that id
+ * against the separately-fetched service catalog in that case.
+ */
+export function masterPrimaryServiceName(
+    master: Pick<MasterDetails, 'services' | 'main_service_id'>,
+    serviceNameById?: Record<number, string>,
+): string | undefined {
+    return (
+        master.services?.[0]?.name ??
+        (master.main_service_id
+            ? serviceNameById?.[master.main_service_id]
+            : undefined)
+    );
+}
+
 export function masterServiceEmoji(
-    master: Pick<MasterDetails, 'services'>,
+    master: Pick<MasterDetails, 'services' | 'main_service_id'>,
+    serviceNameById?: Record<number, string>,
 ): string {
-    const name = master.services?.[0]?.name ?? '';
+    const name = masterPrimaryServiceName(master, serviceNameById);
     return name ? serviceEmoji(name) : '🔨';
 }
 
 export function masterServiceColor(
-    master: Pick<MasterDetails, 'id' | 'services'>,
+    master: Pick<MasterDetails, 'id' | 'services' | 'main_service_id'>,
 ): string {
-    const id = master.services?.[0]?.id ?? master.id;
+    const id = master.services?.[0]?.id ?? master.main_service_id ?? master.id;
     return SERVICE_COLORS[id % SERVICE_COLORS.length];
 }

@@ -246,6 +246,13 @@ const serviceOptions = computed(() =>
         .sort((a, b) => a.label.localeCompare(b.label, currentLang.value)),
 );
 
+// The map list endpoint (`/api/masters`) only returns `main_service_id`, not
+// the eager-loaded `services` relation — this resolves that id back to a
+// display name for the nearby strip.
+const serviceNameById = computed<Record<number, string>>(() =>
+    Object.fromEntries(serviceOptions.value.map((s) => [s.id, s.label])),
+);
+
 const selectedMasterPhotos = computed<string[]>(() => {
     const master = selectedMaster.value;
     if (!master) return [];
@@ -1001,6 +1008,7 @@ onBeforeUnmount(() => {
                             :masters="visibleMasters"
                             :loading="loading"
                             :photo-url="photoUrl"
+                            :service-name-by-id="serviceNameById"
                             @master-click="openMaster"
                         />
                     </div>

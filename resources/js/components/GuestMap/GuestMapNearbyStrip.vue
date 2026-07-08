@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useHorizontalVirtualList } from '@/composables/useHorizontalVirtualList';
-import { masterServiceColor, masterServiceEmoji } from '@/lib/master-display';
+import {
+    masterPrimaryServiceName,
+    masterServiceColor,
+    masterServiceEmoji,
+} from '@/lib/master-display';
 import type { MasterDetails } from '@/types/guest-map';
 import { computed, ref, watch } from 'vue';
 
@@ -8,6 +12,7 @@ const props = defineProps<{
     masters: MasterDetails[];
     loading?: boolean;
     photoUrl: (path?: string | null) => string | null;
+    serviceNameById?: Record<number, string>;
 }>();
 
 const emit = defineEmits<{
@@ -115,20 +120,27 @@ const visibleMasters = computed(() =>
                             loading="lazy"
                             :alt="master.name"
                         />
-                        <span v-else>{{ masterServiceEmoji(master) }}</span>
+                        <span v-else>{{
+                            masterServiceEmoji(master, props.serviceNameById)
+                        }}</span>
                     </div>
                     <div class="w-[72px]">
                         <div
                             class="truncate text-xs font-bold"
                             style="color: var(--panel-text)"
                         >
-                            {{ master.name.split(' ')[0] }}
+                            {{ master.name }}
                         </div>
                         <div
                             class="truncate text-[10px]"
                             style="color: var(--panel-muted-text)"
                         >
-                            {{ master.services?.[0]?.name ?? 'Майстер' }}
+                            {{
+                                masterPrimaryServiceName(
+                                    master,
+                                    props.serviceNameById,
+                                ) ?? 'Майстер'
+                            }}
                         </div>
                         <div class="mt-1 flex items-center gap-1">
                             <span class="text-[10px] text-amber-500">★</span>

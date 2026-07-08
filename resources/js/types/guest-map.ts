@@ -30,6 +30,7 @@ export interface MasterDetails {
     rating?: number;
     reviews_count?: number;
     phone?: string | null;
+    main_service_id?: number;
     services?: MasterService[];
     reviews?: MasterReview[];
     photos?: Array<{ id: number; url: string }>;
