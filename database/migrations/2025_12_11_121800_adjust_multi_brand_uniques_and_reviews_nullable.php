@@ -53,23 +53,27 @@ return new class extends Migration
             Schema::table('reviews', function (Blueprint $table) {
                 $table->unsignedBigInteger('user_id')->nullable()->change();
             });
-            // Drop existing FK if any, then recreate with SET NULL
-            $fkName = $this->findForeignKeyName('reviews', 'user_id');
-            if ($fkName) {
-                Schema::table('reviews', function (Blueprint $table) use ($fkName) {
-                    $table->dropForeign($fkName);
+            // Drop existing FK if any, then recreate with SET NULL. Foreign key
+            // introspection via information_schema is MySQL-only; SQLite (used by
+            // the test suite) doesn't name/enforce FKs the same way, so skip there.
+            if (DB::getDriverName() !== 'sqlite') {
+                $fkName = $this->findForeignKeyName('reviews', 'user_id');
+                if ($fkName) {
+                    Schema::table('reviews', function (Blueprint $table) use ($fkName) {
+                        $table->dropForeign($fkName);
+                    });
+                }
+                Schema::table('reviews', function (Blueprint $table) {
+                    $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
                 });
             }
-            Schema::table('reviews', function (Blueprint $table) {
-                $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
-            });
         }
     }
 
     public function down(): void
     {
         // REVIEWS: revert user_id NOT NULL and FK default (NO ACTION)
-        if (Schema::hasTable('reviews') && Schema::hasColumn('reviews', 'user_id')) {
+        if (Schema::hasTable('reviews') && Schema::hasColumn('reviews', 'user_id') && DB::getDriverName() !== 'sqlite') {
             $fkName = $this->findForeignKeyName('reviews', 'user_id');
             if ($fkName) {
                 Schema::table('reviews', function (Blueprint $table) use ($fkName) {
@@ -110,15 +114,17 @@ return new class extends Migration
 
     private function indexExists(string $table, string $index): bool
     {
-        $result = DB::select("SHOW INDEX FROM `$table` WHERE Key_name = ?", [$index]);
-        return ! empty($result);
+        // Portable across MySQL/SQLite (unlike a raw `SHOW INDEX FROM`, which is
+        // MySQL-only and breaks the SQLite in-memory DB used by the test suite).
+        return Schema::hasIndex($table, $index);
     }
 
     private function findForeignKeyName(string $table, string $column): ?string
     {
         $dbName = DB::getDatabaseName();
-        $sql = "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL";
+        $sql = 'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL';
         $row = DB::selectOne($sql, [$dbName, $table, $column]);
+
         return $row->CONSTRAINT_NAME ?? null;
     }
 };

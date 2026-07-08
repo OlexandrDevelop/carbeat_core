@@ -3,7 +3,6 @@
 use App\Enums\AppBrand;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,7 +21,7 @@ return new class extends Migration
 
         foreach ($tables as $tableName) {
             if (Schema::hasTable($tableName) && ! Schema::hasColumn($tableName, 'app')) {
-                Schema::table($tableName, function (Blueprint $table) use ($tableName) {
+                Schema::table($tableName, function (Blueprint $table) {
                     $table->string('app')->default(AppBrand::CARBEAT)->index()->after('id');
                 });
             }
@@ -87,7 +86,8 @@ return new class extends Migration
 
     private function indexExists(string $table, string $index): bool
     {
-        $result = DB::select("SHOW INDEX FROM `$table` WHERE Key_name = ?", [$index]);
-        return !empty($result);
+        // Portable across MySQL/SQLite (unlike a raw `SHOW INDEX FROM`, which is
+        // MySQL-only and breaks the SQLite in-memory DB used by the test suite).
+        return Schema::hasIndex($table, $index);
     }
 };

@@ -12,12 +12,15 @@ return new class extends Migration
             && Schema::hasColumn('masters', 'tariff_id')
             && Schema::hasColumn('masters', 'is_premium')
         ) {
-            // Backfill: any tariff that is not 'free' marks master as premium
+            // Backfill: any tariff that is not 'free' marks master as premium.
+            // Written as a portable subquery (not a MySQL-specific UPDATE...JOIN)
+            // so it also runs on the SQLite in-memory DB used by the test suite.
             DB::statement("
-                UPDATE masters m
-                JOIN tariffs t ON t.id = m.tariff_id
-                SET m.is_premium = 1
-                WHERE t.name IS NOT NULL AND t.name <> 'free'
+                UPDATE masters
+                SET is_premium = 1
+                WHERE tariff_id IN (
+                    SELECT id FROM tariffs WHERE name IS NOT NULL AND name <> 'free'
+                )
             ");
         }
     }
@@ -25,9 +28,7 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasTable('masters') && Schema::hasColumn('masters', 'is_premium')) {
-            DB::statement("UPDATE masters SET is_premium = 0 WHERE is_premium = 1");
+            DB::statement('UPDATE masters SET is_premium = 0 WHERE is_premium = 1');
         }
     }
 };
-
-
