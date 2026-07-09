@@ -151,11 +151,13 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import GlassPanel from '../../../components/MasterCrm/GlassPanel.vue';
 import { useMasterCrm } from '../../../composables/useMasterCrm';
+import { toDateInput } from '../../../lib/date';
+import { uuid } from '../../../lib/uuid';
 import type { CrmServiceCatalogItem } from '../../../types/master-crm';
 
 const crm = useMasterCrm();
 const snapshot = computed(() => crm.snapshot.value);
-const today = new Date().toISOString().slice(0, 10);
+const today = toDateInput(new Date());
 
 onMounted(() => crm.loadSnapshot(today));
 
@@ -169,7 +171,7 @@ const form = reactive({
 });
 
 function startCreate() {
-    editingId.value = crypto.randomUUID();
+    editingId.value = uuid();
     form.nameUk = '';
     form.nameEn = '';
     form.durationMinutes = 60;

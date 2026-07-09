@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Master;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendSmsCodeRequest;
 use App\Http\Requests\VerifyCodeRequest;
+use App\Http\Services\MasterCrmService;
 use App\Http\Services\SmsService;
 use App\Http\Services\UserService;
 use App\Models\Master;
@@ -34,7 +35,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'OTP sent']);
     }
 
-    public function verifyOtp(VerifyCodeRequest $request, SmsService $smsService, UserService $userService): JsonResponse
+    public function verifyOtp(VerifyCodeRequest $request, SmsService $smsService, UserService $userService, MasterCrmService $crmService): JsonResponse
     {
         $data = $request->validated();
 
@@ -57,9 +58,15 @@ class AuthController extends Controller
         $user->last_login_at = now();
         $user->save();
 
-        if (! Master::where('user_id', $user->id)->exists()) {
+        $master = Master::where('user_id', $user->id)->first();
+        if (! $master) {
             return response()->json(['error' => 'This phone number is not registered as a master.'], 403);
         }
+
+        // Masters onboarded outside the mobile registration flow (admin-created,
+        // imported) never went through verifyAndRegister's ensureDefaultBay call.
+        // Idempotent, so safe to run on every login, not just the first.
+        $crmService->ensureDefaultBay($master);
 
         Auth::guard('web')->login($user, true);
 

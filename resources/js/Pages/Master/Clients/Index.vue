@@ -234,10 +234,12 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import GlassPanel from '../../../components/MasterCrm/GlassPanel.vue';
 import { useMasterCrm } from '../../../composables/useMasterCrm';
+import { toDateInput } from '../../../lib/date';
+import { uuid } from '../../../lib/uuid';
 
 const crm = useMasterCrm();
 const snapshot = computed(() => crm.snapshot.value);
-const today = new Date().toISOString().slice(0, 10);
+const today = toDateInput(new Date());
 
 onMounted(() => crm.loadSnapshot(today));
 
@@ -277,7 +279,7 @@ function selectClient(id: string) {
 }
 
 function startCreateClient() {
-    clientForm.id = crypto.randomUUID();
+    clientForm.id = uuid();
     clientForm.name = '';
     clientForm.phone = '';
     selectedClientId.value = null;
@@ -330,7 +332,7 @@ const editingVehicle = ref(false);
 const vehicleForm = reactive({ id: '', modelName: '', plateNumber: '' });
 
 function startCreateVehicle() {
-    vehicleForm.id = crypto.randomUUID();
+    vehicleForm.id = uuid();
     vehicleForm.modelName = '';
     vehicleForm.plateNumber = '';
     editingVehicle.value = true;

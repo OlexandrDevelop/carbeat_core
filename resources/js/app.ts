@@ -38,10 +38,16 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(i18n)
-            .use(ZiggyVue, {
-                ...ziggy,
-                location: new URL(ziggy.location),
-            })
+            // No `location` override here (unlike ssr.ts, which has no
+            // `window` and must be told the URL explicitly): freezing it to
+            // the initial server-rendered URL would make route().current()
+            // keep reporting that URL forever, since Inertia navigates via
+            // pushState and never remounts this app. Omitting it lets Ziggy
+            // fall back to the live `window.location`, which pushState does
+            // keep in sync — this is what makes active-nav-link
+            // highlighting (route().current(pattern) in Admin/MasterLayout)
+            // update correctly after client-side navigation.
+            .use(ZiggyVue, ziggy)
             .mount(el);
     },
     progress: {

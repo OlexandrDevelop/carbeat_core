@@ -265,6 +265,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
+import { uuid } from '../../lib/uuid';
 import type {
     CrmAppointment,
     CrmBay,
@@ -310,7 +311,7 @@ function defaultEnd(startIso: string): string {
     return date.toISOString();
 }
 
-const appointmentId = props.appointment?.id ?? crypto.randomUUID();
+const appointmentId = props.appointment?.id ?? uuid();
 
 const form = reactive({
     bayId:
@@ -371,7 +372,7 @@ function submit() {
     // existing client, create one so the appointment can reference it.
     let clientId = form.clientId;
     if (!clientId && form.customerName.trim() !== '') {
-        clientId = crypto.randomUUID();
+        clientId = uuid();
         changes.push({
             type: 'save_client',
             payload: {

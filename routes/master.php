@@ -29,6 +29,10 @@ Route::group(['prefix' => 'master', 'middleware' => ['auth', 'master.access']], 
         return Inertia::render('Master/Clients/Index');
     })->name('master.clients.index');
 
+    Route::get('/appointments', function () {
+        return Inertia::render('Master/Appointments/Index');
+    })->name('master.appointments.index');
+
     Route::get('/finance', function () {
         return Inertia::render('Master/Finance/Index');
     })->name('master.finance.index');
@@ -44,4 +48,5 @@ Route::group(['prefix' => 'master-api', 'middleware' => ['auth', 'master.access'
     Route::get('/crm/snapshot', [CrmController::class, 'snapshot'])->name('master.api.crm.snapshot');
     Route::post('/crm/sync', [CrmController::class, 'sync'])->name('master.api.crm.sync');
     Route::get('/crm/finance', [CrmController::class, 'finance'])->name('master.api.crm.finance');
+    Route::get('/crm/appointments', [CrmController::class, 'appointments'])->name('master.api.crm.appointments');
 });

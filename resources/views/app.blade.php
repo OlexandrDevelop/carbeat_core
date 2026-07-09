@@ -3,6 +3,7 @@
     <head>
         @php
             $gaId = config('masters.seo.google_analytics_id');
+            $clarityId = config('masters.seo.microsoft_clarity_id');
             $seo = is_array($page['props']['seo'] ?? null) ? $page['props']['seo'] : [];
             $title = trim((string) ($seo['title'] ?? ''));
             $description = trim((string) ($seo['description'] ?? ''));
@@ -63,6 +64,16 @@
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', @json($gaId));
+        </script>
+        @endif
+
+        @if (config('masters.seo.enable_analytics') && filled($clarityId))
+        <script type="text/javascript">
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", @json($clarityId));
         </script>
         @endif
 

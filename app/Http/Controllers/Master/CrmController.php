@@ -54,6 +54,26 @@ class CrmController extends Controller
         return response()->json($snapshot);
     }
 
+    public function appointments(Request $request): JsonResponse
+    {
+        $master = $this->resolveMaster($request);
+
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+            'bayId' => ['nullable', 'string'],
+            'kind' => ['nullable', 'string', 'in:work,next,request'],
+            'paymentStatus' => ['nullable', 'string', 'in:pending,partial,paid,debt'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $result = $this->crmService->listAppointments($master, $validated);
+
+        return response()->json($result);
+    }
+
     public function finance(Request $request): JsonResponse
     {
         $master = $this->resolveMaster($request);

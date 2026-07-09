@@ -197,6 +197,7 @@ return [
         'enable_robots' => true,
         'enable_analytics' => true,
         'google_analytics_id' => env('GOOGLE_ANALYTICS_ID'),
+        'microsoft_clarity_id' => env('MICROSOFT_CLARITY_ID'),
     ],
 
     /*

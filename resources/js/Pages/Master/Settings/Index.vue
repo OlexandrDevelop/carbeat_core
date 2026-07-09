@@ -61,10 +61,11 @@
 import { computed, onMounted } from 'vue';
 import GlassPanel from '../../../components/MasterCrm/GlassPanel.vue';
 import { useMasterCrm } from '../../../composables/useMasterCrm';
+import { toDateInput } from '../../../lib/date';
 
 const crm = useMasterCrm();
 const settings = computed(() => crm.snapshot.value?.garageSettings ?? null);
 const isLoading = crm.isLoading;
 
-onMounted(() => crm.loadSnapshot(new Date().toISOString().slice(0, 10)));
+onMounted(() => crm.loadSnapshot(toDateInput(new Date())));
 </script>

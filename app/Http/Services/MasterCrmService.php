@@ -488,6 +488,67 @@ class MasterCrmService
         return MasterBay::where('master_id', $master->id)->where('uuid', $uuid)->first();
     }
 
+    /**
+     * Flat, filterable list of appointments across all bays/days — the
+     * snapshot endpoint only ever covers a single business day, which
+     * isn't enough for an "all appointments" view with search/filters.
+     */
+    public function listAppointments(Master $master, array $filters): array
+    {
+        $query = Booking::where('master_id', $master->id)
+            ->whereNotNull('crm_uuid');
+
+        if (! empty($filters['from'])) {
+            $query->whereDate('start_time', '>=', $filters['from']);
+        }
+        if (! empty($filters['to'])) {
+            $query->whereDate('start_time', '<=', $filters['to']);
+        }
+        if (! empty($filters['bayId'])) {
+            $bay = MasterBay::where('master_id', $master->id)
+                ->where('uuid', $filters['bayId'])
+                ->first();
+            $query->where('bay_id', $bay?->id ?? 0);
+        }
+        if (! empty($filters['kind'])) {
+            $query->where('crm_kind', $filters['kind']);
+        }
+        if (! empty($filters['paymentStatus'])) {
+            $query->where('financial_status', $filters['paymentStatus']);
+        }
+        if (! empty($filters['includeCancelled'])) {
+            // no-op: leaves cancelled bookings in the result set
+        } else {
+            $query->where('status', '!=', 'cancelled');
+        }
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhere('plate_number', 'like', "%{$search}%")
+                    ->orWhere('car_model', 'like', "%{$search}%")
+                    ->orWhere('service_name', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = min(100, max(1, (int) ($filters['perPage'] ?? 30)));
+        $page = max(1, (int) ($filters['page'] ?? 1));
+        $paginator = $query->orderByDesc('start_time')->paginate($perPage, ['*'], 'page', $page);
+
+        $bayMap = MasterBay::where('master_id', $master->id)->get()->keyBy('id');
+
+        return [
+            'data' => collect($paginator->items())
+                ->map(fn (Booking $b) => $this->bookingToAppointment($b, $bayMap))
+                ->values()
+                ->all(),
+            'currentPage' => $paginator->currentPage(),
+            'lastPage' => $paginator->lastPage(),
+            'total' => $paginator->total(),
+        ];
+    }
+
     private function bookingToAppointment(Booking $booking, $bayMap): array
     {
         $bay = $booking->bay_id ? $bayMap->get($booking->bay_id) : null;
@@ -496,6 +557,7 @@ class MasterCrmService
         return [
             'id' => $booking->crm_uuid ?? (string) $booking->id,
             'bayId' => $bayId,
+            'bayTitle' => $bay->title ?? '',
             'clientId' => $booking->crm_garage_client_uuid,
             'vehicleId' => $booking->crm_vehicle_uuid,
             'serviceCatalogId' => $booking->crm_service_catalog_uuid,
@@ -519,8 +581,9 @@ class MasterCrmService
     private function buildGarageSettings(Master $master): array
     {
         $workingHours = '';
-        if (is_array($master->working_hours) && ! empty($master->working_hours)) {
-            $first = reset($master->working_hours);
+        $masterWorkingHours = $master->working_hours;
+        if (is_array($masterWorkingHours) && ! empty($masterWorkingHours)) {
+            $first = reset($masterWorkingHours);
             if (isset($first['from'], $first['to'])) {
                 $workingHours = $first['from'].'–'.$first['to'];
             }

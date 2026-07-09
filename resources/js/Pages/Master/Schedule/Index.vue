@@ -87,17 +87,12 @@
                     </button>
                 </div>
 
-                <div
-                    v-if="bay.appointments.length === 0"
-                    class="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400"
-                >
-                    Немає записів
-                </div>
-                <AppointmentCard
-                    v-for="appointment in bay.appointments"
-                    :key="appointment.id"
-                    :appointment="appointment"
-                    @click="openEditModal(appointment)"
+                <BayTimeline
+                    :appointments="bay.appointments"
+                    :is-today="isToday"
+                    :business-day="currentDate"
+                    @select="openEditModal"
+                    @create="openCreateModal(bay.id, $event)"
                 />
             </GlassPanel>
         </div>
@@ -109,6 +104,7 @@
             :service-catalog="snapshot?.serviceCatalog ?? []"
             :appointment="editingAppointment"
             :default-bay-id="defaultBayId"
+            :default-starts-at="defaultStartsAt"
             @close="closeModal"
             @save="handleSave"
             @cancel-appointment="handleCancelAppointment"
@@ -118,20 +114,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import AppointmentCard from '../../../components/MasterCrm/AppointmentCard.vue';
 import AppointmentModal from '../../../components/MasterCrm/AppointmentModal.vue';
+import BayTimeline from '../../../components/MasterCrm/BayTimeline.vue';
 import GlassPanel from '../../../components/MasterCrm/GlassPanel.vue';
 import { useMasterCrm } from '../../../composables/useMasterCrm';
+import { toDateInput } from '../../../lib/date';
 import type { CrmAppointment, CrmChange } from '../../../types/master-crm';
 
 const crm = useMasterCrm();
 const snapshot = computed(() => crm.snapshot.value);
 
-function toDateInput(date: Date): string {
-    return date.toISOString().slice(0, 10);
-}
-
 const currentDate = ref(toDateInput(new Date()));
+const isToday = computed(() => currentDate.value === toDateInput(new Date()));
 
 const formattedDate = computed(() => {
     const date = new Date(`${currentDate.value}T00:00:00`);
@@ -163,10 +157,12 @@ onMounted(() => crm.loadSnapshot(currentDate.value));
 const showModal = ref(false);
 const editingAppointment = ref<CrmAppointment | null>(null);
 const defaultBayId = ref<string | undefined>(undefined);
+const defaultStartsAt = ref<string | undefined>(undefined);
 
-function openCreateModal(bayId?: string) {
+function openCreateModal(bayId?: string, startsAt?: string) {
     editingAppointment.value = null;
     defaultBayId.value = bayId;
+    defaultStartsAt.value = startsAt;
     showModal.value = true;
 }
 
@@ -178,6 +174,7 @@ function openEditModal(appointment: CrmAppointment) {
 function closeModal() {
     showModal.value = false;
     editingAppointment.value = null;
+    defaultStartsAt.value = undefined;
 }
 
 async function handleSave(payload: { id: string; changes: CrmChange[] }) {

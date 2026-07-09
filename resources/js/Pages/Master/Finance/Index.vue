@@ -2,6 +2,56 @@
     <div>
         <div class="mb-4 flex flex-wrap items-center gap-3">
             <h1 class="text-lg font-extrabold text-slate-900">Фінанси</h1>
+
+            <GlassPanel
+                variant="surface"
+                rounded="xl"
+                padding="sm"
+                class="flex items-center gap-2"
+            >
+                <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-bold"
+                    @click="shiftPeriod(-1)"
+                >
+                    ‹
+                </button>
+                <span
+                    class="min-w-[150px] text-center font-mono text-sm font-bold text-slate-800"
+                >
+                    {{ periodLabel }}
+                </span>
+                <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-bold"
+                    @click="shiftPeriod(1)"
+                >
+                    ›
+                </button>
+            </GlassPanel>
+
+            <GlassPanel
+                variant="surface"
+                rounded="xl"
+                padding="sm"
+                class="flex items-center gap-1"
+            >
+                <button
+                    v-for="preset in presets"
+                    :key="preset.key"
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-xs font-bold"
+                    :class="
+                        activePreset === preset.key
+                            ? 'bg-white/60 text-slate-900'
+                            : 'text-slate-500'
+                    "
+                    @click="applyPreset(preset.key)"
+                >
+                    {{ preset.label }}
+                </button>
+            </GlassPanel>
+
             <GlassPanel
                 variant="surface"
                 rounded="xl"
@@ -19,14 +69,6 @@
                     type="date"
                     class="bg-transparent font-mono text-sm"
                 />
-                <button
-                    type="button"
-                    class="ml-2 rounded-lg px-3 py-1 text-xs font-semibold text-slate-600"
-                    :style="{ backgroundColor: 'var(--surface-bg-hover)' }"
-                    @click="load"
-                >
-                    Оновити
-                </button>
             </GlassPanel>
         </div>
 
@@ -189,8 +231,9 @@
 
 <script setup lang="ts">
 import axios from 'axios';
-import { defineComponent, h, onMounted, ref } from 'vue';
+import { computed, defineComponent, h, onMounted, ref, watch } from 'vue';
 import GlassPanel from '../../../components/MasterCrm/GlassPanel.vue';
+import { toDateInput } from '../../../lib/date';
 import type { FinanceReport } from '../../../types/master-crm';
 
 const MetricTile = defineComponent({
@@ -225,19 +268,65 @@ const MetricTile = defineComponent({
     },
 });
 
-function toDateInput(date: Date): string {
-    return date.toISOString().slice(0, 10);
+function addDays(date: Date, days: number): Date {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
 }
 
+type PresetKey = 'today' | 'week' | 'month';
+
+const presets: { key: PresetKey; label: string }[] = [
+    { key: 'today', label: 'Сьогодні' },
+    { key: 'week', label: 'Тиждень' },
+    { key: 'month', label: 'Місяць' },
+];
+
 const today = new Date();
-const monthAgo = new Date();
-monthAgo.setDate(monthAgo.getDate() - 30);
+const monthAgo = addDays(today, -29);
 
 const from = ref(toDateInput(monthAgo));
 const to = ref(toDateInput(today));
+const activePreset = ref<PresetKey | null>('month');
 const report = ref<FinanceReport | null>(null);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+
+function applyPreset(key: PresetKey) {
+    const end = new Date();
+    const start =
+        key === 'today'
+            ? new Date()
+            : key === 'week'
+              ? addDays(end, -6)
+              : addDays(end, -29);
+
+    activePreset.value = key;
+    from.value = toDateInput(start);
+    to.value = toDateInput(end);
+}
+
+function shiftPeriod(direction: 1 | -1) {
+    const start = new Date(`${from.value}T00:00:00`);
+    const end = new Date(`${to.value}T00:00:00`);
+    const spanDays =
+        Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+
+    activePreset.value = null;
+    from.value = toDateInput(addDays(start, direction * spanDays));
+    to.value = toDateInput(addDays(end, direction * spanDays));
+}
+
+const periodLabel = computed(() => {
+    const fmt = (iso: string) =>
+        new Date(`${iso}T00:00:00`).toLocaleDateString('uk-UA', {
+            day: '2-digit',
+            month: 'short',
+        });
+    return from.value === to.value
+        ? fmt(from.value)
+        : `${fmt(from.value)} – ${fmt(to.value)}`;
+});
 
 async function load() {
     isLoading.value = true;
@@ -258,5 +347,6 @@ async function load() {
     }
 }
 
+watch([from, to], load);
 onMounted(load);
 </script>

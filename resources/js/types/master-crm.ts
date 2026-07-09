@@ -13,6 +13,9 @@ export type PaymentMethod =
 export interface CrmAppointment {
     id: string;
     bayId: string;
+    /** Only present on the flat /crm/appointments listing (not in the
+     * per-day snapshot, where the bay is already the grouping key). */
+    bayTitle?: string;
     clientId: string | null;
     vehicleId: string | null;
     serviceCatalogId: string | null;
@@ -98,6 +101,13 @@ export interface CrmSnapshot {
 export interface CrmChange {
     type: string;
     payload: Record<string, unknown>;
+}
+
+export interface AppointmentsPage {
+    data: CrmAppointment[];
+    currentPage: number;
+    lastPage: number;
+    total: number;
 }
 
 export interface FinanceCash {
