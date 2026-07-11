@@ -187,14 +187,16 @@ export interface GuestMapHandle {
     ) => void;
     destroy: () => void;
     syncMasters: (masters: Master[]) => void;
-    setSelected: (
-        masterId: number | null,
-        options?: { reveal?: boolean; offsetY?: number },
-    ) => void;
+    setSelected: (masterId: number | null) => void;
     applyAvailability: (masterId: number, available: boolean) => void;
     setUserPosition: (latlng: [number, number]) => void;
     flyTo: (latlng: [number, number], zoom?: number) => void;
     getView: () => MapMovedContext | null;
+    /** Projects a lat/lng to a pixel point relative to the map container's top-left corner. */
+    latLngToContainerPoint: (
+        lat: number,
+        lng: number,
+    ) => { x: number; y: number } | null;
 }
 
 export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
@@ -427,10 +429,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         }
     }
 
-    function setSelected(
-        masterId: number | null,
-        options?: { reveal?: boolean; offsetY?: number },
-    ): void {
+    function setSelected(masterId: number | null): void {
         if (!map) return;
         const previous = selectedId;
         selectedId = masterId;
@@ -450,22 +449,6 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         if (marker && master) {
             applyIcon(marker, master, true);
             excludeFromCluster(marker);
-
-            if (options?.reveal) {
-                const targetZoom = Math.max(map.getZoom(), 15);
-                let targetLatLng = L.latLng(master.latitude, master.longitude);
-
-                if (options.offsetY) {
-                    const projected = map.project(targetLatLng, targetZoom);
-                    projected.y += options.offsetY;
-                    targetLatLng = map.unproject(projected, targetZoom);
-                }
-
-                map.flyTo(targetLatLng, targetZoom, {
-                    duration: 0.45,
-                    easeLinearity: 0.25,
-                });
-            }
         }
     }
 
@@ -511,6 +494,15 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         };
     }
 
+    function latLngToContainerPoint(
+        lat: number,
+        lng: number,
+    ): { x: number; y: number } | null {
+        if (!map) return null;
+        const point = map.latLngToContainerPoint([lat, lng]);
+        return { x: point.x, y: point.y };
+    }
+
     function destroy(): void {
         if (moveTimer !== null) {
             window.clearTimeout(moveTimer);
@@ -547,5 +539,6 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         setUserPosition,
         flyTo,
         getView,
+        latLngToContainerPoint,
     };
 }

@@ -51,7 +51,6 @@ const props = defineProps<{
 const MASTERS_LIST_TTL = 60_000;
 const MASTER_DETAILS_TTL = 5 * 60_000;
 const LOADING_DELAY_MS = 220;
-const MOBILE_SELECTION_OFFSET_Y = 160;
 
 const mapEl = ref<HTMLElement | null>(null);
 const selectedMaster = ref<MasterDetails | null>(
@@ -64,13 +63,68 @@ const currentMasters = ref<MasterDetails[]>(
     props.initialSelectedMaster ? [{ ...props.initialSelectedMaster }] : [],
 );
 const mapBounds = ref<LatLngBounds | null>(null);
+
+// The nearby strip and the master-detail card float over the bottom of the
+// map, so a marker can be geographically within `mapBounds` yet visually
+// hidden underneath them. Their measured heights are used below to also
+// exclude masters whose projected pixel position falls in that covered band.
+const stripPanelRef = ref<HTMLElement | null>(null);
+const detailPanelRef = ref<HTMLElement | null>(null);
+const stripHeightPx = ref(0);
+const detailHeightPx = ref(0);
+let stripHeightObserver: ResizeObserver | null = null;
+let detailHeightObserver: ResizeObserver | null = null;
+
+watch(stripPanelRef, (el) => {
+    stripHeightObserver?.disconnect();
+    if (!el) {
+        stripHeightPx.value = 0;
+        return;
+    }
+    stripHeightPx.value = el.getBoundingClientRect().height;
+    stripHeightObserver = new ResizeObserver(([entry]) => {
+        if (entry) stripHeightPx.value = entry.contentRect.height;
+    });
+    stripHeightObserver.observe(el);
+});
+
+watch(detailPanelRef, (el) => {
+    detailHeightObserver?.disconnect();
+    if (!el) {
+        detailHeightPx.value = 0;
+        return;
+    }
+    detailHeightPx.value = el.getBoundingClientRect().height;
+    detailHeightObserver = new ResizeObserver(([entry]) => {
+        if (entry) detailHeightPx.value = entry.contentRect.height;
+    });
+    detailHeightObserver.observe(el);
+});
+
+onBeforeUnmount(() => {
+    stripHeightObserver?.disconnect();
+    detailHeightObserver?.disconnect();
+});
+
 const visibleMasters = computed(() => {
     const bounds = mapBounds.value;
-    const masters = bounds
-        ? currentMasters.value.filter((master) =>
-              bounds.contains([master.latitude, master.longitude]),
-          )
-        : currentMasters.value;
+    const coveredBottomPx = Math.max(stripHeightPx.value, detailHeightPx.value);
+    const mapHeight = mapEl.value?.clientHeight ?? null;
+
+    const masters = currentMasters.value.filter((master) => {
+        if (bounds && !bounds.contains([master.latitude, master.longitude]))
+            return false;
+
+        if (coveredBottomPx > 0 && mapHeight !== null) {
+            const point = guestMap.latLngToContainerPoint(
+                master.latitude,
+                master.longitude,
+            );
+            if (point && point.y > mapHeight - coveredBottomPx) return false;
+        }
+
+        return true;
+    });
 
     return [...masters].sort((a, b) => {
         const reviewsDiff = (b.reviews_count ?? 0) - (a.reviews_count ?? 0);
@@ -298,6 +352,27 @@ const selectedMasterWorkStatus = computed(() =>
     ),
 );
 
+const masterDetailBindings = computed(() => ({
+    photos: selectedMasterPhotos.value,
+    primaryService: primaryService.value,
+    extraServices: extraServices.value,
+    workStatus: selectedMasterWorkStatus.value,
+    schedule: selectedMasterSchedule.value,
+    scheduleOpen: scheduleOpen.value,
+    currentLang: currentLang.value,
+    isFloxcity: isFloxcity.value,
+    isMasterSeoContent: isMasterSeoContent.value,
+    canRequestStatus: canRequestMasterStatus.value,
+    isSendingStatusRequest: isSendingStatusRequest.value,
+    statusRequestMessage: statusRequestMessage.value,
+    isSubmittingReview: isSubmittingReview.value,
+    reviewSubmitError: reviewSubmitError.value,
+    isSubmittingReply: isSubmittingReply.value,
+    replySubmitError: replySubmitError.value,
+    t,
+    photoUrl,
+}));
+
 const guestMap = useGuestMap({
     photoUrl,
     onMarkerClick: (master) => void openMaster(master.id),
@@ -462,10 +537,7 @@ async function openMaster(masterId: number): Promise<void> {
     scheduleOpen.value = false;
     const summary = currentMasters.value.find((m) => m.id === masterId);
     if (summary) selectedMaster.value = { ...summary };
-    guestMap.setSelected(masterId, {
-        reveal: true,
-        offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
-    });
+    guestMap.setSelected(masterId);
     loadCooldown(masterId);
     statusRequestMessage.value = '';
 
@@ -1013,10 +1085,7 @@ onMounted(async () => {
 
     if (props.initialSelectedMaster?.id) {
         guestMap.syncMasters([{ ...props.initialSelectedMaster }]);
-        guestMap.setSelected(props.initialSelectedMaster.id, {
-            reveal: true,
-            offsetY: isMobileViewport.value ? MOBILE_SELECTION_OFFSET_Y : 0,
-        });
+        guestMap.setSelected(props.initialSelectedMaster.id);
     }
 
     connectSocket();
@@ -1145,15 +1214,23 @@ onBeforeUnmount(() => {
                     <div
                         v-if="
                             (visibleMasters.length > 0 || loading) &&
-                            !selectedMaster
+                            (isMobileViewport ? !selectedMaster : true)
                         "
-                        class="pointer-events-auto absolute bottom-0 left-0 right-0"
+                        ref="stripPanelRef"
+                        class="pointer-events-auto absolute bottom-0 right-0 transition-[left] duration-300 ease-out"
+                        :style="{
+                            left:
+                                !isMobileViewport && selectedMaster
+                                    ? '500px'
+                                    : '0px',
+                        }"
                     >
                         <GuestMapNearbyStrip
                             :masters="visibleMasters"
                             :loading="loading"
                             :photo-url="photoUrl"
                             :service-name-by-id="serviceNameById"
+                            :selected-master-id="selectedMasterId"
                             @master-click="openMaster"
                         />
                     </div>
@@ -1162,6 +1239,7 @@ onBeforeUnmount(() => {
                 <!-- Master detail -->
                 <div
                     v-if="selectedMaster"
+                    ref="detailPanelRef"
                     class="pointer-events-auto absolute left-3 right-3 md:left-5 md:right-auto md:w-[460px]"
                     :style="{
                         bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
@@ -1171,24 +1249,7 @@ onBeforeUnmount(() => {
                         <GuestMapMasterDetail
                             :key="selectedMaster.id"
                             :master="selectedMaster"
-                            :photos="selectedMasterPhotos"
-                            :primary-service="primaryService"
-                            :extra-services="extraServices"
-                            :work-status="selectedMasterWorkStatus"
-                            :schedule="selectedMasterSchedule"
-                            :schedule-open="scheduleOpen"
-                            :current-lang="currentLang"
-                            :is-floxcity="isFloxcity"
-                            :is-master-seo-content="isMasterSeoContent"
-                            :can-request-status="canRequestMasterStatus"
-                            :is-sending-status-request="isSendingStatusRequest"
-                            :status-request-message="statusRequestMessage"
-                            :is-submitting-review="isSubmittingReview"
-                            :review-submit-error="reviewSubmitError"
-                            :is-submitting-reply="isSubmittingReply"
-                            :reply-submit-error="replySubmitError"
-                            :t="t"
-                            :photo-url="photoUrl"
+                            v-bind="masterDetailBindings"
                             @close="closeDetails"
                             @photo-click="openLightbox"
                             @request-status="requestMasterStatus"

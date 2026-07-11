@@ -13,6 +13,7 @@ const props = defineProps<{
     loading?: boolean;
     photoUrl: (path?: string | null) => string | null;
     serviceNameById?: Record<number, string>;
+    selectedMasterId?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -99,6 +100,9 @@ const visibleMasters = computed(() =>
                     :key="master.id"
                     type="button"
                     class="nearby-card flex-shrink-0 rounded-2xl p-3 text-left"
+                    :class="{
+                        'nearby-card-selected': master.id === selectedMasterId,
+                    }"
                     @click="emit('masterClick', master.id)"
                 >
                     <div
@@ -201,6 +205,12 @@ const visibleMasters = computed(() =>
 .nearby-card:hover {
     background: var(--surface-bg-hover);
     transform: translateY(-1px);
+}
+
+.nearby-card-selected {
+    background: var(--surface-bg-hover);
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(var(--brand-primary-rgb), 0.18);
 }
 
 .nearby-card-skeleton {
