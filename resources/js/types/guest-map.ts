@@ -29,6 +29,7 @@ export interface MasterDetails {
     city?: string | null;
     rating?: number;
     reviews_count?: number;
+    distance?: number;
     phone?: string | null;
     main_service_id?: number;
     services?: MasterService[];
@@ -82,10 +83,18 @@ export interface SeoMasterCard {
     rating?: number;
     reviews_count?: number;
     service_names?: string[];
+    available?: boolean;
 }
 
 export interface SeoContentPayload {
-    type: 'master' | 'city' | 'city_service' | 'service';
+    type:
+        | 'master'
+        | 'city'
+        | 'city_service'
+        | 'service'
+        | 'article'
+        | 'guide_index'
+        | 'available_now';
     title: string;
     intro?: string;
     sections?: SeoSection[];

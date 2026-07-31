@@ -1,12 +1,8 @@
 export type Lang = 'en' | 'uk' | 'de';
 
 export type UiTextKey =
-    | 'allServices'
     | 'availableOnly'
     | 'appDownloadCta'
-    | 'myGeo'
-    | 'filters'
-    | 'loading'
     | 'call'
     | 'profile'
     | 'route'
@@ -19,7 +15,6 @@ export type UiTextKey =
     | 'anonymous'
     | 'statusSent'
     | 'statusError'
-    | 'geoError'
     | 'writeReview'
     | 'yourName'
     | 'yourReview'
@@ -33,12 +28,8 @@ export type UiTextKey =
 
 export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
     en: {
-        allServices: 'All services',
         availableOnly: 'Available',
         appDownloadCta: 'Better in the app',
-        myGeo: 'My location',
-        filters: 'Filter by service',
-        loading: 'Loading...',
         call: 'Call',
         profile: 'Profile',
         route: 'Route',
@@ -51,8 +42,6 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         anonymous: 'Anonymous',
         statusSent: 'Request sent to master.',
         statusError: 'Failed to send request.',
-        geoError:
-            "Couldn't get your location. Check location permissions in your browser.",
         writeReview: 'Write a review',
         yourName: 'Your name',
         yourReview: 'Your review',
@@ -65,12 +54,8 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         replySubmitError: 'Failed to submit reply. Try again.',
     },
     uk: {
-        allServices: 'Всі послуги',
         availableOnly: 'Вільні',
         appDownloadCta: 'В додатку зручніше',
-        myGeo: 'Моя гео',
-        filters: 'Фільтр за послугою',
-        loading: 'Завантаження...',
         call: 'Подзвонити',
         profile: 'Профіль',
         route: 'Маршрут',
@@ -83,8 +68,6 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         anonymous: 'Анонім',
         statusSent: 'Запит відправлено майстру.',
         statusError: 'Не вдалося відправити запит.',
-        geoError:
-            'Не вдалося визначити ваше місцезнаходження. Перевірте дозвіл на геолокацію в браузері.',
         writeReview: 'Написати відгук',
         yourName: "Ваше ім'я",
         yourReview: 'Ваш відгук',
@@ -97,12 +80,8 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         replySubmitError: 'Не вдалося надіслати відповідь. Спробуйте ще раз.',
     },
     de: {
-        allServices: 'Alle Leistungen',
         availableOnly: 'Verfügbar',
         appDownloadCta: 'In der App bequemer',
-        myGeo: 'Mein Standort',
-        filters: 'Nach Leistung filtern',
-        loading: 'Laden...',
         call: 'Anrufen',
         profile: 'Profil',
         route: 'Route',
@@ -115,8 +94,6 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         anonymous: 'Anonym',
         statusSent: 'Anfrage wurde gesendet.',
         statusError: 'Anfrage konnte nicht gesendet werden.',
-        geoError:
-            'Standort konnte nicht ermittelt werden. Bitte Standortberechtigung im Browser prüfen.',
         writeReview: 'Bewertung schreiben',
         yourName: 'Ihr Name',
         yourReview: 'Ihre Bewertung',

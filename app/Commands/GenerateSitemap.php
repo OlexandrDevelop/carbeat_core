@@ -5,6 +5,7 @@ namespace App\Commands;
 use App\Enums\AppBrand;
 use App\Models\City;
 use App\Models\Master;
+use App\Models\SeoArticle;
 use App\Models\Service;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -59,6 +60,13 @@ class GenerateSitemap extends Command
                     ->setPriority(0.75)
             );
 
+            $sitemap->add(
+                Url::create($this->absoluteUrl("/city/{$citySlug}/available-now"))
+                    ->setLastModificationDate($city->updated_at)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_HOURLY)
+                    ->setPriority(0.68)
+            );
+
             Service::query()
                 ->whereHas('masters', fn ($masters) => $masters->where('city_id', $city->id))
                 ->get(['id', 'name', 'updated_at'])
@@ -84,6 +92,21 @@ class GenerateSitemap extends Command
                     ->setLastModificationDate($service->updated_at)
                     ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
                     ->setPriority(0.72)
+            );
+        });
+
+        $sitemap->add(
+            Url::create($this->absoluteUrl('/guide'))
+                ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+                ->setPriority(0.65)
+        );
+
+        SeoArticle::query()->get(['slug', 'updated_at'])->each(function ($article) use ($sitemap) {
+            $sitemap->add(
+                Url::create($this->absoluteUrl("/guide/{$article->slug}"))
+                    ->setLastModificationDate($article->updated_at)
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+                    ->setPriority(0.6)
             );
         });
 

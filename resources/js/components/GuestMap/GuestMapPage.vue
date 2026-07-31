@@ -31,6 +31,7 @@ import {
 } from 'vue';
 import GuestMapLightbox from './GuestMapLightbox.vue';
 import GuestMapMasterDetail from './GuestMapMasterDetail.vue';
+import GuestMapMastersList from './GuestMapMastersList.vue';
 import GuestMapNearbyStrip from './GuestMapNearbyStrip.vue';
 import GuestMapSeoSection from './GuestMapSeoSection.vue';
 import GuestMapStatusBeacon from './GuestMapStatusBeacon.vue';
@@ -106,23 +107,15 @@ onBeforeUnmount(() => {
     detailHeightObserver?.disconnect();
 });
 
-const visibleMasters = computed(() => {
+// Masters within the current map viewport, sorted by review count then
+// rating. Used as-is for the full masters list; `visibleMasters` below
+// additionally excludes markers hidden behind the strip/detail overlay.
+const boundedMasters = computed(() => {
     const bounds = mapBounds.value;
-    const coveredBottomPx = Math.max(stripHeightPx.value, detailHeightPx.value);
-    const mapHeight = mapEl.value?.clientHeight ?? null;
 
     const masters = currentMasters.value.filter((master) => {
         if (bounds && !bounds.contains([master.latitude, master.longitude]))
             return false;
-
-        if (coveredBottomPx > 0 && mapHeight !== null) {
-            const point = guestMap.latLngToContainerPoint(
-                master.latitude,
-                master.longitude,
-            );
-            if (point && point.y > mapHeight - coveredBottomPx) return false;
-        }
-
         return true;
     });
 
@@ -132,8 +125,23 @@ const visibleMasters = computed(() => {
         return (b.rating ?? 0) - (a.rating ?? 0);
     });
 });
+
+const visibleMasters = computed(() => {
+    const coveredBottomPx = Math.max(stripHeightPx.value, detailHeightPx.value);
+    const mapHeight = mapEl.value?.clientHeight ?? null;
+
+    if (coveredBottomPx <= 0 || mapHeight === null) return boundedMasters.value;
+
+    return boundedMasters.value.filter((master) => {
+        const point = guestMap.latLngToContainerPoint(
+            master.latitude,
+            master.longitude,
+        );
+        return !point || point.y <= mapHeight - coveredBottomPx;
+    });
+});
 const loading = ref(false);
-const geoErrorMessage = ref<string | null>(null);
+const showMastersList = ref(false);
 const searchQuery = ref('');
 const selectedServiceId = ref<number | null>(props.initialServiceId ?? null);
 const availableOnly = ref(false);
@@ -147,9 +155,7 @@ const brandName = computed(() => (isFloxcity.value ? 'Floxcity' : 'Carbeat'));
 const baseMapPath = computed(() => props.mapPath ?? '/');
 const seoContent = computed(() => props.seoContent ?? null);
 const isMasterSeoContent = computed(() => seoContent.value?.type === 'master');
-const hasVisibleSeoContent = computed(
-    () => !!seoContent.value && !isMasterSeoContent.value,
-);
+const hasVisibleSeoContent = computed(() => !!seoContent.value);
 const mobileAppUrl = computed<string>(() =>
     isFloxcity.value
         ? 'https://play.google.com/store/search?q=Floxcity&c=apps'
@@ -170,7 +176,7 @@ const themeVars = computed<Record<string, string>>(() =>
               '--surface-bg-hover': 'rgba(255, 255, 255, 0.72)',
               '--surface-border': 'rgba(16, 185, 129, 0.16)',
               '--surface-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.55)',
-              '--loading-pill-bg': 'rgba(255, 255, 255, 0.72)',
+              '--loading-track-bg': 'rgba(100, 116, 139, 0.45)',
               '--dropdown-bg': 'rgba(255, 255, 255, 0.82)',
               '--brand-primary': '#10b981',
               '--brand-primary-rgb': '16, 185, 129',
@@ -192,7 +198,7 @@ const themeVars = computed<Record<string, string>>(() =>
               '--surface-bg-hover': 'rgba(255, 255, 255, 0.72)',
               '--surface-border': 'rgba(37, 99, 235, 0.16)',
               '--surface-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.55)',
-              '--loading-pill-bg': 'rgba(255, 255, 255, 0.72)',
+              '--loading-track-bg': 'rgba(100, 116, 139, 0.45)',
               '--dropdown-bg': 'rgba(255, 255, 255, 0.82)',
               '--brand-primary': '#2563eb',
               '--brand-primary-rgb': '37, 99, 235',
@@ -384,7 +390,6 @@ const guestMap = useGuestMap({
 
 let mastersRequestSeq = 0;
 let loadingTimer: number | null = null;
-let geoErrorTimer: number | null = null;
 
 function buildMastersCacheKey(params: {
     lat: number;
@@ -533,6 +538,7 @@ async function loadMasters(): Promise<void> {
 }
 
 async function openMaster(masterId: number): Promise<void> {
+    showMastersList.value = false;
     selectedMasterId.value = masterId;
     scheduleOpen.value = false;
     const summary = currentMasters.value.find((m) => m.id === masterId);
@@ -625,37 +631,6 @@ function openLightbox(photo: string): void {
 
 function closeLightbox(): void {
     lightboxImage.value = null;
-}
-
-function showGeoError(): void {
-    if (geoErrorTimer !== null) window.clearTimeout(geoErrorTimer);
-    geoErrorMessage.value = t('geoError');
-    geoErrorTimer = window.setTimeout(() => {
-        geoErrorMessage.value = null;
-        geoErrorTimer = null;
-    }, 5000);
-}
-
-async function useMyLocation(): Promise<void> {
-    if (!navigator.geolocation) {
-        showGeoError();
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            geoErrorMessage.value = null;
-            guestMap.setUserPosition([
-                position.coords.latitude,
-                position.coords.longitude,
-            ]);
-            guestMap.flyTo(
-                [position.coords.latitude, position.coords.longitude],
-                13,
-            );
-        },
-        () => showGeoError(),
-        { enableHighAccuracy: true, timeout: 5000 },
-    );
 }
 
 function syncViewportMode(): void {
@@ -1103,10 +1078,6 @@ onBeforeUnmount(() => {
         window.clearTimeout(searchDebounceTimer);
         searchDebounceTimer = null;
     }
-    if (geoErrorTimer !== null) {
-        window.clearTimeout(geoErrorTimer);
-        geoErrorTimer = null;
-    }
     window.removeEventListener('popstate', syncSelectionFromLocation);
 });
 </script>
@@ -1168,28 +1139,16 @@ onBeforeUnmount(() => {
                     <GuestMapTopPanel
                         :flavor="flavor"
                         :current-lang="currentLang"
-                        :services="serviceOptions"
-                        :selected-service-id="selectedServiceId"
                         :available-only="availableOnly"
                         :search-query="searchQuery"
                         :brand-name="brandName"
                         :mobile-app-url="mobileAppUrl"
-                        :geo-error-message="geoErrorMessage"
+                        :loading="loading"
                         :t="t"
-                        @update:selected-service-id="selectedServiceId = $event"
                         @update:available-only="availableOnly = $event"
                         @update:search-query="searchQuery = $event"
                         @set-language="setLanguage"
-                        @use-my-location="useMyLocation"
                     />
-                </div>
-
-                <!-- Loading pill -->
-                <div
-                    v-if="loading"
-                    class="lg-loading-pill pointer-events-auto absolute right-3 top-20 rounded-xl px-3 py-2 text-xs"
-                >
-                    {{ t('loading') }}
                 </div>
 
                 <!-- Status beacon -->
@@ -1213,6 +1172,7 @@ onBeforeUnmount(() => {
                 <Transition name="nearby-panel">
                     <div
                         v-if="
+                            !showMastersList &&
                             (visibleMasters.length > 0 || loading) &&
                             (isMobileViewport ? !selectedMaster : true)
                         "
@@ -1232,6 +1192,29 @@ onBeforeUnmount(() => {
                             :service-name-by-id="serviceNameById"
                             :selected-master-id="selectedMasterId"
                             @master-click="openMaster"
+                            @show-list="showMastersList = true"
+                        />
+                    </div>
+                </Transition>
+
+                <!-- Masters list overlay -->
+                <Transition name="masters-list">
+                    <div
+                        v-if="showMastersList"
+                        class="pointer-events-auto absolute left-3 right-3 md:left-5 md:right-5"
+                        :style="{
+                            top: 'max(6rem, calc(env(safe-area-inset-top) + 5.25rem))',
+                            bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+                        }"
+                    >
+                        <GuestMapMastersList
+                            :masters="boundedMasters"
+                            :loading="loading"
+                            :photo-url="photoUrl"
+                            :service-name-by-id="serviceNameById"
+                            :selected-master-id="selectedMasterId"
+                            @master-click="openMaster"
+                            @close="showMastersList = false"
                         />
                     </div>
                 </Transition>
@@ -1273,10 +1256,12 @@ onBeforeUnmount(() => {
         </div>
 
         <GuestMapSeoSection
-            v-if="seoContent && !isMasterSeoContent"
+            v-if="seoContent"
             :seo-content="seoContent"
             :is-floxcity="isFloxcity"
             :build-master-path="buildMasterPath"
+            :current-lang="currentLang"
+            :t="t"
         />
     </div>
 </template>
@@ -1284,14 +1269,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .guest-map-root {
     min-height: 100dvh;
-}
-
-.lg-loading-pill {
-    background: var(--loading-pill-bg);
-    border: 1px solid var(--panel-border);
-    color: var(--panel-text);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
 }
 
 /* Transitions */
@@ -1329,6 +1306,18 @@ onBeforeUnmount(() => {
 :global(.status-beacon-leave-to) {
     opacity: 0;
     transform: translateY(-6px);
+}
+
+:global(.masters-list-enter-active),
+:global(.masters-list-leave-active) {
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+:global(.masters-list-enter-from),
+:global(.masters-list-leave-to) {
+    opacity: 0;
+    transform: translateY(12px);
 }
 
 :global(.lightbox-fade-enter-active),

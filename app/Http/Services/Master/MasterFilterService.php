@@ -15,8 +15,24 @@ class MasterFilterService
         }
 
         if (! empty($filters['name'])) {
-            $whereClauses[] = 'masters.name LIKE :name';
+            // Single search box: match either the master's own name or the name
+            // (translated) of any service the master offers, main or extra.
+            $whereClauses[] = '(
+                masters.name LIKE :name
+                OR EXISTS (
+                    SELECT 1 FROM service_translations st
+                    WHERE st.name LIKE :name_service
+                    AND (
+                        st.service_id = masters.service_id
+                        OR EXISTS (
+                            SELECT 1 FROM master_services ms_name
+                            WHERE ms_name.master_id = masters.id AND ms_name.service_id = st.service_id
+                        )
+                    )
+                )
+            )';
             $queryParams['name'] = '%'.$filters['name'].'%';
+            $queryParams['name_service'] = '%'.$filters['name'].'%';
         }
 
         if (! empty($filters['service_id'])) {

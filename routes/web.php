@@ -124,8 +124,11 @@ Route::get('/robots.txt', function () {
 Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
 Route::get('/salon/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.salon.show');
 Route::get('/city/{citySlug}', [PublicGuestMapController::class, 'showCity'])->name('public.city.show');
+Route::get('/city/{citySlug}/available-now', [PublicGuestMapController::class, 'showCityAvailableNow'])->name('public.city.available.show');
 Route::get('/city/{citySlug}/{serviceSlug}', [PublicGuestMapController::class, 'showCityService'])->name('public.city.service.show');
 Route::get('/service/{serviceSlug}', [PublicGuestMapController::class, 'showService'])->name('public.service.show');
+Route::get('/guide', [PublicGuestMapController::class, 'guideIndex'])->name('public.guide.index');
+Route::get('/guide/{slug}', [PublicGuestMapController::class, 'showArticle'])->name('public.guide.show');
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
 Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
 Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');

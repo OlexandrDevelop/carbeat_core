@@ -10,6 +10,7 @@ use App\Http\Services\Seo\SeoOverridesService;
 use App\Http\Services\Seo\UkrainianSeoCopyGenerator;
 use App\Models\City;
 use App\Models\Master;
+use App\Models\SeoArticle;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -143,6 +144,239 @@ class PublicGuestMapController extends Controller
         );
     }
 
+    public function showCityAvailableNow(string $citySlug, AppointmentRedisService $appointmentRedisService): Response
+    {
+        $city = $this->resolveCityBySlug($citySlug);
+        $masters = $this->getCityMasters($city);
+        $availabilityFlags = $appointmentRedisService->getAvailabilityFlagsForMany($masters->pluck('id')->all());
+
+        $availableMasters = $masters->filter(fn (Master $master) => $availabilityFlags[$master->id] ?? false)->values();
+        $otherMasters = $masters->reject(fn (Master $master) => $availabilityFlags[$master->id] ?? false)->values();
+        $orderedMasters = $availableMasters->concat($otherMasters);
+
+        $copy = $this->seoCopyGenerator->availableNowCitySeo($city, $availableMasters->count(), $masters->count(), $this->brand(), $this->brandName());
+        $entryKey = 'city_available_now:' . Str::slug($city->name);
+        $content = $this->buildAvailableNowSeoContent($copy, $city, $orderedMasters, $availabilityFlags);
+        $applied = $this->applySeoOverride($entryKey, $this->buildAvailableNowSeo($copy, $city, $orderedMasters), $content);
+
+        return $this->renderPage(
+            seo: $applied['seo'],
+            initialMapView: $this->cityMapView($city),
+            seoContent: $applied['content'],
+            initialSelectedMaster: null,
+            initialServiceId: null,
+        );
+    }
+
+    public function guideIndex(): Response
+    {
+        $brand = $this->brand();
+        $articles = SeoArticle::query()->orderBy('title')->get(['slug', 'title', 'intro']);
+        $brandName = $this->brandName();
+        $vertical = $this->seoCopyGenerator->vertical($brand);
+
+        $title = "Гайди про {$vertical['placeNounMid']} · {$brandName}";
+        $description = mb_substr(
+            "Пояснюємо популярні послуги простими словами: що це, як часто потрібно і як обрати {$vertical['placeNounSingular']} на карті {$brandName}.",
+            0,
+            160,
+        );
+        $canonical = route('public.guide.index');
+
+        $seo = [
+            'title' => $title,
+            'description' => $description,
+            'canonical' => $canonical,
+            'robots' => 'index, follow',
+            'ogImage' => url('/og-image.svg'),
+            'structuredData' => [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => $title,
+                'url' => $canonical,
+                'description' => $description,
+            ],
+        ];
+
+        $content = [
+            'type' => 'guide_index',
+            'title' => $title,
+            'intro' => $description,
+            'sections' => [],
+            'breadcrumbs' => [
+                ['label' => 'Мапа', 'href' => route('landing')],
+                ['label' => 'Гайди', 'href' => $canonical],
+            ],
+            'stats' => [
+                ['label' => 'Гайдів', 'value' => (string) $articles->count()],
+            ],
+            'serviceLinks' => [],
+            'topMasters' => [],
+            'relatedLinks' => $articles
+                ->map(fn (SeoArticle $article) => [
+                    'label' => $article->title,
+                    'href' => route('public.guide.show', ['slug' => $article->slug]),
+                ])
+                ->values()
+                ->all(),
+            'faq' => [],
+        ];
+
+        return $this->renderGuidePage($seo, $content);
+    }
+
+    public function showArticle(string $slug): Response
+    {
+        $article = SeoArticle::query()->where('slug', $slug)->firstOrFail();
+        $brand = $this->brand();
+        $brandName = $this->brandName();
+        $canonical = route('public.guide.show', ['slug' => $article->slug]);
+        $description = mb_substr((string) ($article->intro ?? $article->title), 0, 160);
+
+        $relatedService = $article->related_service_name
+            ? Service::query()->where('name', $article->related_service_name)->first()
+            : null;
+
+        $relatedLinks = array_filter([
+            ['label' => 'Усі гайди', 'href' => route('public.guide.index')],
+            $relatedService
+                ? [
+                    'label' => $relatedService->translate(app()->getLocale()),
+                    'href' => route('public.service.show', ['serviceSlug' => Str::slug($relatedService->name)]),
+                ]
+                : null,
+        ]);
+
+        $faq = is_array($article->faq) ? $article->faq : [];
+        $entryKey = 'guide_article:' . $article->slug;
+        $seo = [
+            'title' => "{$article->title} · {$brandName}",
+            'description' => $description,
+            'canonical' => $canonical,
+            'robots' => 'index, follow',
+            'ogImage' => url('/og-image.svg'),
+            'structuredData' => [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'Article',
+                    'headline' => $article->title,
+                    'url' => $canonical,
+                    'description' => $description,
+                ],
+                $this->buildBreadcrumbSchema([
+                    ['label' => 'Мапа', 'href' => route('landing')],
+                    ['label' => 'Гайди', 'href' => route('public.guide.index')],
+                    ['label' => $article->title, 'href' => $canonical],
+                ]),
+                $this->buildFaqSchema($faq),
+            ],
+        ];
+        $content = [
+            'type' => 'article',
+            'title' => $article->title,
+            'intro' => $article->intro,
+            'sections' => is_array($article->sections) ? $article->sections : [],
+            'breadcrumbs' => [
+                ['label' => 'Мапа', 'href' => route('landing')],
+                ['label' => 'Гайди', 'href' => route('public.guide.index')],
+                ['label' => $article->title, 'href' => $canonical],
+            ],
+            'stats' => [],
+            'serviceLinks' => [],
+            'topMasters' => [],
+            'relatedLinks' => $relatedLinks,
+            'faq' => $faq,
+        ];
+
+        $applied = $this->applySeoOverride($entryKey, $seo, $content);
+
+        return $this->renderGuidePage($applied['seo'], $applied['content']);
+    }
+
+    private function renderGuidePage(array $seo, array $content): Response
+    {
+        $page = $this->brand() === AppBrand::FLOXCITY
+            ? 'Floxcity/Public/Guide'
+            : 'Carbeat/Public/Guide';
+
+        return Inertia::render($page, [
+            'mapPath' => route('landing'),
+            'seo' => $seo,
+            'content' => $content,
+        ]);
+    }
+
+    private function buildAvailableNowSeo(array $copy, City $city, Collection $masters): array
+    {
+        $canonical = route('public.city.available.show', ['citySlug' => Str::slug($city->name)]);
+
+        return [
+            'title' => $copy['metaTitle'],
+            'description' => $copy['description'],
+            'canonical' => $canonical,
+            'robots' => 'index, follow',
+            'ogImage' => url('/og-image.svg'),
+            'structuredData' => [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'CollectionPage',
+                    'name' => $copy['metaTitle'],
+                    'url' => $canonical,
+                    'description' => $copy['description'],
+                ],
+                $this->buildItemListSchema($masters, $canonical),
+                $this->buildBreadcrumbSchema([
+                    ['label' => 'Мапа', 'href' => route('landing')],
+                    ['label' => $city->name, 'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)])],
+                    ['label' => 'Доступні зараз', 'href' => $canonical],
+                ]),
+                $this->buildFaqSchema($copy['faq']),
+            ],
+        ];
+    }
+
+    private function buildAvailableNowSeoContent(array $copy, City $city, Collection $masters, array $availabilityFlags): array
+    {
+        $availableCount = $masters->filter(fn (Master $master) => $availabilityFlags[$master->id] ?? false)->count();
+
+        return [
+            'type' => 'available_now',
+            'title' => $copy['title'],
+            'intro' => $copy['intro'],
+            'sections' => $copy['sections'],
+            'breadcrumbs' => [
+                ['label' => 'Мапа', 'href' => route('landing')],
+                ['label' => $city->name, 'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)])],
+                ['label' => 'Доступні зараз', 'href' => route('public.city.available.show', ['citySlug' => Str::slug($city->name)])],
+            ],
+            'stats' => [
+                ['label' => 'Онлайн зараз', 'value' => (string) $availableCount],
+                ['label' => 'Усього', 'value' => (string) $masters->count()],
+            ],
+            'serviceLinks' => [],
+            'topMasters' => $masters
+                ->take(20)
+                ->map(fn (Master $master) => $this->serializeMasterCard($master, (bool) ($availabilityFlags[$master->id] ?? false)))
+                ->values()
+                ->all(),
+            'relatedLinks' => [
+                [
+                    'label' => "Усі {$this->seoCopyGenerator->vertical($this->brand())['entityMany']} міста {$city->name}",
+                    'href' => route('public.city.show', ['citySlug' => Str::slug($city->name)]),
+                ],
+            ],
+            'faq' => $copy['faq'],
+        ];
+    }
+
+    private function pageComponent(): string
+    {
+        return match ($this->brand()) {
+            AppBrand::FLOXCITY => 'Floxcity/Public/GuestMap',
+            default => 'Carbeat/Public/GuestMap',
+        };
+    }
+
     private function buildCityCopy(City $city, Collection $masters): array
     {
         $popularServiceNames = $masters
@@ -163,13 +397,7 @@ class PublicGuestMapController extends Controller
         ?array $initialSelectedMaster,
         ?int $initialServiceId
     ): Response {
-        $brand = $this->brand();
-        $page = match ($brand) {
-            AppBrand::FLOXCITY => 'Floxcity/Public/GuestMap',
-            default => 'Carbeat/Public/GuestMap',
-        };
-
-        return Inertia::render($page, [
+        return Inertia::render($this->pageComponent(), [
             'apiBase' => '/api',
             'mapPath' => route('landing'),
             'profilePathPrefix' => $this->brand() === AppBrand::FLOXCITY ? '/salon' : '/sto',
@@ -238,7 +466,7 @@ class PublicGuestMapController extends Controller
         ];
     }
 
-    private function serializeMasterCard(Master $master): array
+    private function serializeMasterCard(Master $master, ?bool $available = null): array
     {
         $serviceNames = $master->services
             ->map(fn ($service) => $service->translate(app()->getLocale()))
@@ -246,7 +474,7 @@ class PublicGuestMapController extends Controller
             ->values()
             ->all();
 
-        return [
+        return array_filter([
             'id' => (int) $master->id,
             'name' => (string) $master->name,
             'slug' => (string) $master->slug,
@@ -257,7 +485,8 @@ class PublicGuestMapController extends Controller
                 : ($master->rating_google !== null ? (float) $master->rating_google : 0.0),
             'reviews_count' => (int) ($master->reviews_count ?? 0),
             'service_names' => $serviceNames,
-        ];
+            'available' => $available,
+        ], fn ($value) => $value !== null);
     }
 
     private function buildGenericSeo(AppBrand $brand, bool $isTechnicalGuestMapRoute = false): array

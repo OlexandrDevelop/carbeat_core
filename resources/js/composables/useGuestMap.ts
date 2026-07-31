@@ -299,8 +299,6 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             preferCanvas: true,
         }).setView(initial.center, initial.zoom);
 
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
         L.tileLayer(tileUrl, {
             maxZoom: 18,
             crossOrigin: true,

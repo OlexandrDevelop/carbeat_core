@@ -41,6 +41,9 @@ class UkrainianSeoCopyGenerator
         'placeNounMid' => 'СТО та автосервіси',
         'placeNounSingular' => 'автосервіс',
         'schemaType' => 'AutoRepair',
+        // "станція" is feminine — adjectives describing it must agree in gender.
+        'freeAdjective' => 'вільною',
+        'busyAdjective' => 'зайнятою',
     ];
 
     private const VERTICAL_FLOXCITY = [
@@ -51,6 +54,9 @@ class UkrainianSeoCopyGenerator
         'placeNounMid' => 'салони краси та майстрів',
         'placeNounSingular' => 'салон краси',
         'schemaType' => 'BeautySalon',
+        // "салон" is masculine — adjectives describing it must agree in gender.
+        'freeAdjective' => 'вільним',
+        'busyAdjective' => 'зайнятим',
     ];
 
     private const CITY_LOCATIVE_EXCEPTIONS = [
@@ -317,6 +323,59 @@ class UkrainianSeoCopyGenerator
                 [
                     'q' => "Чи можна переглянути всі {$vertical['entityFew']} міста?",
                     'a' => "Так. Сторінка міста показує всі {$vertical['entityFew']} {$locative}, а ця — звужує список до «{$serviceName}».",
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Copy for the real-time "available now" city page — the one page type with no
+     * direct barb.ua equivalent, since it depends on the live Redis availability flag
+     * rather than static catalog data. Wording leans on "просто зараз" / "у реальному
+     * часі" to make that live-status angle explicit rather than reading like a plain
+     * city listing page.
+     */
+    public function availableNowCitySeo(City $city, int $availableCount, int $totalCount, AppBrand $brand, string $brandName): array
+    {
+        $vertical = $this->vertical($brand);
+        $locative = $this->locativeCityPhrase($city);
+        $entityWord = $this->entityWord($totalCount, $vertical);
+
+        $titleBase = $availableCount > 0
+            ? "Хто доступний просто зараз {$locative}"
+            : "{$vertical['placeNounTitle']} {$locative} онлайн у реальному часі";
+
+        $description = mb_substr(
+            $availableCount > 0
+                ? "Просто зараз {$locative} онлайн {$availableCount} із {$totalCount} {$entityWord} на карті {$brandName}. Статус оновлюється в реальному часі — записуйтесь без очікування у відповіді."
+                : "Перегляньте {$vertical['placeNounMid']} {$locative} на карті {$brandName} та слідкуйте, хто з {$totalCount} {$entityWord} онлайн просто зараз — статус оновлюється в реальному часі.",
+            0,
+            160,
+        );
+
+        return [
+            'title' => $titleBase,
+            'metaTitle' => "{$titleBase} · {$brandName}",
+            'description' => $description,
+            'intro' => "Ця сторінка показує, хто з {$vertical['entityMany']} {$locative} онлайн просто зараз, — без дзвінків і очікування відповіді.",
+            'sections' => [
+                [
+                    'heading' => 'Що означає "доступний зараз"',
+                    'body' => "Майстри та {$vertical['entityMany']} можуть увімкнути статус \"доступний\", коли готові прийняти клієнта найближчим часом. Статус транслюється в реальному часі й автоматично знімається, щойно {$vertical['entityOne']} стає {$vertical['busyAdjective']}.",
+                ],
+                [
+                    'heading' => 'Як користуватись цією сторінкою',
+                    'body' => "Зверху в списку — {$vertical['entityMany']}, які онлайн просто зараз. Нижче — решта {$locative}, щоб було з чим порівняти, навіть якщо прямо зараз вільних немає.",
+                ],
+            ],
+            'faq' => [
+                [
+                    'q' => 'Чи можна записатись, якщо ніхто не онлайн просто зараз?',
+                    'a' => "Так. Список нижче показує всі {$vertical['entityMany']} {$locative} — просто зателефонуйте напряму, щоб домовитись про зручний час.",
+                ],
+                [
+                    'q' => 'Як часто оновлюється статус "доступний"?',
+                    'a' => "У реальному часі: щойно {$vertical['entityOne']} позначає себе вільною або зайнятою, статус на цій сторінці змінюється без перезавантаження.",
                 ],
             ],
         ];

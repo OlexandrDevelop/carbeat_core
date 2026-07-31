@@ -25,7 +25,10 @@ export default defineConfig(({ mode }) => {
             cors: true,
             hmr: {
                 host: process.env.VITE_HMR_HOST || '127.0.0.1',
-                port: Number(process.env.VITE_HMR_PORT || process.env.VITE_PORT || 5173),
+                // Server-side listener must stay on the same port as `server.port` so Vite
+                // reuses the existing HTTP server for the WS upgrade instead of opening a
+                // second listener on a container-internal port Docker never exposes.
+                // `clientPort` alone tells the browser which host-mapped port to dial.
                 protocol: 'ws',
                 clientPort: Number(process.env.VITE_HMR_PORT || process.env.VITE_PORT || 5173),
             },

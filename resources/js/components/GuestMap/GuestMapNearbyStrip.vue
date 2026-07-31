@@ -18,6 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     masterClick: [id: number];
+    showList: [];
 }>();
 
 const SKELETON_CARD_COUNT = 6;
@@ -56,12 +57,14 @@ const visibleMasters = computed(() =>
                 class="skeleton-block h-4 w-32 rounded"
                 aria-hidden="true"
             ></span>
-            <span
+            <button
+                type="button"
                 class="text-sm font-semibold"
                 style="color: var(--brand-primary)"
+                @click="emit('showList')"
             >
                 Списком ↑
-            </span>
+            </button>
         </div>
         <div
             ref="scrollContainerRef"

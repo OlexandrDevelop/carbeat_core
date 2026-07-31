@@ -129,8 +129,17 @@ defineProps<{
                                 >
                                     <div>
                                         <div
-                                            class="text-base font-semibold text-slate-900"
+                                            class="flex items-center gap-2 text-base font-semibold text-slate-900"
                                         >
+                                            <span
+                                                v-if="master.available"
+                                                class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+                                            >
+                                                <span
+                                                    class="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                                                />
+                                                онлайн зараз
+                                            </span>
                                             {{ master.name }}
                                         </div>
                                         <div
