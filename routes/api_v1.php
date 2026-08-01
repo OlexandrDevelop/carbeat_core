@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\ClaimController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\EasyWeekController;
 use App\Http\Controllers\Api\V1\GoogleImportController;
 use App\Http\Controllers\Api\V1\MasterController;
 use App\Http\Controllers\Api\V1\MasterCrmController;
@@ -145,6 +146,14 @@ Route::middleware('auth:api')->post('/status-requests/{masterStatusRequest}/resp
 Route::middleware('auth:api')->prefix('crm')->group(function () {
     Route::get('/snapshot', [MasterCrmController::class, 'snapshot']);
     Route::post('/sync', [MasterCrmController::class, 'sync']);
+});
+
+// EasyWeek integration: master links their EasyWeek account so their real
+// busy/available status (from EasyWeek's own calendar) drives the existing
+// map indicator instead of the smart-random simulation.
+Route::middleware('auth:api')->prefix('master/easyweek')->group(function () {
+    Route::post('/connect', [EasyWeekController::class, 'connect']);
+    Route::get('/status', [EasyWeekController::class, 'status']);
 });
 
 Route::group(['middleware' => 'auth:api'], function () {

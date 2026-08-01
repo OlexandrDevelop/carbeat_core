@@ -55,4 +55,9 @@ return [
         'url' => env('NOMINATIM_URL'),
     ],
 
+    'easyweek' => [
+        'partner_token' => env('EASYWEEK_PARTNER_TOKEN'),
+        'widget_base_url' => env('EASYWEEK_WIDGET_BASE_URL', 'https://widget.easyweek.io'),
+    ],
+
 ];

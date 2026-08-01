@@ -1,6 +1,8 @@
 <?php
 
 use App\Console\Commands\GenerateSlugForMasters;
+use App\Console\Commands\SyncEasyweekAvailability;
+use App\Console\Commands\SyncEasyweekConnections;
 use App\Console\Commands\SyncSmartRandomStatuses;
 use App\Console\Commands\SyncSubscriptions;
 use App\Http\Middleware\AddSecurityHeaders;
@@ -168,6 +170,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('smart-random-statuses:sync')
             ->everyFifteenMinutes()
             ->runInBackground();
+        $schedule->command('easyweek:sync-connections')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping()
+            ->runInBackground();
+        $schedule->command('easyweek:sync-availability')
+            ->everyTenMinutes()
+            ->withoutOverlapping()
+            ->runInBackground();
     })
     ->withCommands(
         [
@@ -178,6 +188,8 @@ return Application::configure(basePath: dirname(__DIR__))
             SyncSubscriptions::class,
             \App\Console\Commands\NormalizeServiceNames::class,
             \App\Console\Commands\RefreshSeoContent::class,
+            SyncEasyweekConnections::class,
+            SyncEasyweekAvailability::class,
         ]
     )
     ->create();

@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AppScoped;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-use App\Models\Traits\AppScoped;
 
 /**
  * @property int $id
@@ -45,6 +45,7 @@ use App\Models\Traits\AppScoped;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Booking> $bookings
  * @property-read int|null $bookings_count
  * @property-read \App\Models\City|null $city
+ * @property-read \App\Models\EasyweekConnection|null $easyweekConnection
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MasterGallery> $gallery
  * @property-read int|null $gallery_count
  * @property-read string|null $main_photo
@@ -54,6 +55,7 @@ use App\Models\Traits\AppScoped;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Service> $services
  * @property-read int|null $services_count
  * @property-read \App\Models\User|null $user
+ *
  * @method static \Database\Factories\MasterFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Master newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Master newQuery()
@@ -84,11 +86,12 @@ use App\Models\Traits\AppScoped;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Master whereWorkingHours($value)
+ *
  * @mixin \Eloquent
  */
 class Master extends Model
 {
-    use HasFactory, AppScoped;
+    use AppScoped, HasFactory;
 
     protected $hidden = [
         'created_at',
@@ -221,7 +224,6 @@ class Master extends Model
         return $this->hasMany(MasterGallery::class);
     }
 
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -232,5 +234,10 @@ class Master extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function easyweekConnection()
+    {
+        return $this->hasOne(EasyweekConnection::class);
     }
 }
