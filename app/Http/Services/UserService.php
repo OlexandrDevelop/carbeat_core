@@ -61,12 +61,38 @@ class UserService
 
     public function attachUserToMasterByPhone(string $phone, User $user): void
     {
-        Master::where('contact_phone', $phone)
+        // Multiple master rows can share the same contact_phone (duplicate
+        // imports, several branches, etc.), and `user_id` is unique. A bulk
+        // UPDATE across all matches would try to set that unique column to
+        // the same value on more than one row and blow up with a
+        // UniqueConstraintViolationException. Pick a single best match and
+        // update only that row instead.
+        $candidates = Master::where('contact_phone', $phone)
             ->where(function ($query) use ($user) {
-                $query->whereNull('user_id')
-                    ->orWhere('user_id', 1)
-                    ->orWhere('user_id', $user->id);
+                $query->where('user_id', $user->id)
+                    ->orWhereNull('user_id')
+                    ->orWhere('user_id', 1);
             })
-            ->update(['user_id' => $user->id]);
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return;
+        }
+
+        $master = $candidates->first(fn ($m) => (int) $m->user_id === $user->id)
+            ?? $candidates->whereNull('user_id')->sortBy('id')->first()
+            ?? $candidates->sortBy('id')->first();
+
+        if ((int) $master->user_id === $user->id) {
+            return;
+        }
+
+        try {
+            $master->update(['user_id' => $user->id]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Another master row already holds this user_id (a stale
+            // system-placeholder collision) — leave this row unlinked
+            // rather than failing the whole login.
+        }
     }
 }
