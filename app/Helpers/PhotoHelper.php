@@ -2,8 +2,8 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Storage;
 use App\Enums\AppBrand;
+use Illuminate\Support\Facades\Storage;
 
 class PhotoHelper
 {
@@ -47,7 +47,7 @@ class PhotoHelper
         }
 
         $fl = $this->normalizeFlavor($flavor);
-        $fileName = 'images/' . $fl . '/' . uniqid('', true) . '.' . $extension;
+        $fileName = 'images/'.$fl.'/'.uniqid('', true).'.'.$extension;
         Storage::disk('public')->put($fileName, $decoded);
 
         return $fileName;
@@ -55,6 +55,7 @@ class PhotoHelper
 
     /**
      * Decode base64-encoded image string and return binary and extension.
+     *
      * @return array{decoded:string, extension:string}|null
      */
     public function base64ToDecoded(string $base64): ?array
@@ -62,7 +63,7 @@ class PhotoHelper
         if (empty($base64)) {
             return null;
         }
-        if (!preg_match('/^data:image\/(\w+);base64,/', $base64, $matches)) {
+        if (! preg_match('/^data:image\/(\w+);base64,/', $base64, $matches)) {
             return null;
         }
         $extension = strtolower($matches[1]);
@@ -72,6 +73,7 @@ class PhotoHelper
         if ($decoded === false) {
             return null;
         }
+
         return ['decoded' => $decoded, 'extension' => $extension];
     }
 
@@ -85,9 +87,31 @@ class PhotoHelper
             return null;
         }
         $fl = $this->normalizeFlavor($flavor);
-        $fileName = 'images/' . $fl . '/' . uniqid('', true) . '.' . strtolower($extension);
+        $fileName = 'images/'.$fl.'/'.uniqid('', true).'.'.strtolower($extension);
         Storage::disk('public')->put($fileName, $binary);
+
         return $fileName;
+    }
+
+    /**
+     * Resolve a stored photo path (or Master::main_photo, which already
+     * falls back to the default avatar SVG) to a browser-loadable URL.
+     */
+    public function publicUrl(?string $path): string
+    {
+        $path = trim((string) $path);
+
+        if ($path === '' || str_starts_with($path, '/images/')
+            || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')
+            || str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            return '/'.$path;
+        }
+
+        return '/storage/'.ltrim($path, '/');
     }
 
     /**
@@ -95,10 +119,17 @@ class PhotoHelper
      */
     private function normalizeFlavor(?string $flavor): string
     {
-        if (!empty($flavor)) return (string) $flavor;
+        if (! empty($flavor)) {
+            return (string) $flavor;
+        }
         $cfg = config('app.client');
-        if ($cfg instanceof AppBrand) return $cfg->value;
-        if (is_string($cfg) && $cfg !== '') return $cfg;
+        if ($cfg instanceof AppBrand) {
+            return $cfg->value;
+        }
+        if (is_string($cfg) && $cfg !== '') {
+            return $cfg;
+        }
+
         return 'carbeat';
     }
 }

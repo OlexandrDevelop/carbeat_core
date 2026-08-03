@@ -55,7 +55,7 @@ class SecurityHardeningTest extends TestCase
             ->assertDontSee('"pulse"')
             ->assertDontSee('scribe')
             ->assertDontSee('/app/resources/views')
-            ->assertDontSee('claim.redirect')
+            ->assertDontSee('claim.show')
             ->assertDontSee('status-request.respond')
             ->assertDontSee('storage.local');
     }

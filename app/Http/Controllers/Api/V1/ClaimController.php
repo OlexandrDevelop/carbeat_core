@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Claim\ClaimSendSmsRequest;
 use App\Http\Requests\Claim\ClaimVerifyRequest;
+use App\Http\Resources\Api\V1\UserResource;
 use App\Http\Services\ClaimService;
+use App\Http\Services\TokenService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
 class ClaimController extends Controller
 {
     public function __construct(
-        private readonly ClaimService $claimService
+        private readonly ClaimService $claimService,
+        private readonly TokenService $tokenService
     ) {}
 
     public function publicInfo(string $token): JsonResponse
@@ -34,13 +37,13 @@ class ClaimController extends Controller
             $code = $e->getCode();
             if ($code === 409) {
                 return response()->json([
-                    'error'   => 'already_claimed',
+                    'error' => 'already_claimed',
                     'message' => 'Цей профіль вже зайнятий іншим користувачем.',
                 ], 409);
             }
 
             return response()->json([
-                'error'   => 'sms_failed',
+                'error' => 'sms_failed',
                 'message' => 'Не вдалося надіслати SMS. Спробуйте ще раз.',
             ], 400);
         }
@@ -51,13 +54,22 @@ class ClaimController extends Controller
         $data = $request->validated();
 
         try {
-            $result = $this->claimService->verify(
+            $user = $this->claimService->verifyAndClaim(
                 $data['master_id'],
                 $data['phone'],
                 $data['code']
             );
 
-            return response()->json($result);
+            $accessToken = $this->tokenService->createAccessToken($user);
+            $refreshModel = $this->tokenService->createRefreshToken($user);
+
+            return response()->json([
+                'status' => 'verified',
+                'user' => new UserResource($user->fresh('master')),
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshModel->plain_token,
+                'expires_in' => 60 * config('auth.access_token_ttl', 15),
+            ]);
         } catch (Exception $e) {
             $statusCode = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 422;
 
@@ -65,4 +77,3 @@ class ClaimController extends Controller
         }
     }
 }
-

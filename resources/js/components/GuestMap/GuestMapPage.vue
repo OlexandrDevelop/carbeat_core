@@ -33,6 +33,7 @@ import GuestMapLightbox from './GuestMapLightbox.vue';
 import GuestMapMasterDetail from './GuestMapMasterDetail.vue';
 import GuestMapMastersList from './GuestMapMastersList.vue';
 import GuestMapNearbyStrip from './GuestMapNearbyStrip.vue';
+import GuestMapOnboardModal from './GuestMapOnboardModal.vue';
 import GuestMapSeoSection from './GuestMapSeoSection.vue';
 import GuestMapStatusBeacon from './GuestMapStatusBeacon.vue';
 import GuestMapTopPanel from './GuestMapTopPanel.vue';
@@ -294,6 +295,12 @@ const {
 
 type Service = { id: number; name: string; slug?: string };
 const services = ref<Service[]>([]);
+const showOnboardModal = ref(false);
+
+function onboardFallbackLocation(): { lat: number; lng: number } | null {
+    const view = guestMap.getView();
+    return view ? { lat: view.center.lat, lng: view.center.lng } : null;
+}
 
 const serviceOptions = computed(() =>
     [...services.value]
@@ -1148,6 +1155,7 @@ onBeforeUnmount(() => {
                         @update:available-only="availableOnly = $event"
                         @update:search-query="searchQuery = $event"
                         @set-language="setLanguage"
+                        @open-onboard="showOnboardModal = true"
                     />
                 </div>
 
@@ -1251,6 +1259,16 @@ onBeforeUnmount(() => {
                         selectedMaster ? selectedMaster.name + ' фото' : 'Фото'
                     "
                     @close="closeLightbox"
+                />
+
+                <!-- Become-a-master onboarding modal -->
+                <GuestMapOnboardModal
+                    v-if="showOnboardModal"
+                    :services="services"
+                    :current-lang="currentLang"
+                    :t="t"
+                    :fallback-location="onboardFallbackLocation"
+                    @close="showOnboardModal = false"
                 />
             </div>
         </div>

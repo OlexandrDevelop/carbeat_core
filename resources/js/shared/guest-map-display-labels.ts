@@ -24,7 +24,19 @@ export type UiTextKey =
     | 'yourReply'
     | 'selectRating'
     | 'reviewSubmitError'
-    | 'replySubmitError';
+    | 'replySubmitError'
+    | 'becomeMaster'
+    | 'onboardTitle'
+    | 'onboardPhoneLabel'
+    | 'onboardContinue'
+    | 'onboardFoundProfile'
+    | 'onboardCodeLabel'
+    | 'onboardVerify'
+    | 'onboardResend'
+    | 'onboardRegisterTitle'
+    | 'onboardNameLabel'
+    | 'onboardServiceLabel'
+    | 'onboardGenericError';
 
 export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
     en: {
@@ -52,6 +64,18 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         selectRating: 'Please select a rating',
         reviewSubmitError: 'Failed to submit review. Try again.',
         replySubmitError: 'Failed to submit reply. Try again.',
+        becomeMaster: "I'm a pro",
+        onboardTitle: 'Add your business',
+        onboardPhoneLabel: 'Phone number',
+        onboardContinue: 'Continue',
+        onboardFoundProfile: 'Is this your profile?',
+        onboardCodeLabel: 'SMS code',
+        onboardVerify: 'Confirm',
+        onboardResend: 'Resend code',
+        onboardRegisterTitle: 'Tell us about your business',
+        onboardNameLabel: 'Business name',
+        onboardServiceLabel: 'Service category',
+        onboardGenericError: 'Something went wrong. Try again.',
     },
     uk: {
         availableOnly: 'Вільні',
@@ -78,6 +102,18 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         selectRating: 'Оберіть оцінку',
         reviewSubmitError: 'Не вдалося надіслати відгук. Спробуйте ще раз.',
         replySubmitError: 'Не вдалося надіслати відповідь. Спробуйте ще раз.',
+        becomeMaster: 'Я майстер',
+        onboardTitle: 'Додайте свій бізнес',
+        onboardPhoneLabel: 'Номер телефону',
+        onboardContinue: 'Продовжити',
+        onboardFoundProfile: 'Це ваш профіль?',
+        onboardCodeLabel: 'Код з SMS',
+        onboardVerify: 'Підтвердити',
+        onboardResend: 'Надіслати код повторно',
+        onboardRegisterTitle: 'Розкажіть коротко про бізнес',
+        onboardNameLabel: 'Назва бізнесу',
+        onboardServiceLabel: 'Категорія послуг',
+        onboardGenericError: 'Щось пішло не так. Спробуйте ще раз.',
     },
     de: {
         availableOnly: 'Verfügbar',
@@ -106,6 +142,19 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
             'Bewertung konnte nicht gesendet werden. Versuchen Sie es erneut.',
         replySubmitError:
             'Antwort konnte nicht gesendet werden. Versuchen Sie es erneut.',
+        becomeMaster: 'Ich bin Profi',
+        onboardTitle: 'Business hinzufügen',
+        onboardPhoneLabel: 'Telefonnummer',
+        onboardContinue: 'Weiter',
+        onboardFoundProfile: 'Ist das Ihr Profil?',
+        onboardCodeLabel: 'SMS-Code',
+        onboardVerify: 'Bestätigen',
+        onboardResend: 'Code erneut senden',
+        onboardRegisterTitle: 'Erzählen Sie uns von Ihrem Unternehmen',
+        onboardNameLabel: 'Firmenname',
+        onboardServiceLabel: 'Dienstleistungskategorie',
+        onboardGenericError:
+            'Etwas ist schiefgelaufen. Versuchen Sie es erneut.',
     },
 };
 

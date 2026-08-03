@@ -1,8 +1,9 @@
 <?php
 
 use App\Enums\AppBrand;
-use App\Http\Controllers\ClaimLinkController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\Master\ClaimController as MasterClaimController;
+use App\Http\Controllers\Master\OnboardController as MasterOnboardController;
 use App\Http\Controllers\MasterStatusRequestWebController;
 use App\Http\Controllers\PublicGuestMapController;
 use App\Http\Controllers\PublicMasterController;
@@ -130,7 +131,15 @@ Route::get('/service/{serviceSlug}', [PublicGuestMapController::class, 'showServ
 Route::get('/guide', [PublicGuestMapController::class, 'guideIndex'])->name('public.guide.index');
 Route::get('/guide/{slug}', [PublicGuestMapController::class, 'showArticle'])->name('public.guide.show');
 Route::get('/m/{slug}', [PublicMasterController::class, 'show'])->name('public.master.show');
-Route::get('/claim/{token}', ClaimLinkController::class)->name('claim.redirect');
+Route::get('/claim/{token}', [MasterClaimController::class, 'show'])->name('claim.show');
+Route::post('/claim/{token}/send-code', [MasterClaimController::class, 'sendCode'])
+    ->middleware('throttle:6,1')
+    ->name('claim.send_code');
+Route::post('/claim/{token}/verify', [MasterClaimController::class, 'verify'])->name('claim.verify');
+Route::post('/master-onboard/send-code', [MasterOnboardController::class, 'sendCode'])
+    ->middleware('throttle:6,1')
+    ->name('master.onboard.send_code');
+Route::post('/master-onboard/verify', [MasterOnboardController::class, 'verify'])->name('master.onboard.verify');
 Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');
 Route::post('/r/{token}', [MasterStatusRequestWebController::class, 'respond'])->name('status-request.respond');
 

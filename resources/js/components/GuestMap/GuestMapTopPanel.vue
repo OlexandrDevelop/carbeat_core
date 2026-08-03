@@ -18,6 +18,7 @@ const emit = defineEmits<{
     'update:availableOnly': [val: boolean];
     'update:searchQuery': [val: string];
     setLanguage: [lang: Lang];
+    openOnboard: [];
 }>();
 
 const isFloxcity = computed(() => props.flavor === 'floxcity');
@@ -101,6 +102,13 @@ onBeforeUnmount(() => clearLoadingTimers());
             >
                 {{ t('appDownloadCta') }}
             </a>
+            <button
+                type="button"
+                class="become-master-cta rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
+                @click="emit('openOnboard')"
+            >
+                {{ t('becomeMaster') }}
+            </button>
             <div
                 class="inline-flex items-center gap-1 rounded-lg p-0.5"
                 :class="isFloxcity ? 'bg-emerald-50' : 'bg-sky-50'"
@@ -256,6 +264,21 @@ onBeforeUnmount(() => clearLoadingTimers());
 
 .app-download-cta:hover {
     opacity: 0.88;
+}
+
+.become-master-cta {
+    background: transparent;
+    border: 1px solid rgba(var(--brand-primary-rgb), 0.55);
+    color: var(--brand-primary);
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+}
+
+.become-master-cta:hover {
+    background: var(--brand-primary);
+    color: #fff;
 }
 
 @keyframes app-cta-pulse {

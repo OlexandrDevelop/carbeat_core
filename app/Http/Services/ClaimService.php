@@ -4,7 +4,6 @@ namespace App\Http\Services;
 
 use App\Enums\AppBrand;
 use App\Helpers\PhoneHelper;
-use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Master;
 use App\Models\User;
 use Carbon\Carbon;
@@ -20,19 +19,29 @@ use Throwable;
 class ClaimService
 {
     private const int|float REDIS_TTL_SECONDS = 5 * 60; // 5 minutes
+
     private const int CODE_LENGTH = 6;
 
     public function __construct(
-        private readonly PhoneHelper $phoneHelper,
-        private readonly TokenService $tokenService
+        private readonly PhoneHelper $phoneHelper
     ) {}
+
+    /**
+     * Resolve a master by its (unclaimed) claim token.
+     *
+     * @throws ModelNotFoundException
+     */
+    public function findMasterByToken(string $token): Master
+    {
+        return Master::where('claim_token', $token)->with(['city', 'services'])->firstOrFail();
+    }
 
     /**
      * Get public information about master by claim token.
      */
     public function getPublicInfo(string $token): array
     {
-        $master = Master::where('claim_token', $token)->firstOrFail();
+        $master = $this->findMasterByToken($token);
 
         return [
             'status' => 'ok',
@@ -72,40 +81,49 @@ class ClaimService
     }
 
     /**
-     * Verify claim code and complete master claim process.
+     * Verify claim code and complete master claim process, linking the
+     * master to a (found-or-created) User. Returns the linked User; callers
+     * decide how to establish access from there (JWT for mobile, web
+     * session for the browser claim flow).
      *
      * @throws Exception
      * @throws Throwable
      */
-    public function verify(int $masterId, string $phone, string $code): array
+    public function verifyAndClaim(int $masterId, string $phone, string $code): User
     {
         $master = Master::findOrFail($masterId);
         $normalizedPhone = $this->phoneHelper->normalize($phone);
 
         $cachedData = $this->getCachedCode($master->id);
 
-        if (!$cachedData) {
+        if (! $cachedData) {
             throw new Exception('code_expired', 410);
         }
 
         $this->validateCode($cachedData, $code, $normalizedPhone);
 
+        $user = $this->claimVerifiedMaster($master, $normalizedPhone);
+        $this->clearCachedCode($master->id);
+
+        return $user;
+    }
+
+    /**
+     * Claim a master and link it to a User, given that the caller has
+     * already verified the requester owns $normalizedPhone by whatever OTP
+     * channel is appropriate for their flow (this method does no code
+     * validation of its own). Used by verifyAndClaim() (token + Redis-code
+     * claim flow) and by phone-first flows that verify via SmsService
+     * instead (e.g. the guest-map onboarding flow).
+     *
+     * @throws Throwable
+     */
+    public function claimVerifiedMaster(Master $master, string $normalizedPhone): User
+    {
         return DB::transaction(function () use ($master, $normalizedPhone) {
             $this->claimMaster($master, $normalizedPhone);
-            $user = $this->ensureUserExists($master, $normalizedPhone);
-            $this->clearCachedCode($master->id);
 
-            $accessToken = $this->tokenService->createAccessToken($user);
-            $refreshModel = $this->tokenService->createRefreshToken($user);
-            $expiresIn = 60 * config('auth.access_token_ttl', 15);
-
-            return [
-                'status' => 'verified',
-                'user' => new UserResource($user->fresh('master')),
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshModel->plain_token,
-                'expires_in' => $expiresIn,
-            ];
+            return $this->ensureUserExists($master, $normalizedPhone);
         });
     }
 
@@ -151,7 +169,7 @@ class ClaimService
         $redisKey = $this->buildRedisKey($masterId);
         $cached = Redis::get($redisKey);
 
-        if (!$cached) {
+        if (! $cached) {
             return null;
         }
 
@@ -174,11 +192,11 @@ class ClaimService
      */
     private function validateCode(?array $cachedData, string $code, string $phone): void
     {
-        if (!$cachedData || !isset($cachedData['code']) || $cachedData['code'] !== $code) {
+        if (! $cachedData || ! isset($cachedData['code']) || $cachedData['code'] !== $code) {
             throw new Exception('invalid_code', 422);
         }
 
-        if (!isset($cachedData['phone']) || $cachedData['phone'] !== $phone) {
+        if (! isset($cachedData['phone']) || $cachedData['phone'] !== $phone) {
             throw new Exception('phone_mismatch', 422);
         }
     }
@@ -202,7 +220,7 @@ class ClaimService
     {
         $user = $master->user;
 
-        if (!$user) {
+        if (! $user) {
             $user = User::firstOrCreate(
                 ['phone' => $phone],
                 ['name' => $master->name]
@@ -236,7 +254,7 @@ class ClaimService
         $base = rtrim(config('app.claim_base_url'), '/');
         $token = $master->claim_token;
 
-        if (!$token) {
+        if (! $token) {
             return;
         }
 
@@ -265,4 +283,3 @@ class ClaimService
         return "claim_sms:{$masterId}";
     }
 }
-
