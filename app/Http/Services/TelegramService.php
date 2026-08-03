@@ -43,13 +43,17 @@ class TelegramService
      */
     public function report(Throwable $exception): void
     {
+        // parse_mode HTML rejects the whole message if any interpolated text
+        // contains something that looks like an unsupported tag (e.g. stack
+        // traces routinely contain "Object.<anonymous>"), so exception
+        // content must be escaped — only the surrounding literal tags stay.
         $message = sprintf(
             "<b>Error on server (%s)</b>\n\n<b>Message:</b> %s\n<b>File:</b> %s:%d\n\n<code>%s</code>",
-            config('app.env'),
-            $exception->getMessage(),
-            $exception->getFile(),
+            e(config('app.env')),
+            e($exception->getMessage()),
+            e($exception->getFile()),
             $exception->getLine(),
-            $exception->getTraceAsString()
+            e($exception->getTraceAsString())
         );
 
         $this->send($message);

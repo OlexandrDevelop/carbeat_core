@@ -17,6 +17,7 @@ class TelegramServiceTest extends TestCase
         $msgMock->shouldReceive('token')->once()->andReturnSelf();
         $msgMock->shouldReceive('to')->once()->andReturnSelf();
         $msgMock->shouldReceive('content')->once()->with('Hello')->andReturnSelf();
+        $msgMock->shouldReceive('options')->once()->with(['parse_mode' => 'HTML'])->andReturnSelf();
         $msgMock->shouldReceive('send')->once();
 
         $service = new TelegramService;
@@ -34,9 +35,35 @@ class TelegramServiceTest extends TestCase
         $msgMock->shouldReceive('to')->times($expectedChunks)->andReturnSelf();
         // content called with chunk strings; allow any string
         $msgMock->shouldReceive('content')->times($expectedChunks)->andReturnSelf();
+        $msgMock->shouldReceive('options')->times($expectedChunks)->andReturnSelf();
         $msgMock->shouldReceive('send')->times($expectedChunks);
 
         $service = new TelegramService;
         $service->send($long);
+    }
+
+    public function test_report_escapes_html_special_characters_from_exception(): void
+    {
+        // Regression: stack traces routinely contain things like
+        // "Object.<anonymous>", which Telegram's parse_mode=HTML rejects
+        // outright as an unsupported tag unless escaped.
+        $exception = new \RuntimeException('boom <script>alert(1)</script>');
+
+        $msgMock = Mockery::mock('alias:NotificationChannels\\Telegram\\TelegramMessage');
+        $msgMock->shouldReceive('create')->once()->andReturnSelf();
+        $msgMock->shouldReceive('token')->once()->andReturnSelf();
+        $msgMock->shouldReceive('to')->once()->andReturnSelf();
+        $msgMock->shouldReceive('options')->once()->andReturnSelf();
+        $msgMock->shouldReceive('content')
+            ->once()
+            ->with(Mockery::on(function (string $content) {
+                return str_contains($content, '&lt;script&gt;')
+                    && ! str_contains($content, '<script>');
+            }))
+            ->andReturnSelf();
+        $msgMock->shouldReceive('send')->once();
+
+        $service = new TelegramService;
+        $service->report($exception);
     }
 }
