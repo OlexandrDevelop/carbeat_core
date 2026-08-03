@@ -73,8 +73,11 @@
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+// Type-only: Leaflet touches `window` merely by being imported, which
+// crashes Node SSR (this layout wraps every master-portal page), so the
+// runtime module is loaded lazily in onMounted() below instead of via a
+// static import.
+import type L from 'leaflet';
 import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
 import type { route as routeFn } from 'ziggy-js';
 import GlassPanel from '../components/MasterCrm/GlassPanel.vue';
@@ -98,10 +101,14 @@ const KYIV_CENTER: [number, number] = [50.4501, 30.5234];
 const mapEl = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
 
-onMounted(() => {
+onMounted(async () => {
     if (!mapEl.value) return;
 
-    map = L.map(mapEl.value, {
+    const Leaflet = (await import('leaflet')).default;
+    await import('leaflet/dist/leaflet.css');
+    if (!mapEl.value || map) return; // unmounted or already initialized while awaiting
+
+    map = Leaflet.map(mapEl.value, {
         center: KYIV_CENTER,
         zoom: 13,
         zoomControl: false,
@@ -114,7 +121,7 @@ onMounted(() => {
         attributionControl: false,
     });
 
-    L.tileLayer(
+    Leaflet.tileLayer(
         `https://api.mapbox.com/styles/v1/rotting/claqrpplh000g14mmffvd0767/tiles/256/{z}/{x}/{y}@2x?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`,
         { maxZoom: 18, crossOrigin: true },
     ).addTo(map);

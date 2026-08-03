@@ -1,8 +1,38 @@
-import L from 'leaflet';
-import 'leaflet.markercluster';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet/dist/leaflet.css';
+import type L from 'leaflet';
 import { onBeforeUnmount } from 'vue';
+
+/**
+ * Leaflet touches `window` merely by being imported (module-level code in
+ * leaflet-src.js), which crashes Node SSR. The map only ever needs it once
+ * mounted client-side, so the runtime module is loaded lazily here instead
+ * of via a static import: init() awaits it before touching anything, and
+ * every other function below only runs after init() has resolved (they're
+ * all no-ops while `map` is still null).
+ */
+let leafletModule: typeof L | null = null;
+let leafletLoading: Promise<typeof L> | null = null;
+
+async function ensureLeaflet(): Promise<typeof L> {
+    if (leafletModule) return leafletModule;
+    if (!leafletLoading) {
+        leafletLoading = (async () => {
+            const mod = await import('leaflet');
+            await import('leaflet.markercluster');
+            await import('leaflet.markercluster/dist/MarkerCluster.css');
+            await import('leaflet/dist/leaflet.css');
+            return (mod.default ?? mod) as typeof L;
+        })();
+    }
+    leafletModule = await leafletLoading;
+    return leafletModule;
+}
+
+function requireLeaflet(): typeof L {
+    if (!leafletModule) {
+        throw new Error('Leaflet not loaded yet — call init() first');
+    }
+    return leafletModule;
+}
 
 export type Master = {
     id: number;
@@ -138,7 +168,7 @@ function buildMasterIcon(
             <path class="marker-pin-path" fill-rule="evenodd" d="${PIN_SVG_PATH}"/>
         </svg>`;
 
-    const icon = L.divIcon({
+    const icon = requireLeaflet().divIcon({
         className: 'master-marker-wrapper',
         html: `<div class="master-marker ${colorClass}">${inner}</div>`,
         iconSize: [pinW, pinH],
@@ -172,7 +202,7 @@ function buildClusterIcon(count: number, hasAvailable: boolean): L.DivIcon {
                 : count < 10000
                   ? 88
                   : 104;
-    return L.divIcon({
+    return requireLeaflet().divIcon({
         className: `cluster-marker cluster-${sizeBucket} ${hasAvailable ? 'cluster-has-available' : 'cluster-all-unavailable'}`,
         html: `<div class="cluster-inner">${count}</div>`,
         iconSize: [px, px],
@@ -184,7 +214,7 @@ export interface GuestMapHandle {
     init: (
         el: HTMLElement,
         initial: { center: [number, number]; zoom: number },
-    ) => void;
+    ) => Promise<void>;
     destroy: () => void;
     syncMasters: (masters: Master[]) => void;
     setSelected: (masterId: number | null) => void;
@@ -280,13 +310,18 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
         options.onMapClick?.();
     }
 
-    function init(
+    async function init(
         el: HTMLElement,
         initial: { center: [number, number]; zoom: number },
-    ): void {
+    ): Promise<void> {
         if (map) return;
 
-        map = L.map(el, {
+        const Leaflet = await ensureLeaflet();
+        // Concurrent init() calls could both pass the `if (map) return;`
+        // guard above before either finishes awaiting Leaflet.
+        if (map) return;
+
+        map = Leaflet.map(el, {
             zoomControl: false,
             minZoom: 2,
             maxZoom: 18,
@@ -299,7 +334,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             preferCanvas: true,
         }).setView(initial.center, initial.zoom);
 
-        L.tileLayer(tileUrl, {
+        Leaflet.tileLayer(tileUrl, {
             maxZoom: 18,
             crossOrigin: true,
             keepBuffer: 4,
@@ -308,7 +343,7 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             attribution: tileAttribution,
         }).addTo(map);
 
-        cluster = L.markerClusterGroup({
+        cluster = Leaflet.markerClusterGroup({
             chunkedLoading: true,
             chunkInterval: 80,
             chunkDelay: 30,
@@ -378,21 +413,26 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             const photo = options.photoUrl(
                 master.main_thumb_url ?? master.main_photo,
             );
-            const marker = L.marker([master.latitude, master.longitude], {
-                icon: buildMasterIcon(state, photo, master.name),
-                keyboard: false,
-                riseOnHover: true,
-            });
+            const marker = requireLeaflet().marker(
+                [master.latitude, master.longitude],
+                {
+                    icon: buildMasterIcon(state, photo, master.name),
+                    keyboard: false,
+                    riseOnHover: true,
+                },
+            );
             marker.on('click', (event) => {
                 if ('originalEvent' in event) {
-                    L.DomEvent.stopPropagation(event.originalEvent as Event);
+                    requireLeaflet().DomEvent.stopPropagation(
+                        event.originalEvent as Event,
+                    );
                 }
                 options.onMarkerClick?.(master);
             });
             marker.bindTooltip(master.name, {
                 direction: 'top',
                 opacity: 0.9,
-                offset: L.point(0, -10),
+                offset: requireLeaflet().point(0, -10),
             });
             (marker as L.Marker & { __masterId?: number }).__masterId =
                 master.id;
@@ -468,13 +508,15 @@ export function useGuestMap(options: UseGuestMapOptions): GuestMapHandle {
             userMarker.setLatLng(latlng);
             return;
         }
-        userMarker = L.circleMarker(latlng, {
-            radius: 8,
-            color: '#ffffff',
-            weight: 2,
-            fillColor: '#2563eb',
-            fillOpacity: 1,
-        }).addTo(map);
+        userMarker = requireLeaflet()
+            .circleMarker(latlng, {
+                radius: 8,
+                color: '#ffffff',
+                weight: 2,
+                fillColor: '#2563eb',
+                fillOpacity: 1,
+            })
+            .addTo(map);
     }
 
     function flyTo(latlng: [number, number], zoom?: number): void {

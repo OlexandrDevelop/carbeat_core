@@ -1057,7 +1057,7 @@ onMounted(async () => {
         ? 14
         : (props.initialMapView?.zoom ?? 11);
 
-    guestMap.init(mapEl.value, {
+    await guestMap.init(mapEl.value, {
         center: initialCenter as [number, number],
         zoom: initialZoom,
     });
