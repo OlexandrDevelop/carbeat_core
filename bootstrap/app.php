@@ -72,8 +72,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->reportable(function (\Throwable $e) {
-            if (app()->bound(TelegramService::class) && app()->environment('local')) {
+            if (! app()->environment('production')) {
+                return;
+            }
+
+            try {
                 app(TelegramService::class)->report($e);
+            } catch (\Throwable $telegramException) {
+                Log::warning('Failed to send exception report to Telegram', [
+                    'exception' => $telegramException->getMessage(),
+                ]);
             }
         });
 
