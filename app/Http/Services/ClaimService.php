@@ -215,27 +215,42 @@ class ClaimService
 
     /**
      * Ensure user exists and is linked to master.
+     *
+     * Deliberately resolves the owner by the just-verified $phone rather
+     * than trusting $master->user: an unclaimed imported master can carry
+     * a stale/placeholder user_id (see MasterService::importFromExternal),
+     * so blindly reusing that relation would hijack an unrelated account's
+     * phone number. masters.user_id is globally unique across brands, so
+     * re-linking must also be checked against that before writing —
+     * otherwise a phone already owned by a different master's user crashes
+     * with a UniqueConstraintViolationException instead of a clean error.
+     *
+     * @throws Exception if $phone's user already owns a different master
      */
     private function ensureUserExists(Master $master, string $phone): User
     {
-        $user = $master->user;
+        $user = User::firstOrCreate(
+            ['phone' => $phone],
+            ['name' => $master->name]
+        );
 
-        if (! $user) {
-            $user = User::firstOrCreate(
-                ['phone' => $phone],
-                ['name' => $master->name]
-            );
+        if ((int) $master->user_id !== $user->id) {
+            $ownedByAnotherMaster = Master::withoutGlobalScope('app')
+                ->where('user_id', $user->id)
+                ->where('id', '!=', $master->id)
+                ->exists();
+
+            if ($ownedByAnotherMaster) {
+                throw new Exception('phone_already_claimed', 409);
+            }
+
             $master->user()->associate($user);
             $master->save();
-        } else {
-            if ($user->phone !== $phone) {
-                $user->phone = $phone;
-            }
-            if (empty($user->name)) {
-                $user->name = $master->name;
-            }
         }
 
+        if (empty($user->name)) {
+            $user->name = $master->name;
+        }
         if (is_null($user->phone_verified_at)) {
             $user->phone_verified_at = Carbon::now();
         }

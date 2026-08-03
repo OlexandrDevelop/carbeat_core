@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Master;
 
 use App\Models\Master;
+use App\Models\User;
 use Daaner\TurboSMS\Facades\TurboSMS;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -159,5 +160,63 @@ class ClaimTest extends TestCase
         ]);
 
         $response->assertStatus(404);
+    }
+
+    public function test_verify_does_not_hijack_unrelated_user_with_stale_master_user_id(): void
+    {
+        // Simulates an imported master that still carries the
+        // importFromExternal() placeholder user_id (see MasterService),
+        // pointing at some unrelated, already-registered user.
+        $placeholderOwner = User::factory()->create([
+            'phone' => '+380509990000',
+            'name' => 'Unrelated Owner',
+        ]);
+
+        $master = $this->createUnclaimedMaster('tok-sentinel', '+380507654321');
+        $master->update(['user_id' => $placeholderOwner->id]);
+
+        Redis::shouldReceive('get')->once()->andReturn(json_encode([
+            'code' => '123456',
+            'phone' => '+380507654321',
+        ]));
+        Redis::shouldReceive('del')->once();
+
+        $response = $this->withHeader('X-App', 'carbeat')->postJson('/claim/tok-sentinel/verify', [
+            'code' => '123456',
+        ]);
+
+        $response->assertOk()->assertJson(['status' => 'ok']);
+
+        $placeholderOwner->refresh();
+        $this->assertSame('+380509990000', $placeholderOwner->phone);
+        $this->assertSame('Unrelated Owner', $placeholderOwner->name);
+
+        $master->refresh();
+        $this->assertNotSame($placeholderOwner->id, $master->user_id);
+        $this->assertDatabaseHas('users', ['phone' => '+380507654321', 'id' => $master->user_id]);
+    }
+
+    public function test_verify_returns_409_when_phone_already_owns_a_different_master(): void
+    {
+        $existingOwner = User::factory()->create(['phone' => '+380507654321']);
+        $this->createUnclaimedMaster('tok-other-master', '+380501110000')
+            ->update(['user_id' => $existingOwner->id, 'is_claimed' => true]);
+
+        $master = $this->createUnclaimedMaster('tok-conflict', '+380507654321');
+
+        Redis::shouldReceive('get')->once()->andReturn(json_encode([
+            'code' => '123456',
+            'phone' => '+380507654321',
+        ]));
+
+        $response = $this->withHeader('X-App', 'carbeat')->postJson('/claim/tok-conflict/verify', [
+            'code' => '123456',
+        ]);
+
+        $response->assertStatus(409)->assertJson(['error' => 'phone_already_claimed']);
+
+        $master->refresh();
+        $this->assertFalse($master->is_claimed);
+        $this->assertNull($master->user_id);
     }
 }
