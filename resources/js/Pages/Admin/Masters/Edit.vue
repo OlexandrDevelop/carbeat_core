@@ -412,8 +412,10 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+// Type-only: Leaflet touches `window` merely by being imported, which
+// crashes Node SSR, so the runtime module is loaded lazily in initMap()
+// (client-only, called from onMounted) instead of via a static import.
+import type L from 'leaflet';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 const props = defineProps<{ masterId: number }>();
@@ -587,19 +589,26 @@ async function reloadReviewsAndMaster() {
 
 onMounted(load);
 
-function initMap() {
+async function initMap() {
     const mapEl = document.getElementById('map');
     if (!mapEl) return;
     const lat = form.latitude ?? 50.4501;
     const lng = form.longitude ?? 30.5234;
     const zoom = form.latitude && form.longitude ? 14 : 11;
     if (!map) {
-        map = L.map('map').setView([lat, lng], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors',
-        }).addTo(map);
-        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        const Leaflet = (await import('leaflet')).default;
+        await import('leaflet/dist/leaflet.css');
+        if (map) return; // a concurrent initMap() call already won
+
+        map = Leaflet.map('map').setView([lat, lng], zoom);
+        Leaflet.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors',
+            },
+        ).addTo(map);
+        marker = Leaflet.marker([lat, lng], { draggable: true }).addTo(map);
         marker.on('dragend', () => {
             const pos = marker!.getLatLng();
             form.latitude = Number(pos.lat.toFixed(6));
