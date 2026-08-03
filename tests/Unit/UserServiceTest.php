@@ -103,6 +103,37 @@ class UserServiceTest extends TestCase
         $this->assertEquals($user->id, $master->user_id);
     }
 
+    public function test_attach_user_to_master_by_phone_does_not_crash_on_duplicate_contact_phone(): void
+    {
+        // Reproduces the masters_user_id_unique crash: two master rows share
+        // a contact_phone (an unclaimed import placeholder with the legacy
+        // user_id=1 sentinel, plus a genuinely unclaimed row). Both used to
+        // match the lookup and get bulk-updated to the same user_id at once.
+        // Bump past id 1 so $owner->id can't collide with the sentinel below.
+        User::factory()->create();
+        $owner = User::factory()->create(['phone' => '+380509999999']);
+
+        $placeholderImport = Master::factory()->make([
+            'contact_phone' => '+380509999999',
+            'user_id' => 1,
+        ]);
+        $placeholderImport->save();
+
+        $unclaimed = Master::factory()->make([
+            'contact_phone' => '+380509999999',
+            'user_id' => null,
+        ]);
+        $unclaimed->save();
+
+        $this->service->attachUserToMasterByPhone('+380509999999', $owner);
+
+        $placeholderImport->refresh();
+        $unclaimed->refresh();
+
+        $this->assertEquals(1, $placeholderImport->user_id);
+        $this->assertEquals($owner->id, $unclaimed->user_id);
+    }
+
     public function test_create_token_for_user_returns_token(): void
     {
         $user = User::factory()->create();
