@@ -124,6 +124,7 @@ Route::get('/robots.txt', function () {
 
 Route::get('/sto/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.sto.show');
 Route::get('/salon/{slug}', [PublicGuestMapController::class, 'showMaster'])->name('public.salon.show');
+Route::get('/masters/{slug}/seo-content', [PublicGuestMapController::class, 'masterSeoContent'])->name('public.master.seo-content');
 Route::get('/city/{citySlug}', [PublicGuestMapController::class, 'showCity'])->name('public.city.show');
 Route::get('/city/{citySlug}/available-now', [PublicGuestMapController::class, 'showCityAvailableNow'])->name('public.city.available.show');
 Route::get('/city/{citySlug}/{serviceSlug}', [PublicGuestMapController::class, 'showCityService'])->name('public.city.service.show');

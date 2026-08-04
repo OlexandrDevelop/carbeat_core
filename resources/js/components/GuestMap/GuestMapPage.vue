@@ -66,6 +66,13 @@ const currentMasters = ref<MasterDetails[]>(
 );
 const mapBounds = ref<LatLngBounds | null>(null);
 
+// Holds the SEO section content re-fetched for a master selected client-side
+// (list/map click) after the initial page load — see the watcher below and
+// `refreshSeoContentForMaster()`. `props.seoContent` only reflects whichever
+// master the current request was rendered for, so without this the visible
+// SEO block would stay stuck on the first master shown.
+const clientSeoContent = ref<SeoContentPayload | null>(null);
+
 // The nearby strip and the master-detail card float over the bottom of the
 // map, so a marker can be geographically within `mapBounds` yet visually
 // hidden underneath them. Their measured heights are used below to also
@@ -154,7 +161,9 @@ const flavor = computed<Flavor>(() => props.flavor ?? 'carbeat');
 const isFloxcity = computed(() => flavor.value === 'floxcity');
 const brandName = computed(() => (isFloxcity.value ? 'Floxcity' : 'Carbeat'));
 const baseMapPath = computed(() => props.mapPath ?? '/');
-const seoContent = computed(() => props.seoContent ?? null);
+const seoContent = computed(
+    () => clientSeoContent.value ?? props.seoContent ?? null,
+);
 const isMasterSeoContent = computed(() => seoContent.value?.type === 'master');
 const hasVisibleSeoContent = computed(() => !!seoContent.value);
 const mobileAppUrl = computed<string>(() =>
@@ -773,6 +782,39 @@ watch(
         window.history.replaceState({}, '', nextPath);
     },
 );
+
+// Vue's `watch` doesn't fire for the value a ref already holds at setup time,
+// so this only runs once a visitor actually switches masters client-side —
+// the master the initial SSR/Inertia response was rendered for keeps using
+// `props.seoContent` as-is, admin overrides included.
+watch(
+    () => selectedMaster.value?.slug ?? null,
+    (slug) => {
+        if (!slug) {
+            clientSeoContent.value = null;
+            return;
+        }
+        void refreshSeoContentForMaster(slug);
+    },
+);
+
+async function refreshSeoContentForMaster(slug: string): Promise<void> {
+    try {
+        const response = await fetch(
+            `/masters/${encodeURIComponent(slug)}/seo-content`,
+            { headers: { Accept: 'application/json' } },
+        );
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+            seoContent?: SeoContentPayload | null;
+        };
+        // Selection may have moved on again while this request was in flight.
+        if (selectedMaster.value?.slug !== slug) return;
+        clientSeoContent.value = data.seoContent ?? null;
+    } catch {
+        // Decorative SEO block — fall through and keep whatever was showing.
+    }
+}
 
 watch(selectedServiceId, (serviceId) => {
     if (typeof window === 'undefined') return;

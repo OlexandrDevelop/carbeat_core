@@ -12,6 +12,7 @@ use App\Models\City;
 use App\Models\Master;
 use App\Models\SeoArticle;
 use App\Models\Service;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -47,6 +48,38 @@ class PublicGuestMapController extends Controller
         string $slug,
         AppointmentRedisService $appointmentRedisService
     ): Response {
+        [$selectedMaster, $applied] = $this->resolveMasterSeo($slug, $appointmentRedisService);
+
+        return $this->renderPage(
+            seo: $applied['seo'],
+            initialMapView: [
+                'center' => [$selectedMaster['latitude'], $selectedMaster['longitude']],
+                'zoom' => 14,
+            ],
+            seoContent: $applied['content'],
+            initialSelectedMaster: $selectedMaster,
+            initialServiceId: null,
+        );
+    }
+
+    /**
+     * Lightweight JSON counterpart to showMaster(), used by the guest map SPA to refresh
+     * the visible SEO section (breadcrumbs, related links, FAQ, ...) when a visitor selects
+     * a different master from the list/map without a full page navigation — the master
+     * page's own Inertia props only get built for the master requested in the initial
+     * request, so client-side selection would otherwise leave that block stale.
+     */
+    public function masterSeoContent(
+        string $slug,
+        AppointmentRedisService $appointmentRedisService
+    ): JsonResponse {
+        [, $applied] = $this->resolveMasterSeo($slug, $appointmentRedisService);
+
+        return response()->json(['seoContent' => $applied['content']]);
+    }
+
+    private function resolveMasterSeo(string $slug, AppointmentRedisService $appointmentRedisService): array
+    {
         $master = Master::with([
             'services.translations',
             'gallery',
@@ -68,16 +101,7 @@ class PublicGuestMapController extends Controller
             $content,
         );
 
-        return $this->renderPage(
-            seo: $applied['seo'],
-            initialMapView: [
-                'center' => [$selectedMaster['latitude'], $selectedMaster['longitude']],
-                'zoom' => 14,
-            ],
-            seoContent: $applied['content'],
-            initialSelectedMaster: $selectedMaster,
-            initialServiceId: null,
-        );
+        return [$selectedMaster, $applied];
     }
 
     public function showCity(string $citySlug): Response
