@@ -9,7 +9,7 @@
             </p>
             <p class="text-md mt-2 text-gray-600">{{ description }}</p>
             <a
-                :href="route('landing')"
+                :href="homeHref"
                 class="mt-8 inline-block rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-800"
             >
                 Повернутись на головну
@@ -19,11 +19,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
+import type { route as routeFn } from 'ziggy-js';
 
 const props = defineProps<{
     status: number;
 }>();
+
+// Error pages can render before HandleInertiaRequests has shared the Ziggy
+// config (e.g. when an earlier middleware throws), in which case app.ts/
+// ssr.ts skip registering ZiggyVue and `route` is never injected — fall
+// back to a plain path so the page still renders instead of throwing.
+const route = inject<typeof routeFn>('route');
+const homeHref = computed(() => (route ? route('landing') : '/'));
 
 const title = computed(() => {
     return {
