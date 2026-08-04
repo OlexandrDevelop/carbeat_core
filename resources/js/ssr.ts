@@ -18,12 +18,24 @@ createServer((page) =>
                 import.meta.glob<DefineComponent>('./Pages/**/*.vue'),
             ),
         setup({ App, props, plugin }) {
-            return createSSRApp({ render: () => h(App, props) })
-                .use(plugin)
-                .use(ZiggyVue, {
-                    ...page.props.ziggy,
-                    location: new URL(page.props.ziggy.location),
+            const app = createSSRApp({ render: () => h(App, props) }).use(
+                plugin,
+            );
+
+            // Error responses can be rendered before HandleInertiaRequests has
+            // shared the Ziggy config (for example, when an earlier middleware
+            // throws). SSR must still be able to render the error page so the
+            // original exception is not replaced by a Ziggy TypeError.
+            const ziggy = page.props?.ziggy;
+
+            if (ziggy?.location) {
+                app.use(ZiggyVue, {
+                    ...ziggy,
+                    location: new URL(ziggy.location),
                 });
+            }
+
+            return app;
         },
     }),
 );
