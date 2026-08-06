@@ -54,6 +54,10 @@ export type UiTextKey =
     | 'rrCarYearLabel'
     | 'rrCityLabel'
     | 'rrCityPlaceholder'
+    | 'rrUseLocationCta'
+    | 'rrUseLocationDetecting'
+    | 'rrUseLocationDetected'
+    | 'rrUseLocationError'
     | 'rrServiceLabel'
     | 'rrServicePlaceholder'
     | 'rrDescriptionLabel'
@@ -129,6 +133,11 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         rrCarYearLabel: 'Year',
         rrCityLabel: 'City',
         rrCityPlaceholder: 'Start typing your city…',
+        rrUseLocationCta: '📍 Use my location',
+        rrUseLocationDetecting: 'Detecting your location…',
+        rrUseLocationDetected: 'Location detected',
+        rrUseLocationError:
+            "Couldn't get your location — enter your city manually.",
         rrServiceLabel: 'Issue type',
         rrServicePlaceholder: 'Select an issue type',
         rrDescriptionLabel: 'Problem description',
@@ -189,7 +198,7 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         rrHeadingPrefix: 'Опишіть поломку —',
         rrHeadingHighlight: 'ми підберемо автосервіс',
         rrSubtitle:
-            "Заповніть форму, підтвердіть номер телефону кодом з SMS — і ваша заявка потрапить до перевірених СТО поряд з вами.",
+            'Заповніть форму, підтвердіть номер телефону кодом з SMS — і ваша заявка потрапить до перевірених СТО поряд з вами.',
         rrSuccessTitle: 'Заявку прийнято!',
         rrSuccessMessage:
             "Дякуємо, {0}. Найближчим часом з вами зв'яжеться автосервіс щодо ремонту {1}.",
@@ -203,6 +212,11 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         rrCarYearLabel: 'Рік випуску',
         rrCityLabel: 'Місто',
         rrCityPlaceholder: 'Почніть вводити назву міста…',
+        rrUseLocationCta: '📍 Використати моє місцезнаходження',
+        rrUseLocationDetecting: 'Визначаємо ваше місцезнаходження…',
+        rrUseLocationDetected: 'Місцезнаходження визначено',
+        rrUseLocationError:
+            'Не вдалося визначити місцезнаходження — введіть місто вручну.',
         rrServiceLabel: 'Тип поломки',
         rrServicePlaceholder: 'Оберіть тип поломки',
         rrDescriptionLabel: 'Опис проблеми',
@@ -280,10 +294,16 @@ export const UI_TEXT: Record<Lang, Record<UiTextKey, string>> = {
         rrCarYearLabel: 'Baujahr',
         rrCityLabel: 'Stadt',
         rrCityPlaceholder: 'Stadt eingeben…',
+        rrUseLocationCta: '📍 Meinen Standort verwenden',
+        rrUseLocationDetecting: 'Standort wird ermittelt…',
+        rrUseLocationDetected: 'Standort ermittelt',
+        rrUseLocationError:
+            'Standort konnte nicht ermittelt werden — geben Sie Ihre Stadt manuell ein.',
         rrServiceLabel: 'Art des Problems',
         rrServicePlaceholder: 'Problemart auswählen',
         rrDescriptionLabel: 'Problembeschreibung',
-        rrDescriptionPlaceholder: 'Beschreiben Sie, was mit dem Auto passiert ist…',
+        rrDescriptionPlaceholder:
+            'Beschreiben Sie, was mit dem Auto passiert ist…',
         rrNameLabel: 'Ihr Name',
         rrNamePlaceholder: 'Name',
         rrPhoneLabel: 'Telefonnummer',

@@ -12,6 +12,10 @@ Route::group(['middleware' => 'carbeat.only'], function () {
         ->middleware('throttle:20,1')
         ->name('repair-request.cities');
 
+    Route::get('/repair-request/reverse-geocode', [RepairRequestController::class, 'reverseGeocode'])
+        ->middleware('throttle:20,1')
+        ->name('repair-request.reverse_geocode');
+
     Route::post('/repair-request/request-otp', [RepairRequestController::class, 'requestOtp'])
         ->middleware('throttle:6,1')
         ->name('repair-request.request_otp');

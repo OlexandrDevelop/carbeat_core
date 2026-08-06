@@ -24,6 +24,16 @@ class RepairRequestNotificationService
      */
     private const RADIUS_KM = 50;
 
+    /**
+     * Hard cap on how many masters a single request notifies. Without one,
+     * a dense-city match (Kyiv/Kharkiv routinely return 200-300+ masters
+     * within RADIUS_KM) would fan out to every one of them at once — a
+     * notification-spam and paid-SMS-cost problem, not a useful match.
+     * Closest + premium masters are prioritized, so the cap trims the least
+     * relevant candidates rather than a random subset.
+     */
+    private const NOTIFY_LIMIT = 60;
+
     public function __construct(
         private readonly MasterTelegramService $telegramService,
         private readonly SmsService $smsService,
@@ -31,7 +41,13 @@ class RepairRequestNotificationService
 
     public function notify(RepairRequest $repairRequest): void
     {
-        foreach ($this->matchingMasters($repairRequest)->get() as $master) {
+        $query = $this->matchingMasters($repairRequest)->orderByDesc('is_premium');
+
+        if ($repairRequest->latitude !== null && $repairRequest->longitude !== null) {
+            $query->orderBy('distance');
+        }
+
+        foreach ($query->limit(self::NOTIFY_LIMIT)->get() as $master) {
             $this->notifyMaster($master, $repairRequest);
         }
     }

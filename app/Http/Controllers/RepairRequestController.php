@@ -165,6 +165,40 @@ class RepairRequestController extends Controller
         return response()->json(['data' => $suggestions]);
     }
 
+    /**
+     * Labels a precise browser-geolocation point (see the "use my location"
+     * button in Carbeat/RepairRequest.vue) with the nearest settlement name,
+     * for display in the `city` field — the coordinates sent to the backend
+     * on submit remain the exact geolocation point, not this settlement's
+     * centroid. Mirrors citySuggestions() (same GeonamesPlace filters) but
+     * searches by distance instead of name prefix.
+     */
+    public function reverseGeocode(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'lat' => 'required|numeric|between:-90,90',
+            'lng' => 'required|numeric|between:-180,180',
+        ]);
+
+        // 0.5° (~55km) bounding box keeps the exact-distance calc below
+        // cheap while comfortably covering "nearest settlement" for any
+        // point within Ukraine.
+        $box = 0.5;
+
+        $place = GeonamesPlace::where('country_code', 'UA')
+            ->where('feature_class', 'P')
+            ->whereBetween('latitude', [$data['lat'] - $box, $data['lat'] + $box])
+            ->whereBetween('longitude', [$data['lng'] - $box, $data['lng'] + $box])
+            ->selectRaw(
+                'display_name, ((latitude - ?) * (latitude - ?) + (longitude - ?) * (longitude - ?)) as dist_sq',
+                [$data['lat'], $data['lat'], $data['lng'], $data['lng']]
+            )
+            ->orderBy('dist_sq')
+            ->first();
+
+        return response()->json(['data' => $place ? ['name' => $place->display_name] : null]);
+    }
+
     public function requestOtp(SendSmsCodeRequest $request, SmsService $smsService): JsonResponse
     {
         $smsService->generateAndSendCode($request->input('phone'));

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Helpers\PhoneHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Services\RepairRequestNotificationService;
+use App\Jobs\NotifyMastersOfRepairRequestJob;
 use App\Models\Master;
 use App\Models\RepairRequest;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,9 @@ use Inertia\Response;
  * public side). A request notifies no masters on its own
  * (App\Http\Controllers\RepairRequestController::verifyAndSubmit() only
  * alerts the ops Telegram chat) — approve() here is what actually triggers
- * App\Http\Services\RepairRequestNotificationService::notify().
+ * App\Jobs\NotifyMastersOfRepairRequestJob (which runs
+ * App\Http\Services\RepairRequestNotificationService::notify()) on the queue,
+ * so this endpoint doesn't block on dozens of Telegram/SMS sends.
  */
 class RepairRequestController extends Controller
 {
@@ -52,7 +55,7 @@ class RepairRequestController extends Controller
         return response()->json($requests);
     }
 
-    public function approve(RepairRequest $repairRequest, RepairRequestNotificationService $notificationService): JsonResponse
+    public function approve(RepairRequest $repairRequest): JsonResponse
     {
         if ($repairRequest->status === 'pending') {
             $repairRequest->forceFill([
@@ -60,7 +63,7 @@ class RepairRequestController extends Controller
                 'approved_at' => now(),
             ])->save();
 
-            $notificationService->notify($repairRequest);
+            NotifyMastersOfRepairRequestJob::dispatch($repairRequest->id);
         }
 
         return response()->json(['status' => $repairRequest->status]);
