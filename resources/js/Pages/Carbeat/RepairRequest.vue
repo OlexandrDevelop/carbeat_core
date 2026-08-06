@@ -347,7 +347,7 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import MapBackdrop from '@/components/MapBackdrop.vue';
 import GlassPanel from '@/components/MasterCrm/GlassPanel.vue';
 import { useBrand } from '@/composables/useBrand';
@@ -367,7 +367,11 @@ const props = defineProps<{
 
 const { brandName, portalThemeClass } = useBrand();
 const { currentLang, t, setLanguage, initLanguage } = useGuestLang();
-initLanguage();
+// initLanguage() reads localStorage, which doesn't exist during SSR
+// (this page is server-rendered — see docker/entrypoint.prod.sh's SSR
+// process) — must run client-only or it throws and takes the whole render
+// down. currentLang defaults to 'en' until this runs, same as GuestMapPage.vue.
+onMounted(() => initLanguage());
 
 const maxYear = new Date().getFullYear() + 1;
 

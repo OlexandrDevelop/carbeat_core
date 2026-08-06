@@ -47,16 +47,34 @@ class TelegramService
         // contains something that looks like an unsupported tag (e.g. stack
         // traces routinely contain "Object.<anonymous>"), so exception
         // content must be escaped — only the surrounding literal tags stay.
+        //
+        // Both pieces are truncated *before* wrapping in <code>/<b> so the
+        // whole message reliably fits in one send() chunk — some exceptions
+        // (e.g. a failed bulk INSERT) carry a getMessage() with the entire
+        // SQL statement, thousands of characters long. send()'s str_split()
+        // chunking has no concept of HTML tags, so a message split mid-way
+        // used to send an unclosed <code> tag as its own Telegram message,
+        // which Telegram rejects outright ("can't find end tag") — silently
+        // dropping the report instead of just looking a bit truncated.
         $message = sprintf(
             "<b>Error on server (%s)</b>\n\n<b>Message:</b> %s\n<b>File:</b> %s:%d\n\n<code>%s</code>",
             e(config('app.env')),
-            e($exception->getMessage()),
+            e($this->truncate($exception->getMessage(), 800)),
             e($exception->getFile()),
             $exception->getLine(),
-            e($exception->getTraceAsString())
+            e($this->truncate($exception->getTraceAsString(), 2000))
         );
 
         $this->send($message);
+    }
+
+    private function truncate(string $text, int $maxLength): string
+    {
+        if (mb_strlen($text) <= $maxLength) {
+            return $text;
+        }
+
+        return mb_substr($text, 0, $maxLength).' … (truncated, see server logs for the full text)';
     }
 
     /**

@@ -52,8 +52,14 @@ class GenerateCleanSitemap extends Command
 
         $this->writeUrl($writer, $this->baseUrl() . '/', null);
 
+        // `reviews_count` isn't a real column on `masters` (it's aggregated
+        // from the `reviews` table) — withCount() adds it as a SELECT alias
+        // so ORDER BY can use it, but a WHERE clause can't reference a
+        // SELECT alias in standard SQL, so the "has any reviews" condition
+        // below uses orWhereHas() instead.
         $masters = Master::query()
             ->select(['slug', 'updated_at'])
+            ->withCount('reviews')
             ->whereNotNull('slug')
             ->where('slug', '!=', '')
             ->whereNotNull('description')
@@ -68,7 +74,7 @@ class GenerateCleanSitemap extends Command
                 $query
                     ->where('rating', '>', 0)
                     ->orWhere('rating_google', '>', 0)
-                    ->orWhere('reviews_count', '>', 0);
+                    ->orWhereHas('reviews');
             })
             ->orderByDesc('reviews_count')
             ->orderByDesc('rating')
