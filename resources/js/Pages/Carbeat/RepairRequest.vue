@@ -16,7 +16,9 @@
                     brandName
                 }}</span>
             </a>
-            <div class="inline-flex items-center gap-1 rounded-lg bg-sky-50 p-0.5">
+            <div
+                class="inline-flex items-center gap-1 rounded-lg bg-sky-50 p-0.5"
+            >
                 <button
                     v-for="lang in ['en', 'uk', 'de'] as const"
                     :key="lang"
@@ -163,6 +165,30 @@
                             class="mb-1 block text-sm font-medium text-slate-700"
                             >{{ t('rrCityLabel') }}</label
                         >
+                        <button
+                            type="button"
+                            :disabled="locationStatus === 'detecting'"
+                            class="glass-surface mb-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
+                            @click="useMyLocation"
+                        >
+                            {{
+                                locationStatus === 'detecting'
+                                    ? t('rrUseLocationDetecting')
+                                    : t('rrUseLocationCta')
+                            }}
+                        </button>
+                        <p
+                            v-if="locationStatus === 'detected'"
+                            class="mb-2 text-xs font-medium text-emerald-600"
+                        >
+                            ✓ {{ t('rrUseLocationDetected') }}
+                        </p>
+                        <p
+                            v-else-if="locationStatus === 'error'"
+                            class="mb-2 text-xs text-amber-600"
+                        >
+                            {{ t('rrUseLocationError') }}
+                        </p>
                         <input
                             v-model="cityQuery"
                             type="text"
@@ -175,7 +201,10 @@
                             @blur="onCityBlur"
                         />
                         <ul
-                            v-if="showCitySuggestions && citySuggestions.length > 0"
+                            v-if="
+                                showCitySuggestions &&
+                                citySuggestions.length > 0
+                            "
                             class="glass-panel absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl py-1"
                         >
                             <li
@@ -253,7 +282,10 @@
                                 :placeholder="t('rrNamePlaceholder')"
                                 class="glass-surface w-full rounded-xl px-3 py-2.5 text-sm outline-none"
                             />
-                            <p v-if="errors.name" class="mt-1 text-xs text-red-600">
+                            <p
+                                v-if="errors.name"
+                                class="mt-1 text-xs text-red-600"
+                            >
                                 {{ errors.name }}
                             </p>
                         </div>
@@ -278,7 +310,10 @@
                         </div>
                     </div>
 
-                    <p v-if="generalError" class="text-sm font-medium text-red-600">
+                    <p
+                        v-if="generalError"
+                        class="text-sm font-medium text-red-600"
+                    >
                         {{ generalError }}
                     </p>
 
@@ -309,7 +344,10 @@
                         class="glass-surface mx-auto w-full max-w-[200px] rounded-2xl px-4 py-3 text-center text-lg tracking-widest outline-none"
                         @keyup.enter="verifyAndSubmit"
                     />
-                    <p v-if="generalError" class="text-sm font-medium text-red-600">
+                    <p
+                        v-if="generalError"
+                        class="text-sm font-medium text-red-600"
+                    >
                         {{ generalError }}
                     </p>
                     <button
@@ -319,7 +357,9 @@
                         :style="{ backgroundColor: 'var(--brand-primary)' }"
                         @click="verifyAndSubmit"
                     >
-                        {{ loading ? t('rrOtpVerifying') : t('rrOtpVerifyCta') }}
+                        {{
+                            loading ? t('rrOtpVerifying') : t('rrOtpVerifyCta')
+                        }}
                     </button>
                     <div class="flex justify-center gap-6 text-sm">
                         <button
@@ -345,15 +385,15 @@
 </template>
 
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import axios from 'axios';
-import { computed, onMounted, reactive, ref } from 'vue';
 import MapBackdrop from '@/components/MapBackdrop.vue';
 import GlassPanel from '@/components/MasterCrm/GlassPanel.vue';
 import { useBrand } from '@/composables/useBrand';
 import { useGuestLang } from '@/composables/useGuestLang';
 import { getUiTextWithParams } from '@/shared/guest-map-display-labels';
 import type { PageProps } from '@/types';
+import { usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 interface ServiceOption {
     id: number;
@@ -439,6 +479,57 @@ const citySuggestions = ref<CitySuggestion[]>([]);
 const showCitySuggestions = ref(false);
 let cityDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
+type LocationStatus = 'idle' | 'detecting' | 'detected' | 'error';
+const locationStatus = ref<LocationStatus>('idle');
+
+/**
+ * City autocomplete alone only ever gives the settlement's centroid as
+ * coordinates — fine for small towns, but for a large city (e.g. Kyiv) a
+ * driver on the outskirts can be tens of km from that point, which the
+ * repair-request matching radius (RepairRequestNotificationService::RADIUS_KM)
+ * then measures from. Precise geolocation fixes that at the source; the
+ * city field still gets filled in (via reverse-geocode) purely for display.
+ */
+function useMyLocation() {
+    if (!('geolocation' in navigator)) {
+        locationStatus.value = 'error';
+        return;
+    }
+
+    locationStatus.value = 'detecting';
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            form.latitude = latitude;
+            form.longitude = longitude;
+
+            try {
+                const response = await axios.get(
+                    '/repair-request/reverse-geocode',
+                    { params: { lat: latitude, lng: longitude } },
+                );
+                const name = response.data?.data?.name as string | undefined;
+                form.city =
+                    name ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            } catch {
+                // Coordinates are already set — a failed label lookup
+                // shouldn't block submission, just fall back to raw coords.
+                form.city = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            }
+
+            cityQuery.value = form.city;
+            citySuggestions.value = [];
+            showCitySuggestions.value = false;
+            locationStatus.value = 'detected';
+        },
+        () => {
+            locationStatus.value = 'error';
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+}
+
 function onCityInput() {
     // Typing again invalidates whatever city was previously picked — force
     // re-selection from the list rather than silently submitting stale
@@ -446,6 +537,7 @@ function onCityInput() {
     form.city = '';
     form.latitude = null;
     form.longitude = null;
+    locationStatus.value = 'idle';
     showCitySuggestions.value = true;
 
     clearTimeout(cityDebounceTimer);
@@ -472,6 +564,7 @@ function selectCity(city: CitySuggestion) {
     form.city = city.name;
     form.latitude = city.lat;
     form.longitude = city.lng;
+    locationStatus.value = 'idle';
     citySuggestions.value = [];
     showCitySuggestions.value = false;
 }

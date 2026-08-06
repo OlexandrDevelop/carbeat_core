@@ -1,6 +1,9 @@
 <template>
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
-        <GlassPanel padding="none" class="flex max-h-[80vh] flex-col overflow-hidden">
+        <GlassPanel
+            padding="none"
+            class="flex max-h-[80vh] flex-col overflow-hidden"
+        >
             <div class="flex gap-1 overflow-x-auto p-3">
                 <button
                     v-for="tabItem in tabs"
@@ -52,7 +55,9 @@
                     type="button"
                     class="block w-full border-t border-white/40 px-4 py-3 text-left text-sm transition first:border-t-0"
                     :class="
-                        selectedId === item.id ? 'bg-white/50' : 'hover:bg-white/30'
+                        selectedId === item.id
+                            ? 'bg-white/50'
+                            : 'hover:bg-white/30'
                     "
                     @click="selectRequest(item.id)"
                 >
@@ -121,7 +126,10 @@
                             >({{ selected.car_year }})</template
                         >
                     </h1>
-                    <p v-if="selected.service_name" class="text-xs text-slate-500">
+                    <p
+                        v-if="selected.service_name"
+                        class="text-xs text-slate-500"
+                    >
                         {{ selected.service_name }}
                     </p>
                 </div>
@@ -196,16 +204,19 @@
             </div>
         </GlassPanel>
 
-        <GlassPanel v-else class="flex items-center justify-center text-sm text-slate-400">
+        <GlassPanel
+            v-else
+            class="flex items-center justify-center text-sm text-slate-400"
+        >
             Обери заявку зі списку
         </GlassPanel>
     </div>
 </template>
 
 <script setup lang="ts">
+import GlassPanel from '@/components/MasterCrm/GlassPanel.vue';
 import axios from 'axios';
 import { computed, onMounted, ref, watch } from 'vue';
-import GlassPanel from '@/components/MasterCrm/GlassPanel.vue';
 import StatusBadge from './StatusBadge.vue';
 
 type RequestStatus = 'pending' | 'called' | 'rejected';

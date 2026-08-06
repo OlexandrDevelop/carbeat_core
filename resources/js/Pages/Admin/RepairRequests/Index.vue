@@ -9,9 +9,7 @@
                 <h1 class="text-2xl font-semibold text-gray-900">
                     Заявки на ремонт
                 </h1>
-                <span class="text-sm text-gray-500"
-                    >Всього: {{ total }}</span
-                >
+                <span class="text-sm text-gray-500">Всього: {{ total }}</span>
             </div>
         </header>
 
@@ -136,19 +134,25 @@
                                     <td class="px-6 py-3 text-sm">
                                         <span
                                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                            :class="statusBadgeClass(item.status)"
+                                            :class="
+                                                statusBadgeClass(item.status)
+                                            "
                                         >
                                             {{ statusLabel(item.status) }}
                                         </span>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-3 text-sm">
+                                    <td
+                                        class="whitespace-nowrap px-6 py-3 text-sm"
+                                    >
                                         <div
                                             v-if="item.status === 'pending'"
                                             class="flex items-center gap-2"
                                         >
                                             <button
                                                 type="button"
-                                                :disabled="moderating === item.id"
+                                                :disabled="
+                                                    moderating === item.id
+                                                "
                                                 class="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
                                                 @click="approve(item)"
                                             >
@@ -156,7 +160,9 @@
                                             </button>
                                             <button
                                                 type="button"
-                                                :disabled="moderating === item.id"
+                                                :disabled="
+                                                    moderating === item.id
+                                                "
                                                 class="rounded-lg border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-600 disabled:opacity-50"
                                                 @click="reject(item)"
                                             >
@@ -176,10 +182,16 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr v-if="expandedId === item.id" class="bg-gray-50">
+                                <tr
+                                    v-if="expandedId === item.id"
+                                    class="bg-gray-50"
+                                >
                                     <td colspan="9" class="px-6 py-4">
                                         <p
-                                            v-if="matchedMasters[item.id] === 'loading'"
+                                            v-if="
+                                                matchedMasters[item.id] ===
+                                                'loading'
+                                            "
                                             class="text-sm text-gray-500"
                                         >
                                             Завантаження…
@@ -187,38 +199,68 @@
                                         <p
                                             v-else-if="
                                                 !matchedMasters[item.id] ||
-                                                (matchedMasters[item.id] as MatchedMaster[]).length === 0
+                                                (
+                                                    matchedMasters[
+                                                        item.id
+                                                    ] as MatchedMaster[]
+                                                ).length === 0
                                             "
                                             class="text-sm text-gray-500"
                                         >
                                             Жодного майстра не підібрано (нема
-                                            послуги або немає майстрів у
-                                            радіусі 50 км).
+                                            послуги або немає майстрів у радіусі
+                                            50 км).
                                         </p>
-                                        <table v-else class="min-w-full text-sm">
+                                        <table
+                                            v-else
+                                            class="min-w-full text-sm"
+                                        >
                                             <thead>
-                                                <tr class="text-left text-xs uppercase text-gray-500">
-                                                    <th class="py-1 pr-4">Майстер</th>
-                                                    <th class="py-1 pr-4">Місто</th>
-                                                    <th class="py-1 pr-4">Відстань</th>
-                                                    <th class="py-1 pr-4">Канал</th>
-                                                    <th class="py-1 pr-4">SMS-запрошень</th>
+                                                <tr
+                                                    class="text-left text-xs uppercase text-gray-500"
+                                                >
+                                                    <th class="py-1 pr-4">
+                                                        Майстер
+                                                    </th>
+                                                    <th class="py-1 pr-4">
+                                                        Місто
+                                                    </th>
+                                                    <th class="py-1 pr-4">
+                                                        Відстань
+                                                    </th>
+                                                    <th class="py-1 pr-4">
+                                                        Канал
+                                                    </th>
+                                                    <th class="py-1 pr-4">
+                                                        SMS-запрошень
+                                                    </th>
                                                 </tr>
                                             </thead>
-                                            <tbody class="divide-y divide-gray-100">
+                                            <tbody
+                                                class="divide-y divide-gray-100"
+                                            >
                                                 <tr
-                                                    v-for="master in matchedMasters[item.id] as MatchedMaster[]"
+                                                    v-for="master in matchedMasters[
+                                                        item.id
+                                                    ] as MatchedMaster[]"
                                                     :key="master.id"
                                                 >
-                                                    <td class="py-1.5 pr-4 font-medium text-gray-900">
+                                                    <td
+                                                        class="py-1.5 pr-4 font-medium text-gray-900"
+                                                    >
                                                         {{ master.name }}
                                                     </td>
-                                                    <td class="py-1.5 pr-4 text-gray-600">
+                                                    <td
+                                                        class="py-1.5 pr-4 text-gray-600"
+                                                    >
                                                         {{ master.city ?? '—' }}
                                                     </td>
-                                                    <td class="py-1.5 pr-4 text-gray-600">
+                                                    <td
+                                                        class="py-1.5 pr-4 text-gray-600"
+                                                    >
                                                         {{
-                                                            master.distance_km !== null
+                                                            master.distance_km !==
+                                                            null
                                                                 ? `${master.distance_km} км`
                                                                 : '—'
                                                         }}
@@ -226,13 +268,25 @@
                                                     <td class="py-1.5 pr-4">
                                                         <span
                                                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                                            :class="channelBadgeClass(master.channel)"
+                                                            :class="
+                                                                channelBadgeClass(
+                                                                    master.channel,
+                                                                )
+                                                            "
                                                         >
-                                                            {{ channelLabel(master.channel) }}
+                                                            {{
+                                                                channelLabel(
+                                                                    master.channel,
+                                                                )
+                                                            }}
                                                         </span>
                                                     </td>
-                                                    <td class="py-1.5 pr-4 text-gray-600">
-                                                        {{ master.sms_invite_count }}
+                                                    <td
+                                                        class="py-1.5 pr-4 text-gray-600"
+                                                    >
+                                                        {{
+                                                            master.sms_invite_count
+                                                        }}
                                                     </td>
                                                 </tr>
                                             </tbody>
