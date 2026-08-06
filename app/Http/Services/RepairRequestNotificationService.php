@@ -15,7 +15,7 @@ use App\Models\RepairRequest;
  */
 class RepairRequestNotificationService
 {
-    private const SMS_INVITE_LIMIT = 3;
+    public const SMS_INVITE_LIMIT = 3;
 
     /**
      * Same radius the driver's own map search uses by default — a master
@@ -31,14 +31,31 @@ class RepairRequestNotificationService
 
     public function notify(RepairRequest $repairRequest): void
     {
-        if (! $repairRequest->service_id) {
-            // "Інше" — no service to match candidate masters against.
-            return;
+        foreach ($this->matchingMasters($repairRequest)->get() as $master) {
+            $this->notifyMaster($master, $repairRequest);
         }
+    }
 
+    /**
+     * The same service+radius matching query used to decide who gets
+     * notified — exposed publicly so the admin panel
+     * (App\Http\Controllers\Admin\RepairRequestController) can show exactly
+     * which masters (and cities) a request was matched against, without
+     * duplicating the logic.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Master>
+     */
+    public function matchingMasters(RepairRequest $repairRequest)
+    {
         $query = Master::where(function ($query) use ($repairRequest) {
-            $query->where('service_id', $repairRequest->service_id)
-                ->orWhereHas('services', fn ($q) => $q->where('services.id', $repairRequest->service_id));
+            if ($repairRequest->service_id) {
+                $query->where('service_id', $repairRequest->service_id)
+                    ->orWhereHas('services', fn ($q) => $q->where('services.id', $repairRequest->service_id));
+            } else {
+                // "Інше" — no service to match against, so no query would
+                // otherwise be built (leaving an always-true empty where()).
+                $query->whereRaw('1 = 0');
+            }
         })
             ->whereNotNull('contact_phone');
 
@@ -46,9 +63,7 @@ class RepairRequestNotificationService
             $this->constrainToRadius($query, $repairRequest->latitude, $repairRequest->longitude);
         }
 
-        foreach ($query->get() as $master) {
-            $this->notifyMaster($master, $repairRequest);
-        }
+        return $query;
     }
 
     /**

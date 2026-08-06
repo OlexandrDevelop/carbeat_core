@@ -37,6 +37,7 @@ class RepairRequestController extends Controller
         $tab = $request->string('tab', 'all')->toString();
 
         $query = RepairRequest::whereIn('service_id', $serviceIds)
+            ->where('status', 'approved')
             ->with('service:id,name');
 
         match ($tab) {
@@ -95,7 +96,8 @@ class RepairRequestController extends Controller
         $master = $this->resolveMaster($request);
 
         abort_unless(
-            in_array($repairRequest->service_id, $this->matchingServiceIds($master), true),
+            $repairRequest->status === 'approved'
+                && in_array($repairRequest->service_id, $this->matchingServiceIds($master), true),
             403
         );
 
@@ -136,7 +138,7 @@ class RepairRequestController extends Controller
      */
     private function tabCounts(Master $master, array $serviceIds): array
     {
-        $base = fn () => RepairRequest::whereIn('service_id', $serviceIds);
+        $base = fn () => RepairRequest::whereIn('service_id', $serviceIds)->where('status', 'approved');
 
         return [
             'all' => $base()->count(),

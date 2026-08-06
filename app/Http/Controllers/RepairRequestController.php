@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SendSmsCodeRequest;
 use App\Http\Requests\SubmitRepairRequestRequest;
-use App\Http\Services\RepairRequestNotificationService;
 use App\Http\Services\SmsService;
+use App\Http\Services\TelegramService;
 use App\Http\Services\UserService;
 use App\Models\GeonamesPlace;
 use App\Models\RepairRequest;
@@ -15,8 +15,10 @@ use App\Support\CarMakes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 /**
  * Public repair-request form (Carbeat only — see App\Http\Middleware\EnsureCarbeatBrand).
@@ -174,7 +176,7 @@ class RepairRequestController extends Controller
         SubmitRepairRequestRequest $request,
         SmsService $smsService,
         UserService $userService,
-        RepairRequestNotificationService $notificationService
+        TelegramService $telegramService
     ): JsonResponse {
         $data = $request->validated();
 
@@ -208,12 +210,51 @@ class RepairRequestController extends Controller
             'description' => $data['description'],
             'phone' => $data['phone'],
             'name' => $data['name'],
+            // Manual moderation: masters are only notified once an admin
+            // approves the request (App\Http\Controllers\Admin\RepairRequestController::approve()),
+            // not immediately on submission — the driver's own response
+            // below is identical either way, so this stays invisible to them.
+            'status' => 'pending',
         ]);
 
-        $notificationService->notify($repairRequest);
+        $this->alertAdmin($repairRequest, $telegramService);
 
         Auth::guard('web')->login($user, true);
 
         return response()->json(['status' => 'ok']);
+    }
+
+    private function alertAdmin(RepairRequest $repairRequest, TelegramService $telegramService): void
+    {
+        $message = sprintf(
+            "🆕 <b>Нова заявка на ремонт (очікує підтвердження)</b>\n\n<b>Місто:</b> %s\n<b>Авто:</b> %s\n<b>Проблема:</b> %s\n<b>Клієнт:</b> %s, %s\n\n<a href=\"%s\">Переглянути в адмінці</a>",
+            e($repairRequest->city),
+            e($this->formatCar($repairRequest)),
+            e($repairRequest->description),
+            e($repairRequest->name),
+            e($repairRequest->phone),
+            e(route('admin.repair_requests.index'))
+        );
+
+        try {
+            $telegramService->send($message);
+        } catch (Throwable $e) {
+            Log::warning('Repair request admin alert failed', [
+                'repair_request_id' => $repairRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * car_model/car_year are optional (a driver often doesn't know either) —
+     * only append what's actually present instead of leaving dangling gaps.
+     */
+    private function formatCar(RepairRequest $repairRequest): string
+    {
+        $parts = array_filter([$repairRequest->car_make, $repairRequest->car_model]);
+        $car = implode(' ', $parts);
+
+        return $repairRequest->car_year ? "{$car} ({$repairRequest->car_year})" : $car;
     }
 }

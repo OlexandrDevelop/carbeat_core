@@ -17,11 +17,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric|null $latitude
  * @property numeric|null $longitude
  * @property string $car_make
- * @property string $car_model
- * @property string $car_year
+ * @property string|null $car_model
+ * @property string|null $car_year
  * @property string $description
  * @property string $phone
  * @property string $name
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $approved_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\User|null $user
@@ -44,11 +46,14 @@ class RepairRequest extends Model
         'description',
         'phone',
         'name',
+        'status',
+        'approved_at',
     ];
 
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
+        'approved_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
