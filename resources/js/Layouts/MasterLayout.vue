@@ -1,7 +1,6 @@
 <template>
     <div :class="['master-shell min-h-screen', portalThemeClass]">
-        <div ref="mapEl" class="master-map-bg" aria-hidden="true"></div>
-        <div class="master-map-veil" aria-hidden="true"></div>
+        <MapBackdrop />
 
         <div
             class="glass-surface relative z-10 flex items-center justify-around gap-1 p-2 lg:hidden"
@@ -73,13 +72,9 @@
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-// Type-only: Leaflet touches `window` merely by being imported, which
-// crashes Node SSR (this layout wraps every master-portal page), so the
-// runtime module is loaded lazily in onMounted() below instead of via a
-// static import.
-import type L from 'leaflet';
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject } from 'vue';
 import type { route as routeFn } from 'ziggy-js';
+import MapBackdrop from '../components/MapBackdrop.vue';
 import GlassPanel from '../components/MasterCrm/GlassPanel.vue';
 import NavIcon from '../components/MasterCrm/NavIcon.vue';
 import { useBrand } from '../composables/useBrand';
@@ -93,45 +88,6 @@ const route = inject<typeof routeFn>('route')!;
 
 const { brandName, portalThemeClass } = useBrand();
 
-// Purely decorative backdrop (locked to Kyiv, no interaction) — same tile
-// provider as the public guest map (resources/js/composables/useGuestMap.ts)
-// for visual consistency with the rest of the site. This layout is
-// persistent across Inertia navigations (mounted once), so the map is too.
-const KYIV_CENTER: [number, number] = [50.4501, 30.5234];
-const mapEl = ref<HTMLElement | null>(null);
-let map: L.Map | null = null;
-
-onMounted(async () => {
-    if (!mapEl.value) return;
-
-    const Leaflet = (await import('leaflet')).default;
-    await import('leaflet/dist/leaflet.css');
-    if (!mapEl.value || map) return; // unmounted or already initialized while awaiting
-
-    map = Leaflet.map(mapEl.value, {
-        center: KYIV_CENTER,
-        zoom: 13,
-        zoomControl: false,
-        dragging: false,
-        touchZoom: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        attributionControl: false,
-    });
-
-    Leaflet.tileLayer(
-        `https://api.mapbox.com/styles/v1/rotting/claqrpplh000g14mmffvd0767/tiles/256/{z}/{x}/{y}@2x?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`,
-        { maxZoom: 18, crossOrigin: true },
-    ).addTo(map);
-});
-
-onUnmounted(() => {
-    map?.remove();
-    map = null;
-});
-
 const navItems = computed<
     {
         label: string;
@@ -143,9 +99,16 @@ const navItems = computed<
             | 'catalog'
             | 'clients'
             | 'finance'
-            | 'settings';
+            | 'settings'
+            | 'repairRequests';
     }[]
 >(() => [
+    {
+        label: 'Заявки',
+        href: route('master.repair_requests.index'),
+        pattern: 'master.repair_requests.*',
+        icon: 'repairRequests',
+    },
     {
         label: 'Розклад',
         href: route('master.schedule.index'),
@@ -190,30 +153,5 @@ const navItems = computed<
     position: relative;
     overflow: hidden;
     background: #f4f6fa;
-}
-
-.master-map-bg {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    /* Purely decorative — blur it so it reads as texture behind the glass
-       panels rather than a legible, distracting map. Scaled up slightly so
-       the blur doesn't reveal the container's edges. */
-    filter: blur(6px);
-    transform: scale(1.08);
-}
-
-/* A light brand tint only — legibility comes from each GlassPanel's own
-   backdrop-filter (see GlassPanel.vue), not from dimming the map itself. */
-.master-map-veil {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: radial-gradient(
-        circle at top left,
-        rgba(var(--brand-primary-rgb), 0.14),
-        transparent 55%
-    );
 }
 </style>

@@ -23,6 +23,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.access', 'adm
     Route::get('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('admin.services.index');
     Route::get('/services/{id}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('admin.services.edit');
 
+    // Repair requests (driver-submitted, Carbeat-only public feature)
+    Route::get('/repair-requests', [\App\Http\Controllers\Admin\RepairRequestController::class, 'index'])->name('admin.repair_requests.index');
+
     // Subscriptions
     Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('admin.subscriptions.index');
     Route::get('/subscriptions/{id}/edit', [\App\Http\Controllers\Admin\SubscriptionController::class, 'edit'])->name('admin.subscriptions.edit');
@@ -70,6 +73,9 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'admin.access', 
 
     // Users (needed by admin master edit page)
     Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.api.users.index');
+
+    // Repair requests (admin)
+    Route::get('/repair-requests', [\App\Http\Controllers\Admin\RepairRequestController::class, 'list'])->name('admin.api.repair_requests.list');
 
     // Services management (admin)
     Route::get('/admin-services', [\App\Http\Controllers\Admin\ServiceController::class, 'list'])->name('admin.api.admin_services.list');

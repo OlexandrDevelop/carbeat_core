@@ -6,6 +6,7 @@ use App\Console\Commands\SyncSubscriptions;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\AdminBrand;
 use App\Http\Middleware\DetectApp;
+use App\Http\Middleware\EnsureCarbeatBrand;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrackMobileActivity;
@@ -57,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.brand' => AdminBrand::class,
             'admin.access' => \App\Http\Middleware\EnsureAdminAccess::class,
             'master.access' => \App\Http\Middleware\EnsureIsMaster::class,
+            'carbeat.only' => EnsureCarbeatBrand::class,
         ]);
 
         // By default `auth` middleware redirects every unauthenticated web
@@ -123,7 +125,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 : \App\Enums\AppBrand::CARBEAT;
             $errorPage = $brand === \App\Enums\AppBrand::FLOXCITY ? 'Floxcity/Error' : 'Carbeat/Error';
 
-            return \Inertia\Inertia::render($errorPage, ['status' => $e->getStatusCode()])
+            // A genuine "no route matched" 404 never enters the `web` middleware
+            // group, so HandleInertiaRequests::share() (ziggy/auth/locale/brand)
+            // never runs — without it, ziggy is missing client-side and the
+            // error page's route('landing') link throws, leaving a blank
+            // screen. Share the same props explicitly here so this render
+            // path is self-sufficient regardless of whether a route matched.
+            return \Inertia\Inertia::render($errorPage, [
+                ...app(\App\Http\Middleware\HandleInertiaRequests::class)->share($request),
+                'status' => $e->getStatusCode(),
+            ])
                 ->toResponse($request)
                 ->setStatusCode($e->getStatusCode());
         });
