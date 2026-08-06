@@ -76,6 +76,9 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'admin.access', 
 
     // Repair requests (admin)
     Route::get('/repair-requests', [\App\Http\Controllers\Admin\RepairRequestController::class, 'list'])->name('admin.api.repair_requests.list');
+    Route::get('/repair-requests/{repairRequest}/matched-masters', [\App\Http\Controllers\Admin\RepairRequestController::class, 'matchedMasters'])->name('admin.api.repair_requests.matched_masters');
+    Route::post('/repair-requests/{repairRequest}/approve', [\App\Http\Controllers\Admin\RepairRequestController::class, 'approve'])->name('admin.api.repair_requests.approve');
+    Route::post('/repair-requests/{repairRequest}/reject', [\App\Http\Controllers\Admin\RepairRequestController::class, 'reject'])->name('admin.api.repair_requests.reject');
 
     // Services management (admin)
     Route::get('/admin-services', [\App\Http\Controllers\Admin\ServiceController::class, 'list'])->name('admin.api.admin_services.list');
