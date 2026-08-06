@@ -24,7 +24,6 @@ class MasterStatusRequestService
         private readonly SmartRandomStatusService $smartRandomStatusService,
         private readonly RealtimePublisher $realtimePublisher,
         private readonly GuestPushCallbackService $guestPushCallbackService,
-        private readonly TelegramService $telegramService,
     ) {}
 
     public function createRequest(?User $driver, array $payload): array
@@ -90,7 +89,7 @@ class MasterStatusRequestService
         if (! $pushSent && ! empty($master->phone)) {
             $brandName = $this->brandName($driverApp);
             $text = "Клієнт на {$brandName} запитує, чи вільні ви зараз? Відповідь тут: {$link}";
-            $this->sendPlainSms($master->phone, $text, $link, $brandName);
+            $this->smsService->sendPlainText($master->phone, $text);
             $statusRequest->forceFill(['channel' => 'sms'])->save();
         }
 
@@ -272,45 +271,6 @@ class MasterStatusRequestService
         $normalized = trim($value);
 
         return $normalized !== '' ? $normalized : null;
-    }
-
-    private function sendPlainSms(string $phone, string $text, string $link, string $brandName): void
-    {
-        if ($this->shouldUseLocalSmsFallback()) {
-            // Do not block API response with Telegram network I/O in local/test mode.
-            dispatch(function () use ($phone, $link, $brandName): void {
-                $this->sendTelegramFallback($phone, $link, $brandName);
-            })->afterResponse();
-
-            return;
-        }
-
-        try {
-            \Daaner\TurboSMS\Facades\TurboSMS::sendMessages($phone, $text);
-        } catch (\Throwable $e) {
-            logger()->warning('Status request SMS failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    private function shouldUseLocalSmsFallback(): bool
-    {
-        return app()->environment('local') || (bool) config('turbosms.test_mode', false);
-    }
-
-    private function sendTelegramFallback(string $phone, string $link, string $brandName): void
-    {
-        $message = sprintf(
-            "🔔 <b>Local status request fallback</b>\n\n<b>Brand:</b> %s\n<b>Master phone:</b> <code>%s</code>\n<b>Reply link:</b> %s",
-            e($brandName),
-            e($phone),
-            e($link)
-        );
-
-        try {
-            $this->telegramService->send($message);
-        } catch (\Throwable $e) {
-            logger()->warning('Status request Telegram fallback failed', ['error' => $e->getMessage()]);
-        }
     }
 
     private function brandName(string $app): string

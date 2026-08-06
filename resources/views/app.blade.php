@@ -27,7 +27,6 @@
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
         @if ($title !== '')
-        <title>{{ $title }}</title>
         <meta property="og:title" content="{{ $title }}" />
         <meta name="twitter:title" content="{{ $title }}" />
         @endif
@@ -83,7 +82,14 @@
             </script>
         @endif
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        {{-- A page-specific $title (from the `seo` Inertia prop, see e.g.
+             App\Http\Controllers\LandingController) becomes this tag's
+             initial value instead of a second, duplicate <title> — browsers
+             only honor the first <title> in <head> anyway, and SEO
+             crawlers/auditors flag the duplicate. The `inertia` attribute
+             lets Inertia's client-side <Head> keep replacing this same tag
+             on subsequent SPA navigations. --}}
+        <title inertia>{{ $title !== '' ? $title : config('app.name', 'Laravel') }}</title>
 
         @inertiaHead
     </head>

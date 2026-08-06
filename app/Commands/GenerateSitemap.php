@@ -101,6 +101,16 @@ class GenerateSitemap extends Command
                 ->setPriority(0.65)
         );
 
+        // Carbeat-only lead form (App\Http\Middleware\EnsureCarbeatBrand) —
+        // FloxCity has no equivalent route, so it would 404 in that sitemap.
+        if ($brand === AppBrand::CARBEAT) {
+            $sitemap->add(
+                Url::create($this->absoluteUrl('/repair-request'))
+                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+                    ->setPriority(0.7)
+            );
+        }
+
         SeoArticle::query()->get(['slug', 'updated_at'])->each(function ($article) use ($sitemap) {
             $sitemap->add(
                 Url::create($this->absoluteUrl("/guide/{$article->slug}"))

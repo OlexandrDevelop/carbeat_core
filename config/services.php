@@ -47,6 +47,12 @@ return [
         'chat_id' => env('TELEGRAM_CHAT_ID'),
     ],
 
+    'telegram-masters-bot' => [
+        'token' => env('TELEGRAM_MASTERS_BOT_TOKEN'),
+        'username' => env('TELEGRAM_MASTERS_BOT_USERNAME'),
+        'webhook_secret' => env('TELEGRAM_MASTERS_BOT_WEBHOOK_SECRET'),
+    ],
+
     'google_places' => [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Master\AuthController;
 use App\Http\Controllers\Master\CrmController;
+use App\Http\Controllers\Master\RepairRequestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -40,6 +41,9 @@ Route::group(['prefix' => 'master', 'middleware' => ['auth', 'master.access']], 
     Route::get('/settings', function () {
         return Inertia::render('Master/Settings/Index');
     })->name('master.settings.index');
+
+    Route::get('/repair-requests', [RepairRequestController::class, 'index'])
+        ->name('master.repair_requests.index');
 });
 
 // Master JSON API routes (session-authenticated, `api` group only formats
@@ -49,4 +53,7 @@ Route::group(['prefix' => 'master-api', 'middleware' => ['auth', 'master.access'
     Route::post('/crm/sync', [CrmController::class, 'sync'])->name('master.api.crm.sync');
     Route::get('/crm/finance', [CrmController::class, 'finance'])->name('master.api.crm.finance');
     Route::get('/crm/appointments', [CrmController::class, 'appointments'])->name('master.api.crm.appointments');
+
+    Route::get('/repair-requests', [RepairRequestController::class, 'list'])->name('master.api.repair_requests.list');
+    Route::patch('/repair-requests/{repairRequest}/status', [RepairRequestController::class, 'updateStatus'])->name('master.api.repair_requests.update_status');
 });

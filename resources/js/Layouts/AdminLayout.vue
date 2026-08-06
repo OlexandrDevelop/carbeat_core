@@ -416,6 +416,35 @@
                                                         Mobile Activity
                                                     </Link>
                                                 </li>
+                                                <li>
+                                                    <Link
+                                                        :href="
+                                                            route(
+                                                                'admin.repair_requests.index',
+                                                            )
+                                                        "
+                                                        :class="[
+                                                            route().current(
+                                                                'admin.repair_requests.*',
+                                                            )
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-wrench text-lg"
+                                                            :class="[
+                                                                route().current(
+                                                                    'admin.repair_requests.*',
+                                                                )
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Заявки на ремонт
+                                                    </Link>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="mt-auto">
@@ -752,6 +781,33 @@
                                             ]"
                                         ></i>
                                         Mobile Activity
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="
+                                            route('admin.repair_requests.index')
+                                        "
+                                        :class="[
+                                            route().current(
+                                                'admin.repair_requests.*',
+                                            )
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-wrench text-lg"
+                                            :class="[
+                                                route().current(
+                                                    'admin.repair_requests.*',
+                                                )
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Заявки на ремонт
                                     </Link>
                                 </li>
                             </ul>

@@ -34,6 +34,57 @@ class SmsService
         return $code;
     }
 
+    /**
+     * Send a plain (non-OTP) text SMS, e.g. status-request or repair-request
+     * invite links. In local/test mode no real SMS is sent — a preview is
+     * posted to the ops Telegram chat instead, so nothing costs money while
+     * developing. Returns true if the send (real or simulated) succeeded.
+     */
+    public function sendPlainText(string $phone, string $text): bool
+    {
+        if ($this->shouldUseLocalSmsFallback()) {
+            // Do not block the response with Telegram network I/O.
+            dispatch(function () use ($phone, $text): void {
+                $this->sendLocalSmsPreviewToTelegram($phone, $text);
+            })->afterResponse();
+
+            return true;
+        }
+
+        try {
+            TurboSMS::sendMessages($phone, $text);
+
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Plain SMS send failed', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    private function shouldUseLocalSmsFallback(): bool
+    {
+        return app()->environment('local') || (bool) config('turbosms.test_mode', false);
+    }
+
+    private function sendLocalSmsPreviewToTelegram(string $phone, string $text): void
+    {
+        $message = sprintf(
+            "🔔 <b>Local SMS fallback (no real SMS sent)</b>\n\n<b>Phone:</b> <code>%s</code>\n<b>Text:</b> %s",
+            e($phone),
+            e($text)
+        );
+
+        try {
+            (new TelegramService())->send($message);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Local SMS Telegram fallback failed', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function verifyCode(string $phone, string $inputCode): bool
     {
         // Universal override code for testing/support (config-driven)

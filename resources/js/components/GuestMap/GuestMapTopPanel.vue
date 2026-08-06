@@ -3,16 +3,23 @@ import type { Lang, UiTextKey } from '@/composables/useGuestLang';
 import type { Flavor } from '@/types/guest-map';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
-const props = defineProps<{
-    flavor: Flavor;
-    currentLang: Lang;
-    availableOnly: boolean;
-    searchQuery: string;
-    brandName: string;
-    mobileAppUrl: string;
-    loading?: boolean;
-    t: (key: UiTextKey) => string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        flavor: Flavor;
+        currentLang: Lang;
+        availableOnly: boolean;
+        searchQuery: string;
+        brandName: string;
+        ctaHref: string;
+        ctaLabel: string;
+        ctaExternal?: boolean;
+        loading?: boolean;
+        t: (key: UiTextKey) => string;
+    }>(),
+    {
+        ctaExternal: true,
+    },
+);
 
 const emit = defineEmits<{
     'update:availableOnly': [val: boolean];
@@ -95,12 +102,15 @@ onBeforeUnmount(() => clearLoadingTimers());
                 {{ brandName }}
             </span>
             <a
-                :href="mobileAppUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="app-download-cta rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+                :href="ctaHref"
+                v-bind="
+                    ctaExternal
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {}
+                "
+                class="app-download-cta flex items-center justify-center rounded-full px-2.5 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-white"
             >
-                {{ t('appDownloadCta') }}
+                {{ ctaLabel }}
             </a>
             <button
                 type="button"

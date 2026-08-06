@@ -42,6 +42,11 @@ use App\Models\Traits\AppScoped;
  * @property string|null $main_thumb_url
  * @property string|null $slug
  * @property int $sms_invites_sent
+ * @property string|null $telegram_chat_id
+ * @property string|null $telegram_link_token
+ * @property int $repair_request_sms_invite_count
+ * @property \Illuminate\Support\Carbon|null $repair_request_sms_invite_last_sent_at
+ * @property int|null $last_invited_repair_request_id
  * @property float|null $rating_google
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Booking> $bookings
  * @property-read int|null $bookings_count
@@ -116,6 +121,8 @@ class Master extends Model
         'premium_until' => 'datetime',
         'is_claimed' => 'boolean',
         'phone_verified_at' => 'datetime',
+        'repair_request_sms_invite_count' => 'integer',
+        'repair_request_sms_invite_last_sent_at' => 'datetime',
         // 'address' => 'json',
         // 'phone' => CustomRawPhoneNumberCast::class.':INTERNATIONAL',
     ];
@@ -156,6 +163,11 @@ class Master extends Model
         'is_claimed',
         'claim_token',
         'phone_verified_at',
+        'telegram_chat_id',
+        'telegram_link_token',
+        'repair_request_sms_invite_count',
+        'repair_request_sms_invite_last_sent_at',
+        'last_invited_repair_request_id',
     ];
 
     protected static function booted(): void

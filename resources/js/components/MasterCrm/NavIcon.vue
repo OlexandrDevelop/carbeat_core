@@ -31,6 +31,12 @@
             <path d="M4 20V10M12 20V4M20 20v-7" />
         </template>
 
+        <template v-else-if="name === 'repairRequests'">
+            <path
+                d="M14.7 6.3a4 4 0 0 1-5.34 4.9L4 17l3 3 5.8-5.36a4 4 0 0 1 4.9-5.34l-2.47 2.47-2.12-2.12 2.47-2.47Z"
+            />
+        </template>
+
         <template v-else>
             <path d="M4 7h11M17 7h3M4 12h5M11 12h9M4 17h13M19 17h1" />
             <circle cx="14" cy="7" r="2" />
@@ -48,6 +54,7 @@ defineProps<{
         | 'catalog'
         | 'clients'
         | 'finance'
-        | 'settings';
+        | 'settings'
+        | 'repairRequests';
 }>();
 </script>

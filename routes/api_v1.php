@@ -150,3 +150,5 @@ Route::middleware('auth:api')->prefix('crm')->group(function () {
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/protected-route', [MasterController::class, 'protectedMethod']);
 });
+
+require __DIR__.'/telegram.php';

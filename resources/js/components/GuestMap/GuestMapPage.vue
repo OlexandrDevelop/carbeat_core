@@ -278,6 +278,17 @@ const { currentLang, t, setLanguage, initLanguage } = useGuestLang({
     },
 });
 
+// Carbeat gets a direct CTA into the repair-request lead form instead of the
+// generic "download the app" pill — Floxcity has no such feature, so it
+// keeps the original Play Store link untouched.
+const topPanelCtaHref = computed<string>(() =>
+    isFloxcity.value ? mobileAppUrl.value : '/repair-request',
+);
+const topPanelCtaLabel = computed<string>(() =>
+    t(isFloxcity.value ? 'appDownloadCta' : 'repairRequestCta'),
+);
+const topPanelCtaExternal = computed<boolean>(() => isFloxcity.value);
+
 const { statusBeacon, showStatusBeacon, closeStatusBeacon } = useStatusBeacon();
 
 const {
@@ -1191,7 +1202,9 @@ onBeforeUnmount(() => {
                         :available-only="availableOnly"
                         :search-query="searchQuery"
                         :brand-name="brandName"
-                        :mobile-app-url="mobileAppUrl"
+                        :cta-href="topPanelCtaHref"
+                        :cta-label="topPanelCtaLabel"
+                        :cta-external="topPanelCtaExternal"
                         :loading="loading"
                         :t="t"
                         @update:available-only="availableOnly = $event"
