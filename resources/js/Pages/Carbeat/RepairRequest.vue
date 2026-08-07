@@ -1,6 +1,6 @@
 <template>
     <div :class="['repair-request-shell min-h-screen', portalThemeClass]">
-        <MapBackdrop />
+        <MapBackdrop static-background />
 
         <div
             class="glass-surface relative z-10 flex items-center justify-between gap-2 p-3"
@@ -16,7 +16,9 @@
                     brandName
                 }}</span>
             </a>
-            <div class="inline-flex items-center gap-1 rounded-lg bg-sky-50 p-0.5">
+            <div
+                class="inline-flex items-center gap-1 rounded-lg bg-sky-50 p-0.5"
+            >
                 <button
                     v-for="lang in ['en', 'uk', 'de'] as const"
                     :key="lang"
@@ -85,10 +87,12 @@
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                             <label
+                                for="rr-car-make"
                                 class="mb-1 block text-sm font-medium text-slate-700"
                                 >{{ t('rrCarMakeLabel') }}</label
                             >
                             <select
+                                id="rr-car-make"
                                 v-model="form.car_make"
                                 required
                                 class="glass-surface w-full rounded-xl px-3 py-2.5 text-sm outline-none"
@@ -175,7 +179,10 @@
                             @blur="onCityBlur"
                         />
                         <ul
-                            v-if="showCitySuggestions && citySuggestions.length > 0"
+                            v-if="
+                                showCitySuggestions &&
+                                citySuggestions.length > 0
+                            "
                             class="glass-panel absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl py-1"
                         >
                             <li
@@ -198,10 +205,12 @@
 
                     <div>
                         <label
+                            for="rr-service"
                             class="mb-1 block text-sm font-medium text-slate-700"
                             >{{ t('rrServiceLabel') }}</label
                         >
                         <select
+                            id="rr-service"
                             v-model="form.service_id"
                             required
                             class="glass-surface w-full rounded-xl px-3 py-2.5 text-sm outline-none"
@@ -253,7 +262,10 @@
                                 :placeholder="t('rrNamePlaceholder')"
                                 class="glass-surface w-full rounded-xl px-3 py-2.5 text-sm outline-none"
                             />
-                            <p v-if="errors.name" class="mt-1 text-xs text-red-600">
+                            <p
+                                v-if="errors.name"
+                                class="mt-1 text-xs text-red-600"
+                            >
                                 {{ errors.name }}
                             </p>
                         </div>
@@ -278,14 +290,17 @@
                         </div>
                     </div>
 
-                    <p v-if="generalError" class="text-sm font-medium text-red-600">
+                    <p
+                        v-if="generalError"
+                        class="text-sm font-medium text-red-600"
+                    >
                         {{ generalError }}
                     </p>
 
                     <button
                         type="submit"
                         :disabled="loading || !isFormValid"
-                        class="w-full rounded-full px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+                        class="w-full rounded-full px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
                         :style="{ backgroundColor: 'var(--brand-primary)' }"
                     >
                         {{ loading ? t('rrSubmitSending') : t('rrSubmitCta') }}
@@ -309,17 +324,22 @@
                         class="glass-surface mx-auto w-full max-w-[200px] rounded-2xl px-4 py-3 text-center text-lg tracking-widest outline-none"
                         @keyup.enter="verifyAndSubmit"
                     />
-                    <p v-if="generalError" class="text-sm font-medium text-red-600">
+                    <p
+                        v-if="generalError"
+                        class="text-sm font-medium text-red-600"
+                    >
                         {{ generalError }}
                     </p>
                     <button
                         type="button"
                         :disabled="loading || otp.length < 4"
-                        class="w-full rounded-full px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+                        class="w-full rounded-full px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
                         :style="{ backgroundColor: 'var(--brand-primary)' }"
                         @click="verifyAndSubmit"
                     >
-                        {{ loading ? t('rrOtpVerifying') : t('rrOtpVerifyCta') }}
+                        {{
+                            loading ? t('rrOtpVerifying') : t('rrOtpVerifyCta')
+                        }}
                     </button>
                     <div class="flex justify-center gap-6 text-sm">
                         <button
@@ -345,15 +365,15 @@
 </template>
 
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import axios from 'axios';
-import { computed, onMounted, reactive, ref } from 'vue';
 import MapBackdrop from '@/components/MapBackdrop.vue';
 import GlassPanel from '@/components/MasterCrm/GlassPanel.vue';
 import { useBrand } from '@/composables/useBrand';
 import { useGuestLang } from '@/composables/useGuestLang';
 import { getUiTextWithParams } from '@/shared/guest-map-display-labels';
 import type { PageProps } from '@/types';
+import { usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 interface ServiceOption {
     id: number;

@@ -47,10 +47,15 @@ export default defineConfig(({ mode }) => {
         },
         plugins: [
             laravel({
-                input: [
-                    'resources/js/app.ts',
-                    'resources/css/app.css',
-                ],
+                // resources/css/app.css is intentionally not listed here: it's
+                // already imported by app.ts (see resources/js/app.ts), which
+                // is how every page actually receives it via @vite(['resources/js/app.ts', ...])
+                // in app.blade.php — no Blade view references the CSS file
+                // directly. Declaring it as a second, separate build input
+                // made Vite emit it twice (two overlapping app-*.css files,
+                // ~33KB combined, nearly 100% unused per-page) instead of
+                // once as part of app.ts's own chunk.
+                input: ['resources/js/app.ts'],
                 ssr: 'resources/js/ssr.ts',
                 refresh: true,
             }),

@@ -3,11 +3,22 @@ import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createApp, DefineComponent, h } from 'vue';
+import { createApp, defineAsyncComponent, DefineComponent, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
-import AdminLayout from './Layouts/AdminLayout.vue';
-import MasterLayout from './Layouts/MasterLayout.vue';
 import i18n from './i18n';
+
+// Dynamic imports: these layouts (and everything they pull in — nav chrome,
+// MapBackdrop/Leaflet for MasterLayout, etc.) previously loaded as part of
+// the shared app.ts entry on *every* page, including public pages like
+// Carbeat/RepairRequest that use neither. Loading them only when an
+// Admin/* or Master/* page is actually resolved keeps that dead weight out
+// of the bundle everywhere else.
+const AdminLayout = defineAsyncComponent(
+    () => import('./Layouts/AdminLayout.vue'),
+);
+const MasterLayout = defineAsyncComponent(
+    () => import('./Layouts/MasterLayout.vue'),
+);
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
