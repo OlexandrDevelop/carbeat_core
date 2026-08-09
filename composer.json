@@ -14,6 +14,7 @@
         "ext-fileinfo": "*",
         "cocur/slugify": "^4.6",
         "daaner/turbosms": "^1.40",
+        "geoip2/geoip2": "^3.4",
         "imangazaliev/didom": "^2.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel-notification-channels/telegram": "^6.0",

@@ -187,6 +187,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('smart-random-statuses:sync')
             ->everyFifteenMinutes()
             ->runInBackground();
+        $schedule->command('geoip:update')
+            ->weekly()
+            ->onSuccess(fn () => Log::info('GeoIP database updated successfully'))
+            ->onFailure(fn () => Log::error('Failed to update GeoIP database'));
     })
     ->withCommands(
         [

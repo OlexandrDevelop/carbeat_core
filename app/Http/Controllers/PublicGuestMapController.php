@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AppBrand;
 use App\Http\Services\Appointment\AppointmentRedisService;
+use App\Http\Services\GeoIpService;
 use App\Http\Services\Seo\SeoOverridesService;
 use App\Http\Services\Seo\UkrainianSeoCopyGenerator;
 use App\Models\City;
@@ -25,6 +26,7 @@ class PublicGuestMapController extends Controller
     public function __construct(
         private readonly SeoOverridesService $seoOverridesService,
         private readonly UkrainianSeoCopyGenerator $seoCopyGenerator,
+        private readonly GeoIpService $geoIpService,
     ) {
     }
 
@@ -37,7 +39,7 @@ class PublicGuestMapController extends Controller
 
         return $this->renderPage(
             seo: $seo,
-            initialMapView: $this->defaultMapView(),
+            initialMapView: $this->defaultMapView($request),
             seoContent: null,
             initialSelectedMaster: null,
             initialServiceId: null,
@@ -146,7 +148,7 @@ class PublicGuestMapController extends Controller
         );
     }
 
-    public function showService(string $serviceSlug): Response
+    public function showService(Request $request, string $serviceSlug): Response
     {
         $service = $this->resolveServiceBySlug($serviceSlug);
         $masters = $this->getServiceMasters($service->id);
@@ -161,7 +163,7 @@ class PublicGuestMapController extends Controller
 
         return $this->renderPage(
             seo: $applied['seo'],
-            initialMapView: $this->defaultMapView(),
+            initialMapView: $this->defaultMapView($request),
             seoContent: $applied['content'],
             initialSelectedMaster: null,
             initialServiceId: (int) $service->id,
@@ -1131,11 +1133,13 @@ class PublicGuestMapController extends Controller
         return $this->defaultMapView();
     }
 
-    private function defaultMapView(): array
+    private function defaultMapView(Request $request): array
     {
+        $view = $this->geoIpService->mapViewForIp($request->ip());
+
         return [
-            'center' => [50.4501, 30.5234],
-            'zoom' => 11,
+            'center' => [$view['lat'], $view['lng']],
+            'zoom' => $view['zoom'],
         ];
     }
 
