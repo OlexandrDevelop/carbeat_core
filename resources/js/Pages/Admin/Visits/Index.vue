@@ -14,6 +14,20 @@
         </header>
 
         <main class="mx-auto max-w-7xl space-y-6 px-6 py-6">
+            <div
+                v-if="statsError"
+                class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+                Couldn't load the stats above — showing zeros until this is
+                fixed.
+                <button
+                    @click="fetchStats"
+                    class="ml-1 font-medium underline hover:no-underline"
+                >
+                    Retry
+                </button>
+            </div>
+
             <!-- Stats cards -->
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div
@@ -500,6 +514,7 @@ const events = ref<VisitEventRow[]>([]);
 const expanded = ref<number | null>(null);
 const isLoading = ref(false);
 const isLoadingDetails = ref(false);
+const statsError = ref(false);
 
 const pagination = reactive({
     current_page: 1,
@@ -526,8 +541,16 @@ const stats = reactive({
 });
 
 async function fetchStats() {
-    const response = await axios.get('/admin-api/visits/stats');
-    Object.assign(stats, response.data);
+    try {
+        const response = await axios.get('/admin-api/visits/stats');
+        Object.assign(stats, response.data);
+        statsError.value = false;
+    } catch (error) {
+        // Without this, a failed request silently leaves every stat at its
+        // zero default with no indication anything went wrong.
+        console.error('Failed to load visit stats:', error);
+        statsError.value = true;
+    }
 }
 
 async function fetchSessions(page = 1) {
