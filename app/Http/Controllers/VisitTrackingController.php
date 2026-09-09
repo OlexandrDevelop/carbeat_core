@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Services\Visit\BotDetector;
 use App\Http\Services\Visit\VisitTrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,13 @@ class VisitTrackingController extends Controller
      */
     public function track(Request $request): JsonResponse
     {
+        // Silently accept and drop: a bot's own request loop doesn't need
+        // to know it was filtered, and useVisitTracking.ts's caller doesn't
+        // check the response body either way.
+        if (BotDetector::isBot($request->userAgent())) {
+            return response()->json(['ok' => true]);
+        }
+
         $data = $request->validate([
             'session_token' => ['required', 'uuid'],
             'type' => ['required', 'string', 'in:pageview,click'],
