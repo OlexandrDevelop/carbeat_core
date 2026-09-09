@@ -420,6 +420,35 @@
                                                     <Link
                                                         :href="
                                                             route(
+                                                                'admin.visits.index',
+                                                            )
+                                                        "
+                                                        :class="[
+                                                            route().current(
+                                                                'admin.visits.*',
+                                                            )
+                                                                ? 'bg-gray-50 text-blue-600'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                                        ]"
+                                                    >
+                                                        <i
+                                                            class="fa fa-chart-line text-lg"
+                                                            :class="[
+                                                                route().current(
+                                                                    'admin.visits.*',
+                                                                )
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                                            ]"
+                                                        ></i>
+                                                        Visits
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        :href="
+                                                            route(
                                                                 'admin.repair_requests.index',
                                                             )
                                                         "
@@ -781,6 +810,29 @@
                                             ]"
                                         ></i>
                                         Mobile Activity
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        :href="route('admin.visits.index')"
+                                        :class="[
+                                            route().current('admin.visits.*')
+                                                ? 'bg-gray-50 text-blue-600'
+                                                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600',
+                                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                                        ]"
+                                    >
+                                        <i
+                                            class="fa fa-chart-line text-lg"
+                                            :class="[
+                                                route().current(
+                                                    'admin.visits.*',
+                                                )
+                                                    ? 'text-blue-600'
+                                                    : 'text-gray-400 group-hover:text-blue-600',
+                                            ]"
+                                        ></i>
+                                        Visits
                                     </Link>
                                 </li>
                                 <li>
