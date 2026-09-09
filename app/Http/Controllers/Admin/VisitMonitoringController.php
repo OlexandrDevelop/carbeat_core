@@ -108,4 +108,19 @@ class VisitMonitoringController extends Controller
             'by_device' => $byDevice,
         ]);
     }
+
+    /**
+     * Delete every visit session (and, via the FK cascade, its events) for
+     * the current brand. Used to clear out data recorded before bot
+     * filtering (BotDetector) or the IP/duplicate-pageview fixes landed.
+     */
+    public function clear(): JsonResponse
+    {
+        $deleted = VisitSession::query()->delete();
+
+        return response()->json([
+            'success' => true,
+            'deleted' => $deleted,
+        ]);
+    }
 }

@@ -148,6 +148,7 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'admin.access', 
     // Visit monitoring (public site analytics)
     Route::get('/visits/stats', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'stats'])->name('admin.api.visits.stats');
     Route::get('/visits', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'list'])->name('admin.api.visits.list');
+    Route::post('/visits/clear', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'clear'])->name('admin.api.visits.clear');
     Route::get('/visits/{visitSession}', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'show'])->name('admin.api.visits.show');
 });
 
