@@ -20,8 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $landing_path
  * @property int $pageviews_count
  * @property int $clicks_count
- * @property \Illuminate\Support\Carbon $started_at
- * @property \Illuminate\Support\Carbon $last_seen_at
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $last_seen_at
  * @property-read int $duration_seconds
  * @property-read int $requests_count
  * @property-read \App\Models\User|null $user
@@ -66,9 +66,19 @@ class VisitSession extends Model
     /**
      * Wall-clock time between the first and most recent event. A
      * single-event session (still browsing, or a one-page bounce) is 0.
+     *
+     * Because this is in $appends, it's evaluated for every VisitSession
+     * instance during JSON serialization — including ones from aggregate
+     * queries (e.g. stats()'s top-referrers/by-device breakdowns) that
+     * select only a couple of columns and never loaded started_at/
+     * last_seen_at. Guard against that instead of crashing on null.
      */
     public function getDurationSecondsAttribute(): int
     {
+        if (! $this->started_at || ! $this->last_seen_at) {
+            return 0;
+        }
+
         return (int) abs($this->last_seen_at->diffInSeconds($this->started_at));
     }
 
@@ -78,7 +88,7 @@ class VisitSession extends Model
      */
     public function getRequestsCountAttribute(): int
     {
-        return $this->pageviews_count + $this->clicks_count;
+        return (int) $this->pageviews_count + (int) $this->clicks_count;
     }
 
     public function events(): HasMany
