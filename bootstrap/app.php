@@ -29,6 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // The app container has no published port — nginx (docker/nginx/*.conf,
+        // which sets X-Real-IP/X-Forwarded-For/-Proto) is the only way in, both
+        // in docker-compose and behind Easypanel in production. Without this,
+        // Request::ip() returns nginx's own container IP for every visitor
+        // instead of the real client IP, which broke IP logging in visit
+        // monitoring (see Admin/Visits — every session showed the same IP).
+        $middleware->trustProxies(at: '*');
         $middleware->prepend(HandleCors::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->web(prepend: [
@@ -43,6 +50,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Ensure CSRF protection is enabled for web routes
         $middleware->web(append: [
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        ]);
+
+        // useVisitTracking.ts sends click beacons via navigator.sendBeacon()
+        // so they survive the page unload a navigation click triggers —
+        // sendBeacon cannot attach a CSRF header, so this endpoint is exempt.
+        // It's a public write-only analytics log, not a state-changing action,
+        // so CSRF protection isn't meaningful here anyway.
+        $middleware->validateCsrfTokens(except: [
+            'track/event',
         ]);
         $middleware->api(prepend: [
             DetectApp::class,

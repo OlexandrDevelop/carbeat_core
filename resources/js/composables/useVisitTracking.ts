@@ -17,6 +17,12 @@ const EXCLUDED_PREFIXES = [
 
 let initialized = false;
 let previousPath: string | null = null;
+let lastPageview: { path: string; at: number } | null = null;
+
+// Guards against a page load reporting itself twice — e.g. Inertia firing a
+// second 'navigate' for a same-URL history sync shortly after the initial
+// load. A genuine repeat visit to the same path is never this fast.
+const PAGEVIEW_DEDUPE_WINDOW_MS = 1500;
 
 function isTrackedPath(path: string): boolean {
     return !EXCLUDED_PREFIXES.some(
@@ -82,6 +88,19 @@ function describeElement(
 }
 
 function send(payload: Record<string, unknown>) {
+    // A click that triggers real navigation unloads the page before an
+    // axios/fetch promise resolves, silently cancelling it — sendBeacon is
+    // built to survive that. It can't carry a CSRF header, so /track/event
+    // is exempted from CSRF verification (see bootstrap/app.php).
+    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+        const blob = new Blob([JSON.stringify(payload)], {
+            type: 'application/json',
+        });
+        if (navigator.sendBeacon('/track/event', blob)) {
+            return;
+        }
+    }
+
     axios.post('/track/event', payload).catch(() => {
         // Best-effort analytics — never surface a tracking failure to the visitor.
     });
@@ -93,6 +112,15 @@ function trackPageview() {
         return;
     }
 
+    const now = Date.now();
+    if (
+        lastPageview &&
+        lastPageview.path === path &&
+        now - lastPageview.at < PAGEVIEW_DEDUPE_WINDOW_MS
+    ) {
+        return;
+    }
+
     const token = getSessionToken();
     if (!token) {
         return;
@@ -100,6 +128,7 @@ function trackPageview() {
 
     const referrer = previousPath ?? document.referrer ?? null;
     previousPath = path;
+    lastPageview = { path, at: now };
 
     send({
         session_token: token,
