@@ -7,8 +7,8 @@ import { createApp, DefineComponent, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import AdminLayout from './Layouts/AdminLayout.vue';
 import MasterLayout from './Layouts/MasterLayout.vue';
-import i18n from './i18n';
 import { useVisitTracking } from './composables/useVisitTracking';
+import i18n from './i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

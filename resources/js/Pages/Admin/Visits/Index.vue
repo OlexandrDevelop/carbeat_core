@@ -106,9 +106,10 @@
                             :key="row.path"
                             class="flex items-center justify-between"
                         >
-                            <span class="truncate font-mono text-xs text-gray-700">{{
-                                row.path
-                            }}</span>
+                            <span
+                                class="truncate font-mono text-xs text-gray-700"
+                                >{{ row.path }}</span
+                            >
                             <span
                                 class="ml-2 shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
                                 >{{ row.c }}</span
@@ -259,9 +260,7 @@
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
-                                            >{{
-                                                session.pageviews_count
-                                            }}</span
+                                            >{{ session.pageviews_count }}</span
                                         >
                                     </td>
                                     <td class="px-4 py-3">
@@ -301,9 +300,7 @@
                                             <div
                                                 class="mb-2 text-xs font-semibold uppercase text-gray-500"
                                             >
-                                                Timeline ({{
-                                                    events.length
-                                                }})
+                                                Timeline ({{ events.length }})
                                             </div>
                                             <div
                                                 v-for="event in events"
@@ -374,8 +371,7 @@
                         </button>
                         <button
                             :disabled="
-                                pagination.current_page >=
-                                pagination.last_page
+                                pagination.current_page >= pagination.last_page
                             "
                             @click="changePage(pagination.current_page + 1)"
                             class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40"

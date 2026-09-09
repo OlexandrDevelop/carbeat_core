@@ -49,7 +49,9 @@ class VisitTrackingService
             ]);
         }
 
-        $session->user_id = $request->user()?->id ?? $session->user_id;
+        if ($user = $request->user()) {
+            $session->user_id = $user->id;
+        }
         $session->last_seen_at = now();
 
         if ($data['type'] === VisitEvent::TYPE_CLICK) {

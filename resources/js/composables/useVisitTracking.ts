@@ -7,7 +7,13 @@ import axios from 'axios';
  * traffic this dashboard is meant to analyze.
  */
 const STORAGE_KEY = 'cb_visit_session_token';
-const EXCLUDED_PREFIXES = ['/admin', '/admin-auth', '/master', '/master-login', '/master-logout'];
+const EXCLUDED_PREFIXES = [
+    '/admin',
+    '/admin-auth',
+    '/master',
+    '/master-login',
+    '/master-logout',
+];
 
 let initialized = false;
 let previousPath: string | null = null;
@@ -51,7 +57,9 @@ interface ElementDescriptor {
     href?: string;
 }
 
-function describeElement(target: EventTarget | null): ElementDescriptor | undefined {
+function describeElement(
+    target: EventTarget | null,
+): ElementDescriptor | undefined {
     if (!(target instanceof Element)) {
         return undefined;
     }
@@ -62,8 +70,14 @@ function describeElement(target: EventTarget | null): ElementDescriptor | undefi
         tag: interactive.tagName.toLowerCase(),
         text: (interactive.textContent ?? '').trim().slice(0, 100) || undefined,
         id: interactive.id || undefined,
-        class: typeof interactive.className === 'string' ? interactive.className : undefined,
-        href: interactive instanceof HTMLAnchorElement ? interactive.href : undefined,
+        class:
+            typeof interactive.className === 'string'
+                ? interactive.className
+                : undefined,
+        href:
+            interactive instanceof HTMLAnchorElement
+                ? interactive.href
+                : undefined,
     };
 }
 
