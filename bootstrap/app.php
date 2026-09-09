@@ -29,6 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // The app container has no published port — nginx (docker/nginx/*.conf,
+        // which sets X-Real-IP/X-Forwarded-For/-Proto) is the only way in, both
+        // in docker-compose and behind Easypanel in production. Without this,
+        // Request::ip() returns nginx's own container IP for every visitor
+        // instead of the real client IP, which broke IP logging in visit
+        // monitoring (see Admin/Visits — every session showed the same IP).
+        $middleware->trustProxies(at: '*');
         $middleware->prepend(HandleCors::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->web(prepend: [
