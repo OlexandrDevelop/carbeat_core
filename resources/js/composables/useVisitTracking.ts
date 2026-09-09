@@ -165,6 +165,14 @@ export function useVisitTracking(): void {
     }
     initialized = true;
 
+    // Selenium/Puppeteer/Playwright set this flag on the browsers they
+    // drive. The server also filters bots by User-Agent (see
+    // BotDetector::isBot), but skipping here avoids sending beacons at all
+    // for automated tooling.
+    if (navigator.webdriver) {
+        return;
+    }
+
     trackPageview();
     router.on('navigate', () => trackPageview());
     document.addEventListener('click', trackClick, { capture: true });
