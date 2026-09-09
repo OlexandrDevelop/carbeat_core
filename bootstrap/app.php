@@ -51,6 +51,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
         ]);
+
+        // useVisitTracking.ts sends click beacons via navigator.sendBeacon()
+        // so they survive the page unload a navigation click triggers —
+        // sendBeacon cannot attach a CSRF header, so this endpoint is exempt.
+        // It's a public write-only analytics log, not a state-changing action,
+        // so CSRF protection isn't meaningful here anyway.
+        $middleware->validateCsrfTokens(except: [
+            'track/event',
+        ]);
         $middleware->api(prepend: [
             DetectApp::class,
         ]);
