@@ -8,6 +8,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import AdminLayout from './Layouts/AdminLayout.vue';
 import MasterLayout from './Layouts/MasterLayout.vue';
 import i18n from './i18n';
+import { useVisitTracking } from './composables/useVisitTracking';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -49,6 +50,8 @@ createInertiaApp({
             // update correctly after client-side navigation.
             .use(ZiggyVue, ziggy)
             .mount(el);
+
+        useVisitTracking();
     },
     progress: {
         color: '#4B5563',

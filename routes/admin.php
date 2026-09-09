@@ -54,6 +54,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin.access', 'adm
     Route::get('/smart-random-status', [SmartRandomStatusController::class, 'index'])->name('admin.smart_random_status.index');
     // Subscriptions dashboard UI
     Route::get('/subscriptions-dashboard', [SubscriptionsAdminController::class, 'index'])->name('admin.subscriptions.dashboard');
+
+    // Visit monitoring (public site analytics)
+    Route::get('/visits', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'index'])->name('admin.visits.index');
 });
 
 // Admin JSON API routes
@@ -141,6 +144,11 @@ Route::group(['prefix' => 'admin-api', 'middleware' => ['auth', 'admin.access', 
     Route::get('/import/runs', [\App\Http\Controllers\Admin\ImportRunController::class, 'list'])->name('admin.api.import.runs.list');
     Route::get('/import/runs/{importRun}/summary', [\App\Http\Controllers\Admin\ImportRunController::class, 'summary'])->name('admin.api.import.runs.summary');
     Route::get('/import/runs/{importRun}/masters', [\App\Http\Controllers\Admin\ImportRunController::class, 'masters'])->name('admin.api.import.runs.masters');
+
+    // Visit monitoring (public site analytics)
+    Route::get('/visits/stats', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'stats'])->name('admin.api.visits.stats');
+    Route::get('/visits', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'list'])->name('admin.api.visits.list');
+    Route::get('/visits/{visitSession}', [\App\Http\Controllers\Admin\VisitMonitoringController::class, 'show'])->name('admin.api.visits.show');
 });
 
 // Admin OTP auth routes (session login)

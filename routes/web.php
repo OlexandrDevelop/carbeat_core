@@ -7,6 +7,7 @@ use App\Http\Controllers\Master\OnboardController as MasterOnboardController;
 use App\Http\Controllers\MasterStatusRequestWebController;
 use App\Http\Controllers\PublicGuestMapController;
 use App\Http\Controllers\PublicMasterController;
+use App\Http\Controllers\VisitTrackingController;
 use App\Http\Middleware\DetectApp;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
@@ -143,6 +144,11 @@ Route::post('/master-onboard/send-code', [MasterOnboardController::class, 'sendC
 Route::post('/master-onboard/verify', [MasterOnboardController::class, 'verify'])->name('master.onboard.verify');
 Route::get('/r/{token}', [MasterStatusRequestWebController::class, 'show'])->name('status-request.show');
 Route::post('/r/{token}', [MasterStatusRequestWebController::class, 'respond'])->name('status-request.respond');
+
+// Visit monitoring: pageview/click beacons from useVisitTracking.ts
+Route::post('/track/event', [VisitTrackingController::class, 'track'])
+    ->middleware('throttle:180,1')
+    ->name('track.event');
 
 // Public pages — brand-specific
 Route::get('/terms', function () {
