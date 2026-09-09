@@ -3,13 +3,24 @@
         <header
             class="sticky top-0 z-10 border-b border-gray-200 bg-white/70 backdrop-blur"
         >
-            <div class="mx-auto max-w-7xl px-6 py-4">
-                <h1 class="text-2xl font-semibold text-gray-900">
-                    Visit Monitoring
-                </h1>
-                <p class="mt-1 text-sm text-gray-500">
-                    Sessions, pageviews and clicks on the public site.
-                </p>
+            <div
+                class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
+            >
+                <div>
+                    <h1 class="text-2xl font-semibold text-gray-900">
+                        Visit Monitoring
+                    </h1>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Sessions, pageviews and clicks on the public site.
+                    </p>
+                </div>
+                <button
+                    @click="clearStats"
+                    :disabled="isClearing"
+                    class="shrink-0 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm text-red-700 hover:bg-red-100 disabled:opacity-50"
+                >
+                    {{ isClearing ? 'Clearing...' : 'Clear Stats' }}
+                </button>
             </div>
         </header>
 
@@ -514,6 +525,7 @@ const events = ref<VisitEventRow[]>([]);
 const expanded = ref<number | null>(null);
 const isLoading = ref(false);
 const isLoadingDetails = ref(false);
+const isClearing = ref(false);
 const statsError = ref(false);
 
 const pagination = reactive({
@@ -550,6 +562,28 @@ async function fetchStats() {
         // zero default with no indication anything went wrong.
         console.error('Failed to load visit stats:', error);
         statsError.value = true;
+    }
+}
+
+async function clearStats() {
+    if (
+        !confirm(
+            'Delete all recorded visit sessions and events? This cannot be undone.',
+        )
+    ) {
+        return;
+    }
+
+    isClearing.value = true;
+    try {
+        await axios.post('/admin-api/visits/clear');
+        expanded.value = null;
+        await Promise.all([fetchStats(), fetchSessions(1)]);
+    } catch (error) {
+        console.error('Failed to clear visit stats:', error);
+        alert('Failed to clear visit stats');
+    } finally {
+        isClearing.value = false;
     }
 }
 
