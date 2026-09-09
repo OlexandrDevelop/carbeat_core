@@ -88,11 +88,21 @@ class VisitMonitoringController extends Controller
             ->groupBy('device_type')
             ->pluck('c', 'device_type');
 
+        // Averaged in PHP rather than SQL so it doesn't depend on a
+        // database-specific date-diff function (sqlite in tests, MySQL in
+        // production).
+        $avgDurationSeconds = (int) round(
+            VisitSession::where('started_at', '>=', $since)
+                ->get(['started_at', 'last_seen_at'])
+                ->avg(fn (VisitSession $session) => $session->duration_seconds) ?? 0
+        );
+
         return response()->json([
             'total_sessions' => VisitSession::where('started_at', '>=', $since)->count(),
             'total_pageviews' => VisitEvent::where('type', VisitEvent::TYPE_PAGEVIEW)->where('created_at', '>=', $since)->count(),
             'total_clicks' => VisitEvent::where('type', VisitEvent::TYPE_CLICK)->where('created_at', '>=', $since)->count(),
             'sessions_today' => VisitSession::whereDate('started_at', now()->toDateString())->count(),
+            'avg_duration_seconds' => $avgDurationSeconds,
             'top_referrers' => $topReferrers,
             'top_pages' => $topPages,
             'by_device' => $byDevice,

@@ -15,7 +15,7 @@
 
         <main class="mx-auto max-w-7xl space-y-6 px-6 py-6">
             <!-- Stats cards -->
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div
                     class="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
                 >
@@ -54,6 +54,16 @@
                     </div>
                     <div class="mt-1 text-3xl font-bold text-gray-900">
                         {{ stats.total_clicks }}
+                    </div>
+                </div>
+                <div
+                    class="overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                >
+                    <div class="text-sm font-medium text-gray-500">
+                        Avg. Time on Site
+                    </div>
+                    <div class="mt-1 text-3xl font-bold text-gray-900">
+                        {{ formatDuration(stats.avg_duration_seconds) }}
                     </div>
                 </div>
             </div>
@@ -212,6 +222,7 @@
                                         'Landing page',
                                         'Pages',
                                         'Clicks',
+                                        'Duration',
                                         'Last seen',
                                         '',
                                     ]"
@@ -228,7 +239,7 @@
                                 class="hover:bg-gray-50"
                             >
                                 <td
-                                    colspan="8"
+                                    colspan="9"
                                     class="px-6 py-8 text-center text-sm text-gray-500"
                                 >
                                     No visits recorded yet
@@ -270,6 +281,13 @@
                                         >
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600">
+                                        {{
+                                            formatDuration(
+                                                session.duration_seconds,
+                                            )
+                                        }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-600">
                                         {{ formatTime(session.last_seen_at) }}
                                     </td>
                                     <td class="px-4 py-3">
@@ -289,62 +307,127 @@
                                     v-if="expanded === session.id"
                                     class="bg-gray-50"
                                 >
-                                    <td colspan="8" class="px-6 py-4">
+                                    <td colspan="9" class="px-6 py-4">
                                         <div
                                             v-if="isLoadingDetails"
                                             class="text-sm text-gray-500"
                                         >
                                             Loading...
                                         </div>
-                                        <div v-else class="space-y-1">
-                                            <div
-                                                class="mb-2 text-xs font-semibold uppercase text-gray-500"
-                                            >
-                                                Timeline ({{ events.length }})
-                                            </div>
-                                            <div
-                                                v-for="event in events"
-                                                :key="event.id"
-                                                class="flex items-center gap-3 text-sm"
-                                            >
-                                                <span
-                                                    class="font-mono text-xs text-gray-400"
-                                                    >{{
-                                                        formatTime(
-                                                            event.created_at,
-                                                        )
-                                                    }}</span
+                                        <div v-else class="space-y-4">
+                                            <div>
+                                                <div
+                                                    class="mb-1.5 flex items-center justify-between text-xs"
                                                 >
-                                                <span
-                                                    class="rounded px-1.5 py-0.5 text-xs font-medium"
-                                                    :class="
-                                                        event.type === 'click'
-                                                            ? 'bg-amber-100 text-amber-700'
-                                                            : 'bg-blue-100 text-blue-700'
-                                                    "
-                                                    >{{ event.type }}</span
-                                                >
-                                                <span
-                                                    class="font-mono text-xs text-gray-700"
-                                                    >{{ event.path }}</span
-                                                >
-                                                <span
-                                                    v-if="event.element_tag"
-                                                    class="text-gray-500"
-                                                >
-                                                    &lt;{{
-                                                        event.element_tag
-                                                    }}&gt;
                                                     <span
-                                                        v-if="
-                                                            event.element_text
-                                                        "
-                                                        class="italic"
-                                                        >"{{
-                                                            event.element_text
-                                                        }}"</span
+                                                        class="font-semibold uppercase text-gray-500"
+                                                        >Activity —
+                                                        {{
+                                                            session.requests_count
+                                                        }}
+                                                        requests over
+                                                        {{
+                                                            formatDuration(
+                                                                session.duration_seconds,
+                                                            )
+                                                        }}</span
                                                     >
-                                                </span>
+                                                    <span
+                                                        class="flex items-center gap-3 text-gray-500"
+                                                    >
+                                                        <span
+                                                            class="inline-flex items-center gap-1"
+                                                            ><span
+                                                                class="h-2 w-2 rounded-full bg-blue-500"
+                                                            ></span
+                                                            >pageview</span
+                                                        >
+                                                        <span
+                                                            class="inline-flex items-center gap-1"
+                                                            ><span
+                                                                class="h-2 w-2 rounded-full bg-amber-500"
+                                                            ></span
+                                                            >click</span
+                                                        >
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    class="relative h-3 w-full rounded-full bg-gray-100"
+                                                >
+                                                    <span
+                                                        v-for="event in events"
+                                                        :key="`tick-${event.id}`"
+                                                        class="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white"
+                                                        :class="
+                                                            event.type ===
+                                                            'click'
+                                                                ? 'bg-amber-500'
+                                                                : 'bg-blue-500'
+                                                        "
+                                                        :style="{
+                                                            left:
+                                                                activityOffset(
+                                                                    session,
+                                                                    event,
+                                                                ) + '%',
+                                                        }"
+                                                        :title="`${event.type} · ${formatTime(event.created_at)}`"
+                                                    ></span>
+                                                </div>
+                                            </div>
+                                            <div class="space-y-1">
+                                                <div
+                                                    class="mb-2 text-xs font-semibold uppercase text-gray-500"
+                                                >
+                                                    Timeline ({{
+                                                        events.length
+                                                    }})
+                                                </div>
+                                                <div
+                                                    v-for="event in events"
+                                                    :key="event.id"
+                                                    class="flex items-center gap-3 text-sm"
+                                                >
+                                                    <span
+                                                        class="font-mono text-xs text-gray-400"
+                                                        >{{
+                                                            formatTime(
+                                                                event.created_at,
+                                                            )
+                                                        }}</span
+                                                    >
+                                                    <span
+                                                        class="rounded px-1.5 py-0.5 text-xs font-medium"
+                                                        :class="
+                                                            event.type ===
+                                                            'click'
+                                                                ? 'bg-amber-100 text-amber-700'
+                                                                : 'bg-blue-100 text-blue-700'
+                                                        "
+                                                        >{{ event.type }}</span
+                                                    >
+                                                    <span
+                                                        class="font-mono text-xs text-gray-700"
+                                                        >{{ event.path }}</span
+                                                    >
+                                                    <span
+                                                        v-if="event.element_tag"
+                                                        class="text-gray-500"
+                                                    >
+                                                        &lt;{{
+                                                            event.element_tag
+                                                        }}&gt;
+                                                        <span
+                                                            v-if="
+                                                                event.element_text
+                                                            "
+                                                            class="italic"
+                                                            >"{{
+                                                                event.element_text
+                                                            }}"</span
+                                                        >
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -397,6 +480,9 @@ interface VisitSessionRow {
     landing_path: string | null;
     pageviews_count: number;
     clicks_count: number;
+    requests_count: number;
+    duration_seconds: number;
+    started_at: string;
     last_seen_at: string;
 }
 
@@ -434,6 +520,7 @@ const stats = reactive({
     total_sessions: 0,
     total_pageviews: 0,
     total_clicks: 0,
+    avg_duration_seconds: 0,
     top_referrers: [] as { referrer_host: string; c: number }[],
     top_pages: [] as { path: string; c: number }[],
 });
@@ -492,6 +579,42 @@ function formatTime(value: string): string {
     } catch {
         return value;
     }
+}
+
+function formatDuration(seconds: number): string {
+    if (!seconds || seconds <= 0) {
+        return '0s';
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+        return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
+}
+
+// Where an event's dot lands on the 0-100% activity bar, as a share of the
+// session's total duration elapsed since its first event.
+function activityOffset(
+    session: VisitSessionRow,
+    event: VisitEventRow,
+): number {
+    if (session.duration_seconds <= 0) {
+        return 0;
+    }
+
+    const elapsedMs =
+        new Date(event.created_at).getTime() -
+        new Date(session.started_at).getTime();
+    const percent = (elapsedMs / (session.duration_seconds * 1000)) * 100;
+
+    return Math.min(100, Math.max(0, percent));
 }
 
 let debounceTimer: number | null = null;

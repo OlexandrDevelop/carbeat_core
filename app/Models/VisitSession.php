@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $clicks_count
  * @property \Illuminate\Support\Carbon $started_at
  * @property \Illuminate\Support\Carbon $last_seen_at
+ * @property-read int $duration_seconds
+ * @property-read int $requests_count
  * @property-read \App\Models\User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\VisitEvent> $events
  */
@@ -44,6 +46,11 @@ class VisitSession extends Model
         'last_seen_at',
     ];
 
+    protected $appends = [
+        'duration_seconds',
+        'requests_count',
+    ];
+
     protected $casts = [
         'pageviews_count' => 'integer',
         'clicks_count' => 'integer',
@@ -54,6 +61,24 @@ class VisitSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Wall-clock time between the first and most recent event. A
+     * single-event session (still browsing, or a one-page bounce) is 0.
+     */
+    public function getDurationSecondsAttribute(): int
+    {
+        return (int) abs($this->last_seen_at->diffInSeconds($this->started_at));
+    }
+
+    /**
+     * Every beacon the browser sent for this session — pageviews and clicks
+     * combined — i.e. how many requests this visitor made to the server.
+     */
+    public function getRequestsCountAttribute(): int
+    {
+        return $this->pageviews_count + $this->clicks_count;
     }
 
     public function events(): HasMany
